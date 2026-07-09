@@ -1,0 +1,776 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Base custom classes to enhance UI with a premium dark fluid look */
+:root {
+  --bg-dark-primary: #09080d;
+  --bg-dark-secondary: #121118;
+  --color-navy-glow: #1e3a8a;
+}
+
+html {
+  color-scheme: only light;
+  background-color: #ffffff !important;
+  color: #0c0f1d !important;
+}
+
+html.dark {
+  color-scheme: only dark;
+  background-color: #09080d !important;
+  color: #f8fafc !important;
+}
+
+body {
+  background-color: #ffffff !important;
+  color: #0c0f1d !important;
+}
+
+html.dark body {
+  background-color: #09080d !important;
+  color: #f8fafc !important;
+}
+
+/* Custom Scrollbar styled to perfectly blend with backgrounds across all browsers and devices */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.15) transparent;
+}
+
+.dark * {
+  scrollbar-color: rgba(255, 255, 255, 0.06) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.15) !important;
+  border-radius: 9999px !important;
+  border: 1px solid transparent !important;
+  background-clip: padding-box !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(148, 163, 184, 0.35) !important;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Specific extra-subtle custom scrollbar for dashboard lists to blend completely with backgrounds */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 3px !important;
+  height: 3px !important;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.1) !important;
+  border-radius: 9999px !important;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(148, 163, 184, 0.25) !important;
+}
+.dark .scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+.dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.dark .glass {
+  background: rgba(18, 17, 24, 0.8);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+/* Glow effects and animation utilities */
+.glow-navy, .glow-navy {
+  box-shadow: 0 0 15px rgba(30, 58, 138, 0.15);
+}
+
+.glow-navy-active, .glow-navy-active {
+  box-shadow: 0 0 25px rgba(30, 58, 138, 0.35);
+}
+
+/* Pulse keyframes for active call status */
+@keyframes signal-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+
+.pulse-glowing {
+  animation: signal-pulse 2s infinite ease-in-out;
+}
+
+/* Custom styling for Leaflet Tooltip to eliminate contrast issues in light & dark themes */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .print-break {
+    page-break-after: always;
+  }
+}
+
+/* Custom styling for Leaflet Tooltip to eliminate contrast issues in light & dark themes */
+.custom-osm-tooltip {
+  background-color: #ffffff !important;
+  color: #0c0f17 !important; /* ultra dark slate for supreme legibility */
+  border: 1.5px solid #0f172a !important; /* solid slate-900 border for crisp shape definition */
+  border-radius: 0.75rem !important; /* rounded-xl */
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.15) !important;
+  padding: 0 !important;
+}
+
+/* Tooltip arrow styling for light theme */
+.custom-osm-tooltip::before {
+  border-top-color: #0f172a !important;
+}
+
+/* Dark mode theme adjustments */
+.dark .custom-osm-tooltip {
+  background-color: #0f172a !important; /* slate-900 (ultra dark black-blue) */
+  color: #ffffff !important; /* pure white */
+  border: 1.5px solid #575757 !important; /* clear contrasting border in dark mode */
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.7) !important;
+}
+
+/* Tooltip arrow styling for dark theme */
+.dark .custom-osm-tooltip::before {
+  border-top-color: #575757 !important;
+}
+
+/* Force tooltip inner contents to respect high-contrast coloring */
+.custom-osm-tooltip .font-sans {
+  color: inherit !important;
+}
+
+.custom-osm-tooltip .text-slate-900 {
+  color: #010409 !important; /* absolute black for supreme legibility */
+}
+
+.dark .custom-osm-tooltip .dark\:text-slate-100 {
+  color: #ffffff !important; /* absolute white */
+}
+
+.custom-osm-tooltip .text-slate-500 {
+  color: #475569 !important; /* slate-600 */
+}
+
+.dark .custom-osm-tooltip .dark\:text-slate-300 {
+  color: #e2e8f0 !important; /* slate-200 */
+}
+
+.custom-osm-tooltip .text-emerald-600 {
+  color: #15803d !important; /* High contrast Deep Green */
+}
+.dark .custom-osm-tooltip .dark\:text-emerald-450 {
+  color: #4ade80 !important; /* Clear Pastel Green */
+}
+
+.custom-osm-tooltip .text-red-650 {
+  color: #b91c1c !important; /* High contrast Deep Red */
+}
+.dark .custom-osm-tooltip .dark\:text-red-400 {
+  color: #f87171 !important; /* Clear Pastel Red */
+}
+
+/* Custom styling for Leaflet Popup to eliminate contrast issues in light & dark themes */
+.custom-osm-popup-container .leaflet-popup-content-wrapper {
+  background-color: rgba(255, 255, 255, 0.7) !important;
+  color: #000000 !important; /* solid, highly readable text */
+  border: 1px solid #cbd5e1 !important; /* crisp light border */
+  border-radius: 16px !important; /* Elegant iPhone corner roundness */
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  padding: 0 !important; /* Perfectly compact */
+  overflow: hidden !important;
+}
+
+.custom-osm-popup-container .leaflet-popup-content {
+  margin: 0 !important;
+  width: auto !important;
+}
+
+.custom-osm-popup-container .leaflet-popup-tip {
+  background-color: rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-left: 1px solid #cbd5e1 !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+  box-shadow: 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.custom-osm-popup-container .leaflet-popup-close-button {
+  color: #64748b !important; /* soft slate-500 icon color */
+  font-size: 11px !important;
+  top: 5px !important;
+  right: 5px !important;
+  font-weight: 800 !important;
+  transition: color 0.15s ease !important;
+}
+.custom-osm-popup-container .leaflet-popup-close-button:hover {
+  color: #ef4444 !important;
+}
+
+/* Dark mode theme adjustments for Leaflet Popup */
+.dark .custom-osm-popup-container .leaflet-popup-content-wrapper {
+  background-color: rgba(11, 10, 17, 0.7) !important; /* Rich 70% translucent dark background to ensure great contrast */
+  color: #f8fafc !important; /* slate-50 */
+  border: 1px solid rgba(30, 58, 138, 0.5) !important; /* Solid sleek navy border for superb definition */
+  box-shadow: 0 20px 35px -5px rgba(0, 0, 0, 0.7), 0 0 15px rgba(30, 58, 138, 0.15) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+}
+
+.dark .custom-osm-popup-container .leaflet-popup-tip {
+  background-color: rgba(11, 10, 17, 0.7) !important;
+  border-left: 1px solid rgba(30, 58, 138, 0.5) !important;
+  border-bottom: 1px solid rgba(30, 58, 138, 0.5) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+}
+
+.dark .custom-osm-popup-container .leaflet-popup-close-button {
+  color: #94a3b8 !important; /* slate-350 */
+  top: 5px !important;
+  right: 5px !important;
+}
+.dark .custom-osm-popup-container .leaflet-popup-close-button:hover {
+  color: #ef4444 !important;
+}
+
+/* Highly specific elements to guarantee maximum contrast & readability */
+.custom-osm-popup-container .popup-header {
+  border-bottom: 1px solid #cbd5e1;
+}
+.dark .custom-osm-popup-container .popup-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.custom-osm-popup-container .popup-title {
+  color: #000000 !important; /* Deep solid black text */
+  font-weight: 800 !important;
+  font-size: 13px !important;
+}
+.dark .custom-osm-popup-container .popup-title {
+  color: #ffffff !important; /* Crystal white text in dark mode */
+}
+
+.custom-osm-popup-container .popup-text-muted {
+  color: #475569 !important; /* Slate-600 */
+}
+.dark .custom-osm-popup-container .popup-text-muted {
+  color: #cbd5e1 !important; /* Slate-300 */
+}
+
+.custom-osm-popup-container .popup-stats-row {
+  color: #1e293b !important; /* Slate-800 */
+}
+.dark .custom-osm-popup-container .popup-stats-row {
+  color: #f1f5f9 !important; /* Slate-100 */
+}
+
+.custom-osm-popup-container .popup-tag {
+  background-color: rgba(30, 58, 138, 0.1);
+  color: #1e3a8a !important;
+}
+.dark .custom-osm-popup-container .popup-tag {
+  background-color: rgba(30, 58, 138, 0.18);
+  color: #60a5fa !important;
+}
+
+.custom-osm-popup-container .popup-news-count-bg {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #020617 !important;
+}
+.dark .custom-osm-popup-container .popup-news-count-bg {
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #ffffff !important;
+}
+
+.custom-osm-popup-container .popup-progress-bg {
+  background-color: #f1f5f9;
+}
+.dark .custom-osm-popup-container .popup-progress-bg {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Sentiment cards internal colors */
+.custom-osm-popup-container .card-pos {
+  background-color: rgba(16, 185, 129, 0.06);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+.custom-osm-popup-container .card-neut {
+  background-color: rgba(100, 116, 139, 0.06);
+  border: 1px solid rgba(100, 116, 139, 0.2);
+}
+.custom-osm-popup-container .card-neg {
+  background-color: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.custom-osm-popup-container .val-pos {
+  color: #047857 !important; /* Intense emerald-700 */
+}
+.dark .custom-osm-popup-container .val-pos {
+  color: #34d399 !important; /* Bright pastel green */
+}
+
+.custom-osm-popup-container .val-neut {
+  color: #334155 !important; /* Strong dark slate */
+}
+.dark .custom-osm-popup-container .val-neut {
+  color: #cbd5e1 !important; /* Soft light slate */
+}
+
+.custom-osm-popup-container .val-neg {
+  color: #b91c1c !important; /* Vibrant Red */
+}
+.dark .custom-osm-popup-container .val-neg {
+  color: #f87171 !important; /* Bright pastel red */
+}
+
+/* Custom explicit rules for Leaflet Popup contents to guarantee supreme contrast and readability */
+.custom-osm-popup-container .popup-label {
+  color: #000000 !important; /* solid black in light mode */
+  font-weight: 800 !important;
+}
+.dark .custom-osm-popup-container .popup-label {
+  color: #ffffff !important; /* solid white in dark mode */
+}
+
+.custom-osm-popup-container .popup-value {
+  color: #000000 !important; /* solid black in light mode */
+  font-weight: 900 !important;
+}
+.dark .custom-osm-popup-container .popup-value {
+  color: #ffffff !important; /* solid white in dark mode */
+}
+
+.custom-osm-popup-container .popup-sentiment-pos {
+  color: #047857 !important; /* Rich emerald dark green for supreme legibility */
+  font-weight: 800 !important;
+}
+.dark .custom-osm-popup-container .popup-sentiment-pos {
+  color: #34d399 !important; /* Clear bright mint green */
+  font-weight: 800 !important;
+}
+
+.custom-osm-popup-container .popup-sentiment-neut {
+  color: #334155 !important; /* Deep dark slate-700 for supreme legibility */
+  font-weight: 800 !important;
+}
+.dark .custom-osm-popup-container .popup-sentiment-neut {
+  color: #cbd5e1 !important; /* Light silver slate-300 */
+  font-weight: 800 !important;
+}
+
+.custom-osm-popup-container .popup-sentiment-neg {
+  color: #b91c1c !important; /* Rich deep dark crimson red for supreme legibility */
+  font-weight: 800 !important;
+}
+.dark .custom-osm-popup-container .popup-sentiment-neg {
+  color: #f87171 !important; /* Clear bright pastel red */
+  font-weight: 800 !important;
+}
+
+.custom-osm-popup-container .popup-no-data {
+  color: #334155 !important;
+  font-weight: 700 !important;
+}
+.dark .custom-osm-popup-container .popup-no-data {
+  color: #94a3b8 !important;
+  font-weight: 700 !important;
+}
+
+.custom-osm-popup-container .leaflet-view-btn {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(99, 102, 241, 0.15) 100%) !important;
+  color: #6366f1 !important;
+  border-radius: 8px !important;
+  font-weight: 800 !important;
+  border: 1px solid rgba(99, 102, 241, 0.25) !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 3px 8px rgba(99, 102, 241, 0.08) !important;
+  min-height: 26px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 4px 10px !important;
+  font-size: 9.5px !important;
+}
+.custom-osm-popup-container .leaflet-view-btn:hover {
+  background: linear-gradient(135deg, #1e3a8a 0%, #6366f1 100%) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  box-shadow: 0 6px 14px rgba(139, 92, 246, 0.3) !important;
+  transform: scale(1.03);
+}
+.custom-osm-popup-container .leaflet-view-btn:active {
+  transform: scale(0.96) !important;
+}
+.dark .custom-osm-popup-container .leaflet-view-btn {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.25) 0%, rgba(139, 92, 246, 0.1) 100%) !important;
+  color: #a78bfa !important;
+  border: 1px solid rgba(139, 92, 246, 0.35) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+.dark .custom-osm-popup-container .leaflet-view-btn:hover {
+  background: linear-gradient(135deg, #a78bfa 0%, #1e3a8a 100%) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  box-shadow: 0 6px 18px rgba(139, 92, 246, 0.5) !important;
+}
+.dark .custom-osm-popup-container .leaflet-view-btn:active {
+  transform: scale(0.96) !important;
+}
+
+/* BMKG Earthquake concentric pulsing ripples */
+@keyframes bmkg-wave {
+  0% {
+    transform: scale(0.15);
+    opacity: 0.95;
+    border-width: 3px;
+  }
+  60% {
+    opacity: 0.55;
+    border-width: 1.5px;
+  }
+  100% {
+    transform: scale(3.5);
+    opacity: 0;
+    border-width: 0.5px;
+  }
+}
+
+.bmkg-pulse-wave-1 {
+  animation: bmkg-wave 3s infinite cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: absolute !important;
+  left: 4px !important;
+  top: 4px !important;
+  width: 48px !important;
+  height: 48px !important;
+}
+.bmkg-pulse-wave-2 {
+  animation: bmkg-wave 3s infinite cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  animation-delay: 1.0s;
+  position: absolute !important;
+  left: 4px !important;
+  top: 4px !important;
+  width: 48px !important;
+  height: 48px !important;
+}
+.bmkg-pulse-wave-3 {
+  animation: bmkg-wave 3s infinite cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  animation-delay: 2.0s;
+  position: absolute !important;
+  left: 4px !important;
+  top: 4px !important;
+  width: 48px !important;
+  height: 48px !important;
+}
+
+/* Custom Map Marker resets & high fidelity styles to guarantee dots, numbers, and colors show perfectly */
+.custom-div-icon-marker {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 36px !important;
+  height: 36px !important;
+  overflow: visible !important;
+}
+
+.custom-div-icon-quake {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 56px !important;
+  height: 56px !important;
+  overflow: visible !important;
+}
+
+.custom-map-marker-wrapper {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 36px !important;
+  min-width: 36px !important;
+  max-width: 36px !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  max-height: 36px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.custom-quake-marker-wrapper {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 56px !important;
+  min-width: 56px !important;
+  max-width: 56px !important;
+  height: 56px !important;
+  min-height: 56px !important;
+  max-height: 56px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.custom-map-marker-pulse {
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 9999px !important;
+  box-sizing: border-box !important;
+}
+
+.custom-map-marker-center {
+  box-sizing: border-box !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  position: relative !important;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 50% !important;
+  color: #ffffff !important;
+  font-family: inherit !important;
+  z-index: 10 !important;
+  
+  /* Flexbox centering */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.4) !important;
+  transition: all 0.3s ease !important;
+}
+
+.custom-map-marker-number {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: white !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  text-align: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.custom-quake-marker-center {
+  box-sizing: border-box !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  position: relative !important;
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 50% !important;
+  color: #ffffff !important;
+  font-family: monospace, inherit !important;
+  z-index: 10 !important;
+  
+  /* Flexbox centering */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.5) !important;
+}
+
+.custom-quake-marker-number {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: white !important;
+  font-size: 10.5px !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  text-align: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* For PDF export compatibility */
+@media print {
+  .custom-map-marker-center, .custom-quake-marker-center {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+  }
+  .custom-map-marker-number, .custom-quake-marker-number {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+  }
+}
+
+.pulse-color-positif {
+  background-color: #10b981 !important; /* emerald-500 */
+}
+.pulse-color-negatif {
+  background-color: #ef4444 !important; /* red-500 */
+}
+.pulse-color-netral {
+  background-color: #3b82f6 !important; /* blue-500 */
+}
+
+.center-color-positif {
+  background-color: #059669 !important; /* emerald-600 */
+}
+.center-color-negatif {
+  background-color: #dc2626 !important; /* red-600 */
+}
+.center-color-netral {
+  background-color: #2563eb !important; /* blue-600 */
+}
+
+/* Explicit high compatibility legend helper styles */
+.legend-dot {
+  width: 10px !important;
+  height: 10px !important;
+  border-radius: 9999px !important;
+  display: inline-block !important;
+}
+.legend-dot-positif {
+  background-color: #10b981 !important;
+  border: 1px solid rgba(0,0,0,0.05) !important;
+}
+.legend-dot-negatif {
+  background-color: #ef4444 !important;
+  border: 1px solid rgba(0,0,0,0.05) !important;
+}
+.legend-dot-netral {
+  background-color: #3b82f6 !important;
+  border: 1px solid rgba(0,0,0,0.05) !important;
+}
+.legend-dot-quake {
+  background-color: #e11d48 !important; /* rose-600 */
+}
+.legend-dot-quake-strong {
+  background-color: #ea580c !important; /* orange-600 */
+}
+.legend-dot-quake-light {
+  background-color: #eab308 !important; /* yellow-500 */
+}
+
+/* Hide on print class specifically for elements that should be hidden during snapshot / printing */
+@media print {
+  .hide-on-print {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+}
+
+/* Modern chat bubble typing dots animation */
+@keyframes typingDot {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+.animate-typing-dot {
+  animation: typingDot 1.2s infinite ease-in-out;
+}
+
+
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 12s linear infinite;
+}
+
+/* Seamless news marquee animation */
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 2000s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+
+

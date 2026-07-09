@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Media Monitoring Security Head Office</title>
+    <link rel="icon" type="image/png" href="https://www.image2url.com/r2/default/images/1782291333785-1a73c559-ac84-4837-9f97-e4f4f5f4845d.png" />
+    <script>
+      // Cleanly suppress external, metamask, and browser extension runtime issues to maintain canvas safety
+      (function() {
+        // Intercept and silence console.error and console.warn for metamask/ethereum issues
+        const originalConsoleError = console.error;
+        console.error = function(...args) {
+          const argsStr = args.map(arg => {
+            try {
+              return String(arg).toLowerCase();
+            } catch(e) {
+              return '';
+            }
+          }).join(' ');
+          if (
+            argsStr.indexOf('metamask') !== -1 ||
+            argsStr.indexOf('ethereum') !== -1 ||
+            argsStr.indexOf('wallet') !== -1
+          ) {
+            // Silently suppress
+            return;
+          }
+          originalConsoleError.apply(console, args);
+        };
+
+        const originalConsoleWarn = console.warn;
+        console.warn = function(...args) {
+          const argsStr = args.map(arg => {
+            try {
+              return String(arg).toLowerCase();
+            } catch(e) {
+              return '';
+            }
+          }).join(' ');
+          if (
+            argsStr.indexOf('metamask') !== -1 ||
+            argsStr.indexOf('ethereum') !== -1 ||
+            argsStr.indexOf('wallet') !== -1
+          ) {
+            // Silently suppress
+            return;
+          }
+          originalConsoleWarn.apply(console, args);
+        };
+
+        window.addEventListener('error', function(e) {
+          const message = e.message || (e.error && e.error.message) || '';
+          const filename = e.filename || '';
+          const messageStr = String(message).toLowerCase();
+          const filenameStr = String(filename).toLowerCase();
+          if (
+            filenameStr.indexOf('extension') !== -1 || 
+            filenameStr.indexOf('chrome-extension:') === 0 || 
+            filenameStr.indexOf('moz-extension:') === 0 ||
+            messageStr.indexOf('metamask') !== -1 ||
+            messageStr.indexOf('ethereum') !== -1 ||
+            messageStr.indexOf('wallet') !== -1 ||
+            messageStr.indexOf('script error') !== -1 ||
+            messageStr === 'script error.' ||
+            (messageStr === '' && filenameStr === '')
+          ) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            e.stopPropagation();
+            return true;
+          }
+        }, true);
+
+        window.addEventListener('unhandledrejection', function(e) {
+          const reason = e.reason;
+          if (reason) {
+            const reasonStr = String(reason.stack || reason.message || reason).toLowerCase();
+            if (
+              reasonStr.indexOf('extension') !== -1 || 
+              reasonStr.indexOf('extension-') !== -1 ||
+              reasonStr.indexOf('metamask') !== -1 ||
+              reasonStr.indexOf('ethereum') !== -1 ||
+              reasonStr.indexOf('wallet') !== -1
+            ) {
+              e.preventDefault();
+              e.stopImmediatePropagation();
+              e.stopPropagation();
+              return true;
+            }
+          }
+        }, true);
+      })();
+    </script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

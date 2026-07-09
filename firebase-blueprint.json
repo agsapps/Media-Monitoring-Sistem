@@ -1,0 +1,196 @@
+{
+  "entities": {
+    "NewsItem": {
+      "title": "NewsItem",
+      "description": "Represents a single media monitoring news post or issue topic",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "summary": { "type": "string" },
+        "link": { "type": "string" },
+        "mediaId": { "type": "string" },
+        "mediaName": { "type": "string" },
+        "publishDate": { "type": "string" },
+        "publishTime": { "type": "string" },
+        "location": { "type": "string" },
+        "categoryId": { "type": "string" },
+        "categoryName": { "type": "string" },
+        "sentiment": { "type": "string", "enum": ["Positif", "Negatif", "Netral"] },
+        "tags": { "type": "array" },
+        "imageUrl": { "type": "string" },
+        "status": { "type": "string", "enum": ["Draft", "Published"] },
+        "isFeatured": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "title", "summary", "mediaId", "mediaName", "publishDate", "categoryId", "categoryName", "sentiment", "status"]
+    },
+    "User": {
+      "title": "User",
+      "description": "Represents an authorized application user with role-based access control",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "username": { "type": "string" },
+        "passwordHash": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["Admin", "Analis", "Viewer", "Editor"] },
+        "status": { "type": "string", "enum": ["Aktif", "Nonaktif", "Non-Aktif"] },
+        "createdAt": { "type": "string" },
+        "lastLogin": { "type": "string" }
+      },
+      "required": ["id", "username", "passwordHash", "name", "email", "role"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Topic taxonomy category tag",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "slug": { "type": "string" },
+        "color": { "type": "string" }
+      },
+      "required": ["id", "name", "slug"]
+    },
+    "MediaSource": {
+      "title": "MediaSource",
+      "description": "A media source outlet",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["Online", "Cetak", "TV", "Radio"] },
+        "reach": { "type": "string", "enum": ["Nasional", "Lokal", "Internasional"] },
+        "date": { "type": "string" },
+        "provinsi": { "type": "string" }
+      },
+      "required": ["id", "name", "type", "reach"]
+    },
+    "ActivityLog": {
+      "title": "ActivityLog",
+      "description": "Admin activity action log",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "username": { "type": "string" },
+        "role": { "type": "string" },
+        "action": { "type": "string" },
+        "target": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["id", "userId", "username", "role", "action", "target", "timestamp"]
+    },
+    "CustomSettings": {
+      "title": "CustomSettings",
+      "description": "Application custom settings",
+      "type": "object",
+      "properties": {
+        "companyName": { "type": "string" },
+        "logoUrl": { "type": "string" },
+        "primaryColor": { "type": "string" },
+        "headerText": { "type": "string" },
+        "footerText": { "type": "string" },
+        "enableAiAssistant": { "type": "boolean" },
+        "theme": { "type": "string", "enum": ["light", "dark"] },
+        "googleSpreadsheetId": { "type": "string" },
+        "googleSheetName": { "type": "string" },
+        "googleSpreadsheetUrl": { "type": "string" }
+      },
+      "required": ["companyName", "primaryColor", "theme"]
+    },
+    "CrawlKeyword": {
+      "title": "CrawlKeyword",
+      "description": "Represents an active keyword monitored by the AI scraper agent",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "text": { "type": "string" },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "text", "active", "createdAt"]
+    },
+    "Highlight": {
+      "title": "Highlight",
+      "description": "Represents today's horizontal carousel hero highlights",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "summary": { "type": "string" },
+        "publishDate": { "type": "string" },
+        "publishTime": { "type": "string" },
+        "location": { "type": "string" },
+        "categoryName": { "type": "string" },
+        "mediaName": { "type": "string" },
+        "link": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "isPinned": { "type": "boolean" },
+        "orderIndex": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "title", "summary", "publishDate", "location", "categoryName", "mediaName", "orderIndex", "createdAt"]
+    },
+    "SocialNewsItem": {
+      "title": "SocialNewsItem",
+      "description": "Represents a social media news item gathered by the system",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "caption": { "type": "string" },
+        "ringkasan": { "type": "string" },
+        "username": { "type": "string" },
+        "jenisSosmed": { "type": "string" },
+        "waktuPosting": { "type": "string" },
+        "tanggalInput": { "type": "string" },
+        "sentimen": { "type": "string", "enum": ["Positif", "Negatif", "Netral"] },
+        "kategori": { "type": "string" },
+        "lokasi": { "type": "string" },
+        "link": { "type": "string" }
+      },
+      "required": ["id", "caption", "jenisSosmed", "sentimen"]
+    }
+  },
+  "firestore": {
+    "news": {
+      "schema": "NewsItem",
+      "description": "Collection of all media monitored news artifacts"
+    },
+    "categories": {
+      "schema": "Category",
+      "description": "Topic tracking categories"
+    },
+    "medias": {
+      "schema": "MediaSource",
+      "description": "Media outlet source catalogs"
+    },
+    "logs": {
+      "schema": "ActivityLog",
+      "description": "System audit operation trials"
+    },
+    "settings": {
+      "schema": "CustomSettings",
+      "description": "System global app-theme configurations"
+    },
+    "users": {
+      "schema": "User",
+      "description": "Collection of all authorized users"
+    },
+    "keywords": {
+      "schema": "CrawlKeyword",
+      "description": "Active scraper keywords panel lists"
+    },
+    "highlights": {
+      "schema": "Highlight",
+      "description": "Dynamic front-page carousel highlight entries"
+    },
+    "socialNews": {
+      "schema": "SocialNewsItem",
+      "description": "Collection of gathered social media news posts"
+    }
+  }
+}

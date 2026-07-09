@@ -1,0 +1,8 @@
+{
+  "firestore": [
+    {
+      "database": "ai-studio-mediamonitoring-a3a0dab2-c025-4415-b74f-6a7d9d69ca89",
+      "rules": "firestore.rules"
+    }
+  ]
+}
