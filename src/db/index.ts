@@ -182,7 +182,7 @@ export const createPool = (forceNoSsl = false) => {
     const lastArg = args[args.length - 1];
     if (typeof lastArg === 'function') {
       const callback = lastArg;
-      args[args.length - 1] = function(this: any, err: any, result: any) {
+      args[args.length - 1] = function(this: any, err: any, _result: any) {
         const duration = Date.now() - start;
         if (err) {
           addQueryLog(queryText, queryValues, duration, 'FAILED', err.message);
@@ -302,10 +302,10 @@ export const refreshDatabaseConnection = (forceNoSsl = false): boolean => {
 // Export db as a Proxy that forwards all operations to dbInstance.
 // This allows other modules to import { db } once, while the underlying pool changes.
 export const db = new Proxy({} as any, {
-  get(target, prop, receiver) {
+  get(_target, prop, receiver) {
     return Reflect.get(dbInstance, prop, receiver);
   },
-  set(target, prop, value, receiver) {
+  set(_target, prop, value, receiver) {
     return Reflect.set(dbInstance, prop, value, receiver);
   }
 });

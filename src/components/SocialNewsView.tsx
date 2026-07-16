@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useAppState } from '../AppContext';
 import { 
-  Sparkles, Trash2, Search, Filter, ExternalLink, Calendar, Clock, 
-  MessageSquare, User, AlertCircle, RefreshCw, Eye, X, BookOpen, MapPin, 
-  Tag, ShieldAlert, FileText, Share2, Info, Clipboard, ListPlus, ArrowLeft, CheckCircle, SlidersHorizontal,
-  ChevronDown, ChevronUp, ChevronRight, UploadCloud
+  Sparkles, Trash2, Search, Filter, ExternalLink, 
+  MessageSquare, User, AlertCircle, RefreshCw, Eye, X, MapPin, 
+  Tag, Info, Clipboard, ListPlus, ArrowLeft, CheckCircle,
+  ChevronRight, UploadCloud
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import * as XLSX from 'xlsx';
@@ -33,7 +33,6 @@ export const SocialNewsView: React.FC = () => {
     socialNews, 
     loadSocialNews, 
     createSocialNews, 
-    createSocialNewsBatch,
     deleteSocialNews, 
     user,
     categories,
@@ -82,11 +81,10 @@ export const SocialNewsView: React.FC = () => {
   const filterLocation = socialLocationFilter;
   const setFilterLocation = setSocialLocationFilter;
   const [sortBy, setSortBy] = useState<'terbaru' | 'terlama'>('terbaru');
-  const [filterStartDate, setFilterStartDate] = useState<string>('');
-  const [filterEndDate, setFilterEndDate] = useState<string>('');
+  const [filterStartDate, setFilterStartDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
+  const [filterEndDate, setFilterEndDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
   const [filterStartHour, setFilterStartHour] = useState<string>('Semua');
   const [filterEndHour, setFilterEndHour] = useState<string>('Semua');
-  const [activeFilterTab, setActiveFilterTab] = useState<'standar' | 'lanjutan'>('standar');
   const [isFilterExpanded, setIsFilterExpanded] = useState<boolean>(true);
 
   // Pagination state

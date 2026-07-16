@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useAppState } from '../AppContext';
 import { 
   Users, UserPlus, Shield, Trash2, Edit3, Key, 
-  CheckCircle, XCircle, Search, Plus, Save, X, AlertTriangle,
-  Info, UserCheck, Calendar, Mail, FileText, RefreshCw, ScrollText
+  CheckCircle, XCircle, Search, Save, X, AlertTriangle,
+  Info, UserCheck, FileText, RefreshCw, ScrollText
 } from 'lucide-react';
-import { User, ActivityLog } from '../types';
+import { User } from '../types';
 
 export const UsersView: React.FC = () => {
   const { user: currentUser, authFetch, showToast, logs, loadLogs } = useAppState();
@@ -923,8 +923,8 @@ export const UsersView: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-white/5 text-xs text-slate-600 dark:text-slate-400 font-mono">
               {logs && logs.length > 0 ? (
-                logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-white/2 transition">
+                logs.map((log, idx) => (
+                  <tr key={`${log.id}-${idx}`} className="hover:bg-slate-50/50 dark:hover:bg-white/2 transition">
                     <td className="py-3 px-4 whitespace-nowrap text-slate-400 dark:text-slate-500">
                       {new Date(log.timestamp).toLocaleString('id-ID')}
                     </td>

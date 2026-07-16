@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useAppState } from '../AppContext';
 import { PROVINCES } from '../types';
 import { 
-  Database, Plus, Shield, UserCheck, Trash2, Calendar, HardDrive, ScrollText, 
-  Tag, Pocket, Radio, HelpCircle, Edit2, X, Check
+  Database, Plus, Trash2, Calendar, 
+  Tag, Radio, Edit2, X, Check
 } from 'lucide-react';
 
 export const MasterDataView: React.FC = () => {
   const { 
-    categories, medias, logs, createCategory, updateCategory, deleteCategory, createMedia, loadLogs, user, showToast 
+    categories, medias, createCategory, updateCategory, deleteCategory, createMedia, loadLogs, showToast 
   } = useAppState();
 
   // Load audit trail logs upon mounting master panel
@@ -103,9 +103,9 @@ export const MasterDataView: React.FC = () => {
         <div>
           <h2 className="text-2xl font-bold tracking-tight font-display text-slate-900 dark:text-white flex items-center gap-2">
             <Database className="w-6 h-6 text-indigo-600" id="master-db-icon" />
-            Master Klasifikasi & Audit Trail
+            Master Kategori
           </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Pengaturan pengkodean sistem, saluran media eksternal, dan pengawasan log aktivitas (audit trail).</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Pengaturan Sistem Kategori & Media.</p>
         </div>
       </div>
 

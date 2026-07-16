@@ -1393,7 +1393,7 @@ export async function generatePDFReport(
       ];
 
   let cardYPlace = 27;
-  itemsToHighlight.forEach((hl, hIdx) => {
+  itemsToHighlight.forEach((hl, _hIdx) => {
     const { mainText, analysisText } = splitSummaryParts(hl.summary || "");
     const titleLines = wrapAndSanitizeText(doc, hl.title || "", 132, 10.5, "bold");
     const wrapHighlights = wrapAndSanitizeText(doc, mainText || "Belum ada ringkasan teks.", 166, 7.5, "normal");

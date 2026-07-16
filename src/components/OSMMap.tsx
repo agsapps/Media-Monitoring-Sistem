@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useAppState } from '../AppContext';
-import { Maximize2, Minimize2, ChevronDown, ChevronUp, RefreshCw, Wifi, Newspaper, X, ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
+import { Maximize2, Minimize2, ChevronDown, ChevronUp, RefreshCw, Newspaper, X, ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface ProvinceCoords {
@@ -50,37 +50,46 @@ const PROVINCE_COORDINATES: ProvinceCoords = {
   'Papua Barat Daya': [-0.9329, 131.5422]
 };
 
+const normalizedProvinceCache: Record<string, string> = {};
+
 export const normalizeProvinceName = (name: string): string => {
   if (!name) return 'Nasional';
+  if (normalizedProvinceCache[name]) return normalizedProvinceCache[name];
+
   const clean = name.trim().toLowerCase()
     .replace(/[^a-z0-9]/g, '')
     .replace(/^provinsi/, '')
     .replace(/^prov/, '');
 
+  let result = name;
   if (clean === 'diy' || clean === 'diyogyakarta' || clean === 'daerahistimewayogyakarta' || clean === 'dikyogyakarta') {
-    return 'DI Yogyakarta';
+    result = 'DI Yogyakarta';
+  } else if (clean === 'dkijakarta' || clean === 'daerahkhususibukotajakarta' || clean === 'jakarta') {
+    result = 'DKI Jakarta';
+  } else if (clean === 'kepri' || clean === 'kepulauanriau') {
+    result = 'Kepulauan Riau';
+  } else if (clean === 'babel' || clean === 'kepulauanbangkabelitung' || clean === 'bangkabelitung') {
+    result = 'Kepulauan Bangka Belitung';
+  } else if (clean === 'papuabaratdaya') {
+    result = 'Papua Barat Daya';
+  } else if (clean === 'papuabarat') {
+    result = 'Papua Barat';
+  } else if (clean === 'papuaselatan') {
+    result = 'Papua Selatan';
+  } else if (clean === 'papuatengah') {
+    result = 'Papua Tengah';
+  } else if (clean === 'papuapegunungan') {
+    result = 'Papua Pegunungan';
+  } else {
+    const matchedKey = Object.keys(PROVINCE_COORDINATES).find(key => {
+      const kClean = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+      return kClean === clean;
+    });
+    result = matchedKey || name;
   }
-  if (clean === 'dkijakarta' || clean === 'daerahkhususibukotajakarta' || clean === 'jakarta') {
-    return 'DKI Jakarta';
-  }
-  if (clean === 'kepri' || clean === 'kepulauanriau') {
-    return 'Kepulauan Riau';
-  }
-  if (clean === 'babel' || clean === 'kepulauanbangkabelitung' || clean === 'bangkabelitung') {
-    return 'Kepulauan Bangka Belitung';
-  }
-  if (clean === 'papuabaratdaya') return 'Papua Barat Daya';
-  if (clean === 'papuabarat') return 'Papua Barat';
-  if (clean === 'papuaselatan') return 'Papua Selatan';
-  if (clean === 'papuatengah') return 'Papua Tengah';
-  if (clean === 'papuapegunungan') return 'Papua Pegunungan';
 
-  const matchedKey = Object.keys(PROVINCE_COORDINATES).find(key => {
-    const kClean = key.toLowerCase().replace(/[^a-z0-9]/g, '');
-    return kClean === clean;
-  });
-
-  return matchedKey || name;
+  normalizedProvinceCache[name] = result;
+  return result;
 };
 
 interface OSMMapProps {
@@ -191,8 +200,6 @@ export const OSMMap: React.FC<OSMMapProps> = React.memo(({
       const cards = Array.from(container.children) as HTMLElement[];
       if (cards.length <= 1) return;
 
-      // Find current scroll position
-      const scrollTop = container.scrollTop;
       const containerRect = container.getBoundingClientRect();
 
       // Find which card is currently active (closest to the top of viewport)

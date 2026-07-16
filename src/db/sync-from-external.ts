@@ -1,6 +1,5 @@
 import { db, pool } from './index.ts';
 import {
-  users as sqlUsers,
   categories as sqlCategories,
   medias as sqlMedias,
   settings as sqlSettings,
@@ -9,7 +8,6 @@ import {
   news as sqlNews,
   socialNews as sqlSocialNews
 } from './schema.ts';
-import { sql } from 'drizzle-orm';
 
 const EXTERNAL_BASE_URL = 'https://media-monitoring-745708369616.asia-southeast1.run.app';
 

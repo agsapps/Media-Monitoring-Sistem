@@ -16,9 +16,8 @@ import { LoginGate } from './components/LoginGate';
 import { TerminalMonitoringView } from './components/TerminalMonitoringView';
 import { 
   Sun, Moon, ShieldAlert, AlertTriangle, ShieldCheck, 
-  User, Database, Globe, BarChart3, Settings2, FileText, ChevronRight, Menu,
-  Cpu, Copy, Check, X, Clock, RefreshCw, Maximize, Minimize, MapPin,
-  Eye, EyeOff, Newspaper,
+  User, Database, Globe, FileText, Menu,
+  Cpu, Copy, Check, X, RefreshCw, Maximize, Minimize, MapPin,
   Camera, Upload, LogOut,
   Chrome, Compass, Laptop, Smartphone, Tablet
 } from 'lucide-react';
@@ -72,9 +71,8 @@ const renderDeviceIcon = (icon: string) => {
 
 const DashboardLayout: React.FC = () => {
   const { 
-    activeTab, setTab, theme, toggleTheme, user, logout, settings, toast, clearToast, isLoading,
-    toasts, dismissToast, themeMode, setThemeMode, authFetch, syncDatabase, showToast, updateProfile,
-    news
+    activeTab, theme, user, logout, settings, isLoading,
+    toasts, dismissToast, themeMode, setThemeMode, authFetch, showToast, updateProfile
   } = useAppState();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -83,10 +81,7 @@ const DashboardLayout: React.FC = () => {
   const [activeSessions, setActiveSessions] = useState<{ id: string; ip: string; mac: string; userAgent: string; location?: string }[]>([]);
   const [isSessionsDropdownOpen, setIsSessionsDropdownOpen] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState<string | null>(null);
-  const [isSyncing, setIsSyncing] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [showTicker, setShowTicker] = useState(true);
-
   // --- DATABASE DIAGNOSTICS FOR CUSTOM POSTGRES ---
   const [isDiagModalOpen, setIsDiagModalOpen] = useState(false);
   const [diagLoading, setDiagLoading] = useState(false);
@@ -133,30 +128,6 @@ const DashboardLayout: React.FC = () => {
       setDiagLoading(false);
     }
   };
-
-  // Helper for Ticker (Running Text)
-  const isNewItem = (item: any) => {
-    const isRecent = item.createdAt ? (new Date().getTime() - new Date(item.createdAt).getTime()) / (1000 * 60 * 60) <= 24 : false;
-    return (
-      isRecent ||
-      item.statusWaktu?.toUpperCase() === 'NEW' ||
-      item.status_waktu?.toUpperCase() === 'NEW'
-    );
-  };
-
-  const getTickerNews = () => {
-    if (!news || news.length === 0) return [];
-    // Return only published news from archive that are labeled as 'New'
-    return [...news]
-      .filter(item => item.status === 'Published' && isNewItem(item))
-      .sort((a, b) => {
-        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return timeB - timeA;
-      });
-  };
-
-  const tickerNewsItems = getTickerNews();
 
   // Profile Edit States
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -419,20 +390,12 @@ const DashboardLayout: React.FC = () => {
     }
   };
 
-  const handleSync = async () => {
-    if (isSyncing) return;
-    setIsSyncing(true);
-    await syncDatabase();
-    setIsSyncing(false);
-  };
-
   return (
     <div className={`min-h-screen flex bg-white dark:bg-slate-950 font-sans transition-colors duration-200`}>
       {/* Dynamic Collapsible Sidebar navigation */}
       <Sidebar 
         isOpen={isSidebarOpen} 
         setIsOpen={setIsSidebarOpen} 
-        onLoginClick={() => setIsLoginModalOpen(true)} 
       />
 
       {/* Main Container Area */}
@@ -516,7 +479,7 @@ const DashboardLayout: React.FC = () => {
                               Memuat data pengguna...
                             </div>
                           ) : (
-                             activeSessions.map((session, index) => {
+                             activeSessions.map((session) => {
                                const isCopiedIP = copiedIndex === `ip-${session.id}`;
                                const isCopiedMAC = copiedIndex === `mac-${session.id}`;
                                
@@ -1311,7 +1274,7 @@ const DashboardLayout: React.FC = () => {
                 dragDirectionLock
                 dragConstraints={{ left: -100, right: 300 }}
                 dragElastic={{ left: 0.1, right: 0.8 }}
-                onDragEnd={(event, info) => {
+                onDragEnd={(_, info) => {
                   if (info.offset.x > 120 || info.offset.x < -80) {
                     dismissToast(item.id);
                   }

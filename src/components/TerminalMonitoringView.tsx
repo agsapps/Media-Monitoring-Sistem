@@ -2,16 +2,16 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAppState } from '../AppContext';
 import { 
   Database, Cpu, HardDrive, RefreshCw, Terminal as TerminalIcon, 
-  CheckCircle2, Activity, Clock, BarChart3, Server, Globe, Play, 
-  Trash2, ShieldCheck, ShieldAlert, Wifi, Search, AlertCircle, Copy, Check, ExternalLink,
-  Zap, Sliders, ArrowUpRight, ArrowDownLeft, TrendingUp, ChevronsRight, Network
+  CheckCircle2, Activity, BarChart3, Server, Play, 
+  Trash2, Wifi, Search, Copy, Check, ExternalLink,
+  Zap, ArrowUpRight, ArrowDownLeft, Network
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell 
 } from 'recharts';
 
 export const TerminalMonitoringView: React.FC = () => {
-  const { authFetch, showToast, user } = useAppState();
+  const { authFetch, showToast } = useAppState();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<any>(null);
   const [chartMetric, setChartMetric] = useState<'size' | 'rows'>('size');
@@ -1243,7 +1243,7 @@ export const TerminalMonitoringView: React.FC = () => {
                   radius={[6, 6, 0, 0]}
                   maxBarSize={45}
                 >
-                  {chartData.map((entry, index) => {
+                  {chartData.map((_, index) => {
                     const colors = [
                       '#3B82F6', // Blue
                       '#1e3a8a', // Purple/Violet

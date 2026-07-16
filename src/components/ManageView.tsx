@@ -3,14 +3,14 @@ import { useAppState } from '../AppContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   FileEdit, Trash2, CheckCircle2, AlertCircle, Sparkles, Plus, Search, 
-  Eye, Save, X, ExternalLink, RefreshCw, HelpCircle, FileText, Calendar, Clock,
+  Save, X, ExternalLink, RefreshCw, HelpCircle, FileText, Calendar, Clock,
   FileSpreadsheet, Globe, Star, UploadCloud, Pin, ArrowUp, ArrowDown, Pencil, MapPin,
-  SlidersHorizontal, ChevronDown, Filter, RotateCcw, Check, Terminal, Bug, Activity
+  SlidersHorizontal, ChevronDown, RotateCcw, Terminal, Bug, Activity
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { NewsItem, Sentiment, NewsStatus, PROVINCES, formatDateDDMMYYYY, cleanTitleText } from '../types';
 import { 
-  initGoogleAuth, googleSignIn, googleSignOut, getCachedAccessToken, setCachedAccessToken
+  initGoogleAuth, googleSignIn, googleSignOut, getCachedAccessToken
 } from '../googleAuth';
 import { 
   createSpreadsheet, appendIssueToSheet, bulkExportIssuesToSheet, getSpreadsheetSheets,
@@ -116,24 +116,11 @@ const findBestCategoryMatch = (recName: string, categoriesList: { id: string; na
 };
 
 
-const getCategoryEmoji = (name: string): string => {
-  const norm = name.toLowerCase();
-  if (norm.includes('subsidi') || norm.includes('distribusi')) return '📦';
-  if (norm.includes('korupsi') || norm.includes('fraud') || norm.includes('mafia')) return '🔍';
-  if (norm.includes('hsse') || norm.includes('operasional')) return '⚡';
-  if (norm.includes('demo') || norm.includes('demonstrasi') || norm.includes('sosial')) return '🗣️';
-  if (norm.includes('hukum') || norm.includes('keamanan') || norm.includes('aset')) return '⚖️';
-  if (norm.includes('harga') || norm.includes('tarif') || norm.includes('kebijakan')) return '💰';
-  if (norm.includes('pasokan') || norm.includes('langka') || norm.includes('kelangkaan')) return '🚨';
-  if (norm.includes('investasi') || norm.includes('korporasi') || norm.includes('bumn')) return '📈';
-  return '📁';
-};
-
 export const ManageView: React.FC = () => {
   const { 
     news, categories, medias, saveNewsItem, removeNewsItem, batchDeleteNews, batchImportNews, batchUpdateCategory, batchUpdatePublishDate, batchUpdatePublishTime, batchUpdateSentiment, batchUpdateLocation,
-    analyzeWithGemini, crawlGoogleNews, showToast, user, settings, saveSettings, setSelectedProvince, setTab,
-    highlights, saveHighlight, removeHighlight, keywords, saveKeyword, removeKeyword, reorderHighlights, socialNews,
+    analyzeWithGemini, crawlGoogleNews, showToast, settings, saveSettings, setSelectedProvince, setTab,
+    highlights, saveHighlight, removeHighlight, reorderHighlights, socialNews,
     authFetch
   } = useAppState();
 
@@ -387,17 +374,6 @@ export const ManageView: React.FC = () => {
   const [tempBatchDate, setTempBatchDate] = useState('');
   const [tempBatchTime, setTempBatchTime] = useState('');
   
-  // --- GOOGLE NEWS CRAWL STATES ---
-  const [isCrawlModalOpen, setIsCrawlModalOpen] = useState(false);
-  const [crawlKeyword, setCrawlKeyword] = useState('');
-  const [crawlTimeLimit, setCrawlTimeLimit] = useState('1h');
-  const [crawledItems, setCrawledItems] = useState<any[]>([]);
-  const [isCrawling, setIsCrawling] = useState(false);
-  const [aiSavingUrls, setAiSavingUrls] = useState<Record<string, boolean>>({});
-  const [selectedCrawlUrls, setSelectedCrawlUrls] = useState<string[]>([]);
-  const [isBatchSaving, setIsBatchSaving] = useState(false);
-  const [batchSaveProgress, setBatchSaveProgress] = useState({ total: 0, current: 0 });
-
   // Custom states for Multi-Keyword crawling & Auto-publishing
   const [formMode, setFormMode] = useState<'single' | 'multi-crawl'>('single');
   const [multiKeywordsInput, setMultiKeywordsInput] = useState('');
@@ -408,22 +384,16 @@ export const ManageView: React.FC = () => {
   const [isMultiCrawling, setIsMultiCrawling] = useState(false);
 
   const [multiCrawlLogs, setMultiCrawlLogs] = useState<any[]>([]);
-
-  React.useEffect(() => {
-    setSelectedCrawlUrls([]);
-  }, [crawledItems]);
   
   // --- GOOGLE SHEETS STATES ---
   const [googleUser, setGoogleUser] = useState<any>(null);
-  const [googleToken, setGoogleToken] = useState<string | null>(null);
   const [spreadsheetIdInput, setSpreadsheetIdInput] = useState(settings.googleSpreadsheetId || '');
   const [sheetNameInput, setSheetNameInput] = useState(settings.googleSheetName || 'Daftar Isu');
   const [sheetSosmedNameInput, setSheetSosmedNameInput] = useState(settings.googleSheetSosmedName || 'Pantauan Sosmed');
   const [isSyncingAll, setIsSyncingAll] = useState(false);
   const [isSyncingAllSocial, setIsSyncingAllSocial] = useState(false);
   const [isCreatingSheet, setIsCreatingSheet] = useState(false);
-  const [showTroubleshooting, setShowTroubleshooting] = useState(false);
-  const [manualTokenInput, setManualTokenInput] = useState('');
+
 
   React.useEffect(() => {
     if (settings.googleSpreadsheetId) setSpreadsheetIdInput(settings.googleSpreadsheetId);
@@ -434,13 +404,11 @@ export const ManageView: React.FC = () => {
   // Initialize auth listener
   React.useEffect(() => {
     const unsub = initGoogleAuth(
-      (usr, tok) => {
+      (usr) => {
         setGoogleUser(usr);
-        setGoogleToken(tok);
       },
       () => {
         setGoogleUser(null);
-        setGoogleToken(null);
       }
     );
     return () => unsub();
@@ -452,7 +420,6 @@ export const ManageView: React.FC = () => {
       const result = await googleSignIn();
       if (result) {
         setGoogleUser(result.user);
-        setGoogleToken(result.accessToken);
         showToast(`Berhasil terhubung Google: ${result.user.displayName || result.user.email}!`, 'success');
       }
     } catch (err: any) {
@@ -461,7 +428,7 @@ export const ManageView: React.FC = () => {
       
       if (err && err.code) {
         if (err.code === 'auth/unauthorized-domain') {
-          errMsg = `Domain "${window.location.hostname}" belum didaftarkan di Authorized Domains di Firebase Console. Gunakan Mode Token Manual di bawah sebagai alternatif instan.`;
+          errMsg = `Domain "${window.location.hostname}" belum didaftarkan di Authorized Domains di Firebase Console.`;
         } else if (err.code === 'auth/popup-blocked') {
           errMsg = 'Popup Google Sign-In diblokir oleh browser. Harap izinkan popup di browser Anda.';
         } else if (err.code === 'auth/popup-closed-by-user') {
@@ -474,31 +441,13 @@ export const ManageView: React.FC = () => {
       }
       
       showToast(errMsg, 'error');
-      setShowTroubleshooting(true);
     }
-  };
-
-  const handleApplyManualToken = () => {
-    if (!manualTokenInput.trim()) {
-      showToast('Masukkan Access Token terlebih dahulu!', 'error');
-      return;
-    }
-    const cleanToken = manualTokenInput.trim();
-    setCachedAccessToken(cleanToken);
-    setGoogleToken(cleanToken);
-    setGoogleUser({
-      email: 'manual-token@applet.internal',
-      displayName: 'Token Manual (User)'
-    });
-    showToast('Token manual berhasil diterapkan! Anda siap melakukan sinkronisasi.', 'success');
   };
 
   const handleGoogleLogout = async () => {
     try {
       await googleSignOut();
       setGoogleUser(null);
-      setGoogleToken(null);
-      setManualTokenInput('');
       showToast('Koneksi Google diputuskan.', 'info');
     } catch (err) {
       showToast('Gagal memutuskan koneksi.', 'error');
@@ -1518,140 +1467,6 @@ export const ManageView: React.FC = () => {
   // ===================================
   // CRAWL GOOGLE NEWS SYSTEM EVENT HANDLERS
   // ===================================
-  const handleBatchAiSave = async () => {
-    if (selectedCrawlUrls.length === 0) {
-      showToast('Harap pilih setidaknya satu berita untuk disimpan massal.', 'warning');
-      return;
-    }
-
-    const itemsToSave = crawledItems.filter(item => selectedCrawlUrls.includes(item.link));
-    setIsBatchSaving(true);
-    setBatchSaveProgress({ total: itemsToSave.length, current: 0 });
-    showToast(`Memulai proses analisis & penyimpanan massal AI untuk ${itemsToSave.length} berita...`, 'info');
-
-    let successCount = 0;
-    let failCount = 0;
-
-    for (let i = 0; i < itemsToSave.length; i++) {
-      const item = itemsToSave[i];
-      setBatchSaveProgress(prev => ({ ...prev, current: i + 1 }));
-      
-      // Set single loading state for visual response on that item
-      setAiSavingUrls(prev => ({ ...prev, [item.link]: true }));
-
-      try {
-        const response = await analyzeWithGemini({
-          title: item.title,
-          url: item.link,
-          mediaName: item.mediaName,
-          publishDate: item.publishDate,
-          publishTime: item.publishTime
-        });
-
-        if (!response) {
-          failCount++;
-          continue;
-        }
-
-        const finalMediaName = response.mediaName || item.mediaName || 'Google News';
-        let resolvedMediaId = '';
-        const matchedMedia = medias.find(m => m.name.toLowerCase() === finalMediaName.toLowerCase());
-        if (matchedMedia) {
-          resolvedMediaId = matchedMedia.id;
-        }
-
-        let finalCategoryId = categories[0]?.id || '';
-        if (response.categoryRecommendationId) {
-          finalCategoryId = response.categoryRecommendationId;
-        } else if (response.categoryRecommendation) {
-          finalCategoryId = findBestCategoryMatch(response.categoryRecommendation, categories).id;
-        }
-
-        const finalSummary = response.strategicAnalysis 
-          ? `${response.summary || 'Kliping Isu Terbitan.'}\n\n[Analisis]\n${response.strategicAnalysis}`
-          : (response.summary || 'Kliping Isu Terbitan.');
-
-        const finalImage = response.imageUrl || 'https://img2.beritasatu.com/cache/beritasatu/960x620-3/2024/05/1715143507-1600x1066.webp';
-
-        // Ensure response.tags is always a clean array of strings
-        let resolvedTags: string[] = [];
-        if (Array.isArray(response.tags)) {
-          resolvedTags = response.tags.map(t => String(t).replace(/\s+/g, '')).filter(Boolean);
-        } else if (typeof response.tags === 'string') {
-          resolvedTags = response.tags.split(',').map(t => t.replace(/\s+/g, '')).filter(Boolean);
-        }
-        if (resolvedTags.length === 0) {
-          resolvedTags = ['GoogleNews'];
-        }
-
-        const finalTitle = response.judul || item.title;
-        const prefixedTitle = cleanTitleText(finalTitle);
-
-        const payload = {
-          title: prefixedTitle,
-          summary: finalSummary,
-          link: response.url || response.resolvedUrl || item.link,
-          mediaId: resolvedMediaId,
-          mediaName: finalMediaName,
-          publishDate: item.publishDate,
-          publishTime: item.publishTime || '12:00',
-          location: response.location || 'DKI Jakarta',
-          categoryId: finalCategoryId,
-          sentiment: response.sentiment || 'Netral',
-          tags: resolvedTags,
-          imageUrl: finalImage,
-          status: 'Published',
-          isFeatured: false
-        };
-
-        const result = await saveNewsItem(payload, false);
-        if (result) {
-          if (settings.googleSpreadsheetId) {
-            try {
-              await handleAutoSyncToSheets(result);
-            } catch (err) {
-              console.warn('Sheets sync error', err);
-            }
-          }
-          successCount++;
-          // Remove from local list as we go so the screen updates dynamically
-          setCrawledItems(prev => prev.filter(c => c.link !== item.link));
-        } else {
-          failCount++;
-        }
-      } catch (err) {
-        console.error('Error batch saving', err);
-        failCount++;
-      } finally {
-        setAiSavingUrls(prev => ({ ...prev, [item.link]: false }));
-      }
-    }
-
-    setIsBatchSaving(false);
-    setSelectedCrawlUrls([]);
-    showToast(`Selesai menyimpan massal! Berhasil: ${successCount}, Gagal: ${failCount}.`, 'success');
-  };
-
-  const handleCrawlSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const query = crawlKeyword.trim();
-    if (!query) {
-      showToast('Kata kunci pencarian tidak boleh kosong!', 'error');
-      return;
-    }
-    
-    setIsCrawling(true);
-    setCrawledItems([]);
-    try {
-      showToast(`Melakukan crawling Google News dengan kata kunci "${query}"...`, 'info');
-      const items = await crawlGoogleNews(query, crawlTimeLimit, settings?.autoCrawlMethod || 'auto');
-      setCrawledItems(items || []);
-    } catch (err: any) {
-      showToast('Gagal melakukan crawling portal berita!', 'error');
-    } finally {
-      setIsCrawling(false);
-    }
-  };
 
   const addCrawlLog = (text: string, type: 'info' | 'warning' | 'error' | 'success' | 'ai' | 'crawler' | 'db' | 'processing' | 'finish') => {
     setMultiCrawlLogs(prev => [
@@ -1818,134 +1633,6 @@ export const ManageView: React.FC = () => {
       showToast('Operasi Auto-Crawl AI terganggu.', 'warning');
     } finally {
       setIsMultiCrawling(false);
-    }
-  };
-
-  const handleUseCrawledItem = (item: any) => {
-    // Fill creation fields
-    setTitle(item.title);
-    setLink(item.link);
-    setSummary(''); 
-    setStrategicAnalysis('');
-    
-    // Resolve media match
-    const searchTrimmed = item.mediaName.trim();
-    const matched = medias.find(m => m.name.toLowerCase() === searchTrimmed.toLowerCase());
-    if (matched) {
-      setMediaId(matched.id);
-      setMediaSearch(matched.name);
-    } else {
-      setMediaId('');
-      setMediaSearch(searchTrimmed);
-    }
-
-    setPublishDate(item.publishDate);
-    setPublishTime(item.publishTime || '12:00');
-
-    // Reset fallback category and default state parameters
-    if (categories.length > 0) {
-      setCategoryId(categories[0].id);
-    }
-    setSentiment('Netral');
-    setTagsInput('GoogleNews');
-    setImageUrl('');
-    setStatus('Published');
-    setIsFeatured(false);
-
-    // Toggle forms
-    setIsCrawlModalOpen(false);
-    setIsFormOpen(true);
-    showToast('Berita berhasil dimuat! Anda dapat menganalisis atau mengarsipkannya sekarang.', 'success');
-  };
-
-  const handleAiAutoSaveItem = async (item: any) => {
-    if (aiSavingUrls[item.link]) return; // Prevent double trigger
-    
-    setAiSavingUrls(prev => ({ ...prev, [item.link]: true }));
-    showToast(`AI sedang mengulas dan mendaftarkan: "${item.title.slice(0, 30)}..."`, 'info');
-    
-    try {
-      const response = await analyzeWithGemini({
-        title: item.title,
-        url: item.link,
-        mediaName: item.mediaName,
-        publishDate: item.publishDate,
-        publishTime: item.publishTime
-      });
-
-      if (!response) {
-        showToast('AI gagal melengkapi otomatis artikel ini. Pilih opsi Gunakan Form.', 'error');
-        setAiSavingUrls(prev => ({ ...prev, [item.link]: false }));
-        return;
-      }
-
-      // Try matching mediaName
-      const finalMediaName = response.mediaName || item.mediaName || 'Google News';
-      let resolvedMediaId = '';
-      const matchedMedia = medias.find(m => m.name.toLowerCase() === finalMediaName.toLowerCase());
-      if (matchedMedia) {
-        resolvedMediaId = matchedMedia.id;
-      }
-
-      // Find closest matching category slug representation
-      let finalCategoryId = categories[0]?.id || '';
-      if (response.categoryRecommendationId) {
-        finalCategoryId = response.categoryRecommendationId;
-      } else if (response.categoryRecommendation) {
-        finalCategoryId = findBestCategoryMatch(response.categoryRecommendation, categories).id;
-      }
-
-      const finalSummary = response.strategicAnalysis 
-        ? `${response.summary || 'Kliping Isu Terbitan.'}\n\n[Analisis]\n${response.strategicAnalysis}`
-        : (response.summary || 'Kliping Isu Terbitan.');
-
-      // Default high quality stock image / custom returned imageUrl
-      const finalImage = response.imageUrl || 'https://img2.beritasatu.com/cache/beritasatu/960x620-3/2024/05/1715143507-1600x1066.webp';
-
-      // Ensure response.tags is always a clean array of strings
-      let resolvedTags: string[] = [];
-      if (Array.isArray(response.tags)) {
-        resolvedTags = response.tags.map(t => String(t).replace(/\s+/g, '')).filter(Boolean);
-      } else if (typeof response.tags === 'string') {
-        resolvedTags = response.tags.split(',').map(t => t.replace(/\s+/g, '')).filter(Boolean);
-      }
-      if (resolvedTags.length === 0) {
-        resolvedTags = ['GoogleNews'];
-      }
-
-      const finalTitle = response.judul || item.title;
-      const prefixedTitle = cleanTitleText(finalTitle);
-
-      const payload = {
-        title: prefixedTitle,
-        summary: finalSummary,
-        link: item.link,
-        mediaId: resolvedMediaId,
-        mediaName: finalMediaName,
-        publishDate: item.publishDate,
-        publishTime: item.publishTime || '12:00',
-        location: response.location || 'DKI Jakarta',
-        categoryId: finalCategoryId,
-        sentiment: response.sentiment || 'Netral',
-        tags: resolvedTags,
-        imageUrl: finalImage,
-        status: 'Published',
-        isFeatured: false
-      };
-
-      const result = await saveNewsItem(payload, false);
-      if (result) {
-        if (settings.googleSpreadsheetId) {
-          await handleAutoSyncToSheets(result);
-        }
-        showToast('Berhasil mengarsipkan berita rilis ke pusat data!', 'success');
-        // Filter out item so they don't click it again
-        setCrawledItems(prev => prev.filter(c => c.link !== item.link));
-      }
-    } catch (e) {
-      showToast('Koneksi bermasalah saat mendaftarkan isu.', 'error');
-    } finally {
-      setAiSavingUrls(prev => ({ ...prev, [item.link]: false }));
     }
   };
 
@@ -3658,7 +3345,7 @@ export const ManageView: React.FC = () => {
                 </div>
               ) : (
                 <div className="divide-y divide-slate-150 dark:divide-slate-800">
-                  {filteredCrawlerLogs.map((log: any) => {
+                  {filteredCrawlerLogs.map((log: any, idx: number) => {
                     const isExpanded = expandedLogId === log.id;
                     
                     // Style by status
@@ -3696,7 +3383,7 @@ export const ManageView: React.FC = () => {
 
                     return (
                       <div 
-                        key={log.id} 
+                        key={`${log.id}-${idx}`} 
                         className={`transition duration-155 hover:bg-slate-100/50 dark:hover:bg-slate-900/40`}
                       >
                         {/* Header click bar */}

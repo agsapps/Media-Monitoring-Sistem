@@ -3,7 +3,7 @@ import { useAppState } from '../AppContext';
 import { 
   Settings, Save, ShieldCheck, Sparkles, Search, 
   Play, RefreshCw, Clock, Terminal, Check, Plus, Trash2,
-  ExternalLink, Database, AlertCircle, Activity
+  Database, Activity
 } from 'lucide-react';
 import { ActivityLog } from '../types';
 
@@ -52,10 +52,8 @@ export const SettingsView: React.FC = () => {
   const [fonnteTarget, setFonnteTarget] = useState<string>((settings as any).fonnteTarget || '6281902052373');
   const [fonnteTargets, setFonnteTargets] = useState<string[]>((settings as any).fonnteTargets || ['6281902052373']);
   const [fonnteCategories, setFonnteCategories] = useState<string[]>((settings as any).fonnteCategories || ['Negatif']);
-  const [whatsappProvider, setWhatsappProvider] = useState<'fonnte' | 'openwa'>((settings as any).whatsappProvider || 'openwa');
   const [openWaVpsUrl, setOpenWaVpsUrl] = useState<string>((settings as any).openWaVpsUrl || '');
   const [openWaToken, setOpenWaToken] = useState<string>((settings as any).openWaToken || '');
-  const [newTargetInput, setNewTargetInput] = useState<string>('');
   const [savingSettings, setSavingSettings] = useState(false);
   const [triggeringCrawl, setTriggeringCrawl] = useState(false);
   const [schedulerLogs, setSchedulerLogs] = useState<ActivityLog[]>([]);
@@ -200,7 +198,6 @@ export const SettingsView: React.FC = () => {
       setFonnteTarget((settings as any).fonnteTarget || '6281902052373');
       setFonnteTargets((settings as any).fonnteTargets || ['6281902052373']);
       setFonnteCategories((settings as any).fonnteCategories || ['Negatif']);
-      setWhatsappProvider('openwa');
       setOpenWaVpsUrl((settings as any).openWaVpsUrl || '');
       setOpenWaToken((settings as any).openWaToken || '');
     }
@@ -240,33 +237,6 @@ export const SettingsView: React.FC = () => {
     setSavingSettings(false);
     if (success) {
       fetchSchedulerLogs();
-    }
-  };
-
-  const addTargetNumber = () => {
-    if (!newTargetInput.trim()) return;
-    const cleaned = newTargetInput.trim().replace(/[^0-9]/g, '');
-    if (!cleaned) return;
-    if (fonnteTargets.includes(cleaned)) {
-      showToast('Nomor sudah ada di dalam daftar.', 'error');
-      return;
-    }
-    setFonnteTargets([...fonnteTargets, cleaned]);
-    setNewTargetInput('');
-    showToast('Nomor penerima baru berhasil ditambahkan.', 'success');
-  };
-
-  const removeTargetNumber = (num: string) => {
-    const filtered = fonnteTargets.filter(item => item !== num);
-    setFonnteTargets(filtered);
-    showToast('Nomor penerima berhasil dihapus.', 'info');
-  };
-
-  const toggleFonnteCategory = (catName: string) => {
-    if (fonnteCategories.includes(catName)) {
-      setFonnteCategories(fonnteCategories.filter(c => c !== catName));
-    } else {
-      setFonnteCategories([...fonnteCategories, catName]);
     }
   };
 
@@ -1031,10 +1001,10 @@ export const SettingsView: React.FC = () => {
                     Belum ada riwayat koneksi database. Klik "Uji Koneksi" di atas untuk mencoba.
                   </div>
                 ) : (
-                  dbConnectionLogs.map((log) => {
+                  dbConnectionLogs.map((log, idx) => {
                     const isSuccess = log.status === 'SUCCESS';
                     return (
-                      <div key={log.id} className="border-b border-slate-900 pb-2 last:border-b-0 last:pb-0 space-y-1">
+                      <div key={`${log.id}-${idx}`} className="border-b border-slate-900 pb-2 last:border-b-0 last:pb-0 space-y-1">
                         <div className="flex items-center justify-between gap-2">
                           <span className={`text-[8.5px] font-bold px-1.5 py-0.5 rounded-sm ${
                             isSuccess 
@@ -1098,8 +1068,8 @@ export const SettingsView: React.FC = () => {
               Tidak ada log aktivitas background scheduler terbaru. Menunggu interval pencarian berikutnya...
             </div>
           ) : (
-            schedulerLogs.map((log) => (
-              <div key={log.id} className="flex flex-col sm:flex-row gap-1 sm:gap-4 border-b border-white/5 pb-1.5 last:border-0 last:pb-0">
+            schedulerLogs.map((log, idx) => (
+              <div key={`${log.id}-${idx}`} className="flex flex-col sm:flex-row gap-1 sm:gap-4 border-b border-white/5 pb-1.5 last:border-0 last:pb-0">
                 <span className="text-indigo-400 font-bold shrink-0">
                   [{new Date(log.timestamp).toLocaleString('id-ID', { hour: 'numeric', minute: 'numeric', second: 'numeric' })}]
                 </span>

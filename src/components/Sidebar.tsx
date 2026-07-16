@@ -6,15 +6,12 @@ import {
   FileEdit, 
   Database, 
   Settings2, 
-  LogOut,
   ChevronLeft,
   ChevronRight,
-  UserCheck,
   Users,
   FileText,
   MessageSquare,
   ShieldCheck,
-  Search,
   Terminal
 } from 'lucide-react';
 import { Logo } from './Logo';
@@ -22,11 +19,10 @@ import { Logo } from './Logo';
 interface SidebarProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
-  onLoginClick: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, onLoginClick }) => {
-  const { user, activeTab, setTab, logout, settings, isCrawlSyncing, triggerAutoSync } = useAppState();
+export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
+  const { user, activeTab, setTab, settings, isCrawlSyncing, triggerAutoSync } = useAppState();
 
   const menuItems = [
     { id: 'portal' as const, label: 'Media Monitoring', icon: Globe, roles: ['Admin', 'Analis', 'Editor', 'Viewer'] },

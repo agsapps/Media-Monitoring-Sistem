@@ -1,16 +1,14 @@
 import React, { useState, useMemo } from 'react';
 import { useAppState } from '../AppContext';
 import { 
-  FileText, Sparkles, Sliders, Download, Eye, RefreshCw, Check, 
-  Layers, ShieldCheck, Info, CheckSquare, Square, Calendar, 
-  User, Building2, MapPin, Search, AlertCircle, MessageSquare, Phone, Send
+  FileText, Sliders, Download, RefreshCw, Calendar, Search
 } from 'lucide-react';
-import { generatePDFReport, splitSummaryParts, getDefaultLogoBase64, saveDefaultLogoBase64, getDefaultLogoRightBase64, saveDefaultLogoRightBase64, getDefaultLogoCoverLeftBase64, getDefaultLogoCoverRightBase64 } from '../utils/pdfReportGenerator';
+import { generatePDFReport, getDefaultLogoBase64, getDefaultLogoRightBase64, getDefaultLogoCoverLeftBase64, getDefaultLogoCoverRightBase64 } from '../utils/pdfReportGenerator';
 import { safeHtml2Canvas } from '../utils/safeHtml2Canvas';
 import { OSMMap } from './OSMMap';
 
 export const PDFExportStudio: React.FC = () => {
-  const { news, showToast, highlights, settings, saveSettings, authFetch } = useAppState();
+  const { news, showToast, highlights, settings, saveSettings } = useAppState();
 
   // Selected province state for the offscreen OSM Map snapshot
   const [selectedProvinceMap, setSelectedProvinceMap] = useState('Nasional');
@@ -20,9 +18,6 @@ export const PDFExportStudio: React.FC = () => {
   // General Customization States
   const [reportTitle, setReportTitle] = useState('LAPORAN KHUSUS MEDIA MONITORING');
   const [reportType, setReportType] = useState<'Weekly' | 'Monthly' | 'Custom'>('Custom');
-  const [confidentiality, setConfidentiality] = useState('CONFIDENTIAL — INTERNAL PERUSAHAAN');
-  const [authorName, setAuthorName] = useState('Security Head Office Analyst');
-  const [department, setDepartment] = useState('Unit Intelijen Strategis');
   const [customReportText, setCustomReportText] = useState(
     `**Kebijakan Energi & Tata Kelola**
 - Pengawasan distribusi BBM subsidi diperketat melalui verifikasi QR Code dan STNK guna memastikan ketepatan sasaran.
@@ -55,9 +50,6 @@ export const PDFExportStudio: React.FC = () => {
       setDefaultLogoCoverRight(settings.pdfExportLogoCoverRight || getDefaultLogoCoverRightBase64());
     }
   }, [settings]);
-
-  const activeLogo = customLogo || defaultLogo;
-  const activeLogoRight = customLogoRight || defaultLogoRight;
 
   // Filter States
   const [selectedSentiment, setSelectedSentiment] = useState<'All' | 'Positif' | 'Negatif' | 'Netral'>('All');
@@ -113,19 +105,6 @@ export const PDFExportStudio: React.FC = () => {
     return 0;
   };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] as File | undefined;
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (uploadEvent) => {
-        const base64 = uploadEvent.target?.result as string;
-        setCustomLogo(base64);
-        showToast('Logo kustom sekali-cetak berhasil diterapkan!', 'success');
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handleDefaultLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] as File | undefined;
     if (file) {
@@ -145,19 +124,6 @@ export const PDFExportStudio: React.FC = () => {
     const success = await saveSettings({ pdfExportLogoLeft: "" });
     if (success) {
       showToast('Logo default kiri telah dikembalikan ke logo sistem asli.', 'info');
-    }
-  };
-
-  const handleLogoRightUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] as File | undefined;
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (uploadEvent) => {
-        const base64 = uploadEvent.target?.result as string;
-        setCustomLogoRight(base64);
-        showToast('Logo kustom kanan sekali-cetak berhasil diterapkan!', 'success');
-      };
-      reader.readAsDataURL(file);
     }
   };
 
@@ -227,46 +193,6 @@ export const PDFExportStudio: React.FC = () => {
     }
   };
 
-  const handleAttachmentsUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      const fileList = Array.from(files) as File[];
-      const readersToProcess = fileList.map((file: File) => {
-        return new Promise<{ src: string; aspectRatio: number }>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = (uploadEvent) => {
-            const src = (uploadEvent.target?.result as string) || '';
-            if (!src) {
-              resolve({ src: '', aspectRatio: 1.3333 });
-              return;
-            }
-            const img = new Image();
-            img.onload = () => {
-              const aspect = (img.naturalWidth || img.width) / (img.naturalHeight || img.height) || 1.3333;
-              resolve({ src, aspectRatio: aspect });
-            };
-            img.onerror = () => {
-              resolve({ src, aspectRatio: 1.3333 });
-            };
-            img.src = src;
-          };
-          reader.readAsDataURL(file);
-        });
-      });
-
-      Promise.all(readersToProcess).then((results) => {
-        const newImages = results.map((item, idx) => ({
-          src: item.src,
-          size: 'medium' as const,
-          caption: `Kliping Visual #${uploadedImages.length + idx + 1}`,
-          aspectRatio: item.aspectRatio
-        }));
-        setUploadedImages((prev) => [...prev, ...newImages]);
-        showToast(`${results.length} gambar lampiran berhasil ditambahkan!`, 'success');
-      });
-    }
-  };
-
   const removeAttachmentImg = (idx: number) => {
     setUploadedImages((prev) => prev.filter((_, i) => i !== idx));
     showToast('Lampiran visual dihapus.', 'info');
@@ -281,13 +207,7 @@ export const PDFExportStudio: React.FC = () => {
   };
 
   // Page Inclusion States
-  const [includeCover, setIncludeCover] = useState(true);
-  const [includeStats, setIncludeStats] = useState(true);
   const [includeMap, setIncludeMap] = useState(true);
-  const [includeNewsTable, setIncludeNewsTable] = useState(true);
-
-  // Preview Paginated Navigation State
-  const [activePreviewPage, setActivePreviewPage] = useState<number>(1);
 
   // Is Generating State
   const [isCompiling, setIsCompiling] = useState(false);
@@ -457,10 +377,7 @@ export const PDFExportStudio: React.FC = () => {
     setSelectedCategory('All');
     setSelectedProvince('All');
     setSearchKeyword('');
-    setIncludeCover(true);
-    setIncludeStats(true);
     setIncludeMap(true);
-    setIncludeNewsTable(true);
     setCustomReportText(
       'Berdasarkan pantauan intelijen media pada periode ini, fluktuasi sentimen opini publik menunjukkan stabilitas relatif tinggi. Potensi kerawanan sosial akibat penyesuaian tarif BBM bersubsidi berhasil dinetralisir melalui intervensi kehumasan kolaboratif.'
     );

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAppState } from '../AppContext';
+import { VirtualScroll } from './VirtualScroll';
 import { 
-  Search, Filter, BookOpen, Share2, Download, ExternalLink, Calendar, 
-  ChevronRight, Copy, Check, MessageSquare, AlertCircle, FileText, Globe, RefreshCcw, X,
+  Search, Filter, ExternalLink, Calendar, 
+  ChevronRight, Copy, Check, AlertCircle, FileText, Globe, RefreshCcw, X,
   LayoutGrid, List
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
@@ -209,8 +210,8 @@ export const PortalView: React.FC = () => {
   const [selectedSent, setSelectedSent] = useState('all');
   const [selectedMed, setSelectedMed] = useState('all');
   const [selectedDate, setSelectedDate] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [startHour, setStartHour] = useState<number>(0);
@@ -318,6 +319,33 @@ export const PortalView: React.FC = () => {
   // Pagination simulator
   const [visibleCount, setVisibleCount] = useState(6);
 
+  // Responsive state for VirtualScroll column & height sizing
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const activeColumns = useMemo(() => {
+    if (viewMode === 'list') return 1;
+    if (windowWidth >= 1024) return 3;
+    if (windowWidth >= 640) return 2;
+    return 1;
+  }, [viewMode, windowWidth]);
+
+  const virtualItemHeight = useMemo(() => {
+    if (viewMode === 'list') return 180;
+    if (windowWidth < 640) return 430;
+    return 400;
+  }, [viewMode, windowWidth]);
+
+  const virtualGap = useMemo(() => {
+    if (viewMode === 'list') return 16;
+    return windowWidth >= 768 ? 24 : 16;
+  }, [viewMode, windowWidth]);
+
   // Responsive state for mobile filters panel
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showPdfConfirm, setShowPdfConfirm] = useState(false);
@@ -335,30 +363,6 @@ export const PortalView: React.FC = () => {
       (portalLocationFilter !== 'all' && portalLocationFilter.trim() !== '')
     );
   }, [searchVal, selectedCat, selectedSent, selectedMed, selectedDate, startDate, endDate, portalLocationFilter]);
-
-  // Generate list of the last 30 days starting from today to always populate the dropdown option list
-  const dateOptions = React.useMemo(() => {
-    const list: { value: string; label: string }[] = [];
-    const today = new Date();
-    
-    for (let i = 0; i < 30; i++) {
-      const d = new Date();
-      d.setDate(today.getDate() - i);
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
-      const dd = String(d.getDate()).padStart(2, '0');
-      const value = `${yyyy}-${mm}-${dd}`;
-      
-      const label = d.toLocaleDateString('id-ID', {
-        weekday: 'short',
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric'
-      });
-      list.push({ value, label });
-    }
-    return list;
-  }, []);
 
 
   const sortedNews = useMemo(() => {
@@ -486,7 +490,7 @@ export const PortalView: React.FC = () => {
     showToast('Filter dikosongkan.', 'info');
   };
 
-  const handleCopyLink = (item: NewsItem, isDetail = false) => {
+  const handleCopyLink = (item: NewsItem) => {
     const fakeUrl = `${window.location.origin}/portal/news/${item.id}`;
     navigator.clipboard.writeText(fakeUrl);
     setCopiedId(item.id);

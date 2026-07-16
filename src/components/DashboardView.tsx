@@ -4,7 +4,6 @@ import { useAppState } from '../AppContext';
 import { generatePDFReport } from '../utils/pdfReportGenerator';
 import { OSMMap, normalizeProvinceName } from './OSMMap';
 import { safeHtml2Canvas } from '../utils/safeHtml2Canvas';
-import { HighlightCarousel } from './HighlightCarousel';
 import { DateRangeSlider } from './DateRangeSlider';
 import { HeatmapWidget } from './HeatmapWidget';
 import { 
@@ -12,11 +11,14 @@ import {
 } from 'recharts';
 import { 
   RefreshCw, FileSpreadsheet, MapPin, ChevronLeft, ChevronRight,
-  Search, SlidersHorizontal, Tag, X, Filter,
+  Search, SlidersHorizontal, X, Filter,
   TrendingUp, TrendingDown, Info, Activity, CheckCircle2, AlertTriangle,
   Sparkles, ChevronDown, ChevronUp, Zap, Copy, Calendar, Newspaper,
   Smile, Frown, Meh, ArrowUp, ArrowDown, Download, FileText, Twitter, MessageSquare
 } from 'lucide-react';
+
+// Global timezone-independent date parser cache to eliminate millions of redundant Date instantiations
+const parsedUTCDateCache: Record<string, Date> = {};
 
 export const DashboardView: React.FC = () => {
   const { user, authFetch, loadStats, showToast, news: rawNews, loadNews, selectedProvince, setSelectedProvince, settings, highlights, isCrawlSyncing, triggerAutoSync, setTab, socialNews, loadSocialNews, setPortalLocationFilter, setSocialLocationFilter } = useAppState();
@@ -101,7 +103,7 @@ export const DashboardView: React.FC = () => {
 
 
   const [activeTabDuration, setActiveTabDuration] = useState<'All' | 'Days' | 'Weeks' | 'Months' | 'Years'>('Days');
-  const [selectedCalendarDate, setSelectedCalendarDate] = useState<string>('');
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
   const [isMultiSelectMode, setIsMultiSelectMode] = useState<boolean>(false);
   const [selectedCalendarDates, setSelectedCalendarDates] = useState<string[]>([]);
   const [comparisonMode, setComparisonMode] = useState<'none' | 'mom' | 'yoy'>('none');
@@ -114,27 +116,6 @@ export const DashboardView: React.FC = () => {
         left: direction === 'left' ? -scrollAmount : scrollAmount,
         behavior: 'smooth'
       });
-    }
-  };
-
-  const toggleMultiSelectMode = () => {
-    if (!isMultiSelectMode) {
-      setIsMultiSelectMode(true);
-      setSelectedCalendarDates([activeCalendarDate]);
-      setStartDateFilter(activeCalendarDate);
-      setEndDateFilter(activeCalendarDate);
-      setSelectedDateFilter(activeCalendarDate);
-      showToast('Mode multi-select aktif. Pilih beberapa tanggal di kalender.', 'info');
-    } else {
-      setIsMultiSelectMode(false);
-      if (selectedCalendarDates.length > 0) {
-        const last = selectedCalendarDates[selectedCalendarDates.length - 1];
-        setSelectedCalendarDate(last);
-        setStartDateFilter(last);
-        setEndDateFilter(last);
-        setSelectedDateFilter(last);
-      }
-      showToast('Kembali ke mode seleksi tunggal.', 'info');
     }
   };
 
@@ -214,7 +195,7 @@ export const DashboardView: React.FC = () => {
   const [selectedSentimentFilter, setSelectedSentimentFilter] = useState<string>('Semua');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('Semua');
   const [selectedRegionFilter, setSelectedRegionFilter] = useState<string>('Semua');
-  const [selectedDateFilter, setSelectedDateFilter] = useState<string>('Semua');
+  const [selectedDateFilter, setSelectedDateFilter] = useState<string>(() => new Date().toISOString().split('T')[0]);
   const [startDateFilter, setStartDateFilter] = useState<string>('');
   const [endDateFilter, setEndDateFilter] = useState<string>('');
   const [hasSetDefaultDate, setHasSetDefaultDate] = useState<boolean>(false);
@@ -224,53 +205,16 @@ export const DashboardView: React.FC = () => {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [activeMobileDetailTab, setActiveMobileDetailTab] = useState<'sentiment' | 'provinces' | 'topics' | 'media'>('sentiment');
   const [isMapDetailPanelOpen, setIsMapDetailPanelOpen] = useState(true);
-  const [isDetailCompact, setIsDetailCompact] = useState(true);
+  const isDetailCompact = true;
   const [isLayoutOrderSwapped, setIsLayoutOrderSwapped] = useState(false);
   const [isMobile, setIsMobile] = useState<boolean>(false);
 
   // Widget drag-and-drop state & helpers for stats widgets in "Rincian Statistik" panel
-  const [widgetOrder, setWidgetOrder] = useState<string[]>(() => {
+  const [widgetOrder] = useState<string[]>(() => {
     const saved = localStorage.getItem('dashboard_widget_order');
     let order = saved ? JSON.parse(saved) : ['sentiment', 'provinces', 'topics', 'media'];
     return order.filter((x: string) => x !== 'social_media');
   });
-  const [draggedWidget, setDraggedWidget] = useState<string | null>(null);
-  const [isHoveredWidget, setIsHoveredWidget] = useState<string | null>(null);
-
-  const handleDragStart = (e: React.DragEvent, id: string) => {
-    setDraggedWidget(id);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragOver = (e: React.DragEvent, targetId: string) => {
-    e.preventDefault();
-    setIsHoveredWidget(targetId);
-    if (draggedWidget && draggedWidget !== targetId) {
-      const currentIdx = widgetOrder.indexOf(draggedWidget);
-      const targetIdx = widgetOrder.indexOf(targetId);
-      const newOrder = [...widgetOrder];
-      newOrder.splice(currentIdx, 1);
-      newOrder.splice(targetIdx, 0, draggedWidget);
-      setWidgetOrder(newOrder); // Live preview reordering
-    }
-  };
-
-  const handleDragLeave = () => {
-    setIsHoveredWidget(null);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsHoveredWidget(null);
-    setDraggedWidget(null);
-    localStorage.setItem('dashboard_widget_order', JSON.stringify(widgetOrder));
-    showToast('Posisi statistik disimpan!', 'success');
-  };
-
-  const handleDragEnd = () => {
-    setDraggedWidget(null);
-    setIsHoveredWidget(null);
-  };
 
   // MAIN DASHBOARD SECTIONS DRAG-AND-DROP WORKFLOW
   const [dashboardSections, setDashboardSections] = useState<string[]>(() => {
@@ -297,46 +241,6 @@ export const DashboardView: React.FC = () => {
     }
     return ['metrics', 'charts', 'social', 'map', 'heatmap'];
   });
-  const [draggedSection, setDraggedSection] = useState<string | null>(null);
-  const [hoveredSection, setHoveredSection] = useState<string | null>(null);
-
-  const handleSectionDragStart = (e: React.DragEvent, id: string) => {
-    setDraggedSection(id);
-    e.dataTransfer.effectAllowed = 'move';
-    // Smooth custom visual feedback
-    if (e.dataTransfer && typeof Image !== 'undefined') {
-      const img = new Image();
-      img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-      e.dataTransfer.setDragImage(img, 0, 0);
-    }
-  };
-
-  const handleSectionDragOver = (e: React.DragEvent, targetId: string) => {
-    e.preventDefault();
-    setHoveredSection(targetId);
-    if (draggedSection && draggedSection !== targetId) {
-      const currentIdx = dashboardSections.indexOf(draggedSection);
-      const targetIdx = dashboardSections.indexOf(targetId);
-      const newSections = [...dashboardSections];
-      newSections.splice(currentIdx, 1);
-      newSections.splice(targetIdx, 0, draggedSection);
-      setDashboardSections(newSections);
-    }
-  };
-
-  const handleSectionDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDraggedSection(null);
-    setHoveredSection(null);
-    localStorage.setItem('dashboard_sections_order', JSON.stringify(dashboardSections));
-    showToast('Tata letak baru dashboard berhasil disimpan!', 'success');
-  };
-
-  const handleSectionDragEnd = () => {
-    setDraggedSection(null);
-    setHoveredSection(null);
-  };
-
   const moveSection = (id: string, direction: 'up' | 'down') => {
     const idx = dashboardSections.indexOf(id);
     if (idx === -1) return;
@@ -362,34 +266,6 @@ export const DashboardView: React.FC = () => {
     const saved = localStorage.getItem('dashboard_metrics_order2');
     return saved ? JSON.parse(saved) : ['total', 'positif', 'netral', 'negatif'];
   });
-  const [draggedMetricCard, setDraggedMetricCard] = useState<string | null>(null);
-  const [hoveredMetricCard, setHoveredMetricCard] = useState<string | null>(null);
-
-  const handleMetricDragStart = (e: React.DragEvent, id: string) => {
-    setDraggedMetricCard(id);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleMetricDragOver = (e: React.DragEvent, targetId: string) => {
-    e.preventDefault();
-    setHoveredMetricCard(targetId);
-    if (draggedMetricCard && draggedMetricCard !== targetId) {
-      const currentIdx = metricCardsOrder.indexOf(draggedMetricCard);
-      const targetIdx = metricCardsOrder.indexOf(targetId);
-      const newOrder = [...metricCardsOrder];
-      newOrder.splice(currentIdx, 1);
-      newOrder.splice(targetIdx, 0, draggedMetricCard);
-      setMetricCardsOrder(newOrder);
-    }
-  };
-
-  const handleMetricDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDraggedMetricCard(null);
-    setHoveredMetricCard(null);
-    localStorage.setItem('dashboard_metrics_order2', JSON.stringify(metricCardsOrder));
-    showToast('Posisi kartu nilai sentimen disimpan!', 'success');
-  };
 
   const moveMetricCard = (id: string, direction: 'left' | 'right') => {
     const idx = metricCardsOrder.indexOf(id);
@@ -459,213 +335,7 @@ export const DashboardView: React.FC = () => {
      }
    };
 
-  const [isGeneratingPdf, setIsGeneratingPdf] = useState<'Weekly' | 'Monthly' | null>(null);
 
-  const handleGenerateTimedPdfReport = async (type: 'Weekly' | 'Monthly') => {
-    setIsGeneratingPdf(type);
-    showToast(`Memproses data laporan ${type === 'Weekly' ? 'Mingguan' : 'Bulanan'}...`, 'info');
-
-    try {
-      // Find latest date in the dataset
-      const publishedNews = news.filter(n => n.status === 'Published');
-      if (publishedNews.length === 0) {
-        showToast('Tidak ada data rilis berita untuk dianalisis.', 'error');
-        setIsGeneratingPdf(null);
-        return;
-      }
-
-      let maxDateStr = '2026-05-31';
-      const dates = publishedNews.map(n => n.publishDate).filter(Boolean);
-      if (dates.length > 0) {
-        maxDateStr = dates.reduce((max, current) => current > max ? current : max, dates[0]);
-      }
-
-      const d = parseUTCDate(maxDateStr);
-      let targetNews = [];
-      let dateRangeDesc = '';
-      let dateRangeString = '';
-
-      if (type === 'Weekly') {
-        const day = d.getUTCDay(); // 0 is Sunday, 1 is Monday, ..., 6 is Saturday
-        const diffToMonday = day === 0 ? -6 : 1 - day;
-        const monday = new Date(d.getTime());
-        monday.setUTCDate(monday.getUTCDate() + diffToMonday);
-
-        const sunday = new Date(monday.getTime());
-        sunday.setUTCDate(sunday.getUTCDate() + 6);
-
-        const mondayStr = formatUTCDate(monday);
-        const sundayStr = formatUTCDate(sunday);
-
-        targetNews = publishedNews.filter(n => {
-          if (!n.publishDate) return false;
-          return n.publishDate >= mondayStr && n.publishDate <= sundayStr;
-        });
-
-        dateRangeDesc = `Mingguan (Senin, ${formatIndonesianDate(mondayStr)} s.d. Minggu, ${formatIndonesianDate(sundayStr)})`;
-        dateRangeString = `${formatIndonesianDate(mondayStr)} s.d. ${formatIndonesianDate(sundayStr)}`;
-      } else {
-        const year = d.getUTCFullYear();
-        const monthIndex = d.getUTCMonth(); // 0-indexed
-
-        const firstDayOfMonth = new Date(Date.UTC(year, monthIndex, 1));
-        const lastDayOfMonth = new Date(Date.UTC(year, monthIndex + 1, 0));
-
-        const firstDayStr = formatUTCDate(firstDayOfMonth);
-        const lastDayStr = formatUTCDate(lastDayOfMonth);
-
-        targetNews = publishedNews.filter(n => {
-          if (!n.publishDate) return false;
-          return n.publishDate >= firstDayStr && n.publishDate <= lastDayStr;
-        });
-
-        const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-        const monthName = months[monthIndex];
-        dateRangeDesc = `Bulanan (Satu Bulan pada ${monthName} ${year})`;
-        dateRangeString = `01 s.d. ${String(lastDayOfMonth.getUTCDate()).padStart(2, '0')} ${monthName} ${year}`;
-      }
-
-      if (targetNews.length === 0) {
-        showToast(`Tidak ditemukan rilis berita untuk periode ${dateRangeDesc} dari tanggal basis data ${formatIndonesianDate(maxDateStr)}.`, 'warning');
-        setIsGeneratingPdf(null);
-        return;
-      }
-
-      // Compute statistics over the filtered set
-      const totalCount = targetNews.length;
-      const positifCount = targetNews.filter(n => n.sentiment === 'Positif').length;
-      const netralCount = targetNews.filter(n => n.sentiment === 'Netral').length;
-      const negatifCount = targetNews.filter(n => n.sentiment === 'Negatif').length;
-
-      // Find dominant category/sector
-      const topics: Record<string, number> = {};
-      targetNews.forEach(n => {
-        if (n.categoryName) {
-          topics[n.categoryName] = (topics[n.categoryName] || 0) + 1;
-        }
-      });
-      let dominantTopic = 'Minyak & Gas';
-      let maxTopicCount = 0;
-      Object.entries(topics).forEach(([topic, cnt]) => {
-        if (cnt > maxTopicCount) {
-          maxTopicCount = cnt;
-          dominantTopic = topic;
-        }
-      });
-
-      // Find dominant region
-      const regions: Record<string, number> = {};
-      targetNews.forEach(n => {
-        if (n.location) {
-          regions[n.location] = (regions[n.location] || 0) + 1;
-        }
-      });
-      let dominantRegion = 'Nasional';
-      let maxRegionCount = 0;
-      Object.entries(regions).forEach(([reg, cnt]) => {
-        if (cnt > maxRegionCount) {
-          maxRegionCount = cnt;
-          dominantRegion = reg;
-        }
-      });
-
-      // Estimate risk level
-      const negativeRatio = totalCount > 0 ? (negatifCount / totalCount) : 0;
-      let highestRisk = 'Rendah';
-      if (negativeRatio >= 0.6) {
-        highestRisk = 'Kritis';
-      } else if (negativeRatio >= 0.3) {
-        highestRisk = 'Tinggi';
-      } else if (negativeRatio >= 0.1) {
-        highestRisk = 'Sedang';
-      }
-
-      // Format custom headline for the AI
-      const headline = `Laporan Khusus ${dateRangeDesc} per tanggal ${maxDateStr}. Total ${totalCount} berita dianalisis.`;
-
-      const response = await authFetch('/api/gemini/agent-report', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          filteredNews: targetNews,
-          filterStatusHeadline: headline
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.report) {
-          // Format Title for Report
-          const reportTitle = type === 'Weekly' 
-            ? 'LAPORAN MEDIA MONITORING MINGGUAN' 
-            : 'LAPORAN MEDIA MONITORING BULANAN';
-
-          // Capture map snapshot if container is present on screen
-          const mapElement = document.getElementById('osm-map-container');
-          let mapSnapshotBase64: string | undefined = undefined;
-          
-          if (mapElement) {
-            try {
-              const canvas = await safeHtml2Canvas(mapElement, {
-                useCORS: true,
-                allowTaint: true,
-                logging: false,
-                scale: 2
-              });
-              mapSnapshotBase64 = canvas.toDataURL('image/jpeg', 0.85);
-            } catch (mapErr) {
-              console.error('Failed to capture map snapshot:', mapErr);
-            }
-          }
-
-          // Build specific province statistics for this report's targetNews subset
-          const reportProvinceStats: Record<string, { newsCount: number; positif: number; netral: number; negatif: number }> = {};
-          targetNews.forEach((item) => {
-            const prov = item.location || 'Nasional';
-            if (!reportProvinceStats[prov]) {
-              reportProvinceStats[prov] = { newsCount: 0, positif: 0, netral: 0, negatif: 0 };
-            }
-            reportProvinceStats[prov].newsCount += 1;
-            if (item.sentiment === 'Positif') reportProvinceStats[prov].positif += 1;
-            else if (item.sentiment === 'Netral') reportProvinceStats[prov].netral += 1;
-            else if (item.sentiment === 'Negatif') reportProvinceStats[prov].negatif += 1;
-          });
-
-          // Trigger pdf generator download
-          generatePDFReport(
-            reportTitle,
-            type,
-            dateRangeString,
-            data.report,
-            {
-              total: totalCount,
-              positif: positifCount,
-              netral: netralCount,
-              negatif: negatifCount,
-              topTopic: dominantTopic,
-              topRegion: dominantRegion,
-              riskLevel: highestRisk
-            },
-            mapSnapshotBase64,
-            reportProvinceStats,
-            highlights
-          );
-
-          showToast(`Laporan PDF ${type === 'Weekly' ? 'Mingguan' : 'Bulanan'} berhasil diunduh!`, 'success');
-        } else {
-          showToast('Gagal menyusun isi laporan.', 'error');
-        }
-      } else {
-        showToast('Koneksi sistem terganggu saat membuat laporan.', 'error');
-      }
-    } catch (err) {
-      showToast('Terjadi kesalahan pembuatan PDF.', 'error');
-    } finally {
-      setIsGeneratingPdf(null);
-    }
-  };
 
   const renderProcessedReport = (text: string) => {
     if (!text) return null;
@@ -674,7 +344,6 @@ export const DashboardView: React.FC = () => {
     const elements: React.ReactNode[] = [];
     let currentTable: { headers: string[]; rows: string[][] } | null = null;
     let currentList: React.ReactNode[] = [];
-    let inList = false;
 
     const flushList = (key: string) => {
       if (currentList.length > 0) {
@@ -685,7 +354,6 @@ export const DashboardView: React.FC = () => {
         );
         currentList = [];
       }
-      inList = false;
     };
 
     const flushTable = (key: string) => {
@@ -791,7 +459,6 @@ export const DashboardView: React.FC = () => {
       }
 
       if (trimmed.startsWith('* ') || trimmed.startsWith('- ')) {
-        inList = true;
         const listContent = trimmed.substring(2);
         currentList.push(
           <li key={currentList.length} className="flex items-start gap-2 text-xs text-slate-800 dark:text-slate-100 leading-relaxed mb-1">
@@ -860,24 +527,20 @@ export const DashboardView: React.FC = () => {
     return Array.from(new Set(list)).sort() as string[];
   }, [news]);
 
-  const uniqueDates = React.useMemo(() => {
-    const list = news.filter(n => n.status === 'Published').map(n => n.publishDate).filter(Boolean);
-    return Array.from(new Set(list)).sort().reverse() as string[];
-  }, [news]);
-
   const sortedTimelineDates = React.useMemo(() => {
     const list = news.filter(n => n.status === 'Published').map(n => n.publishDate).filter(Boolean);
     return Array.from(new Set(list)).sort() as string[];
   }, [news]);
 
   React.useEffect(() => {
-    if (uniqueDates.length > 0 && !hasSetDefaultDate) {
-      setSelectedDateFilter(uniqueDates[0]);
-      setSelectedCalendarDate(uniqueDates[0]);
-      setSelectedCalendarDates([uniqueDates[0]]);
+    if (!hasSetDefaultDate) {
+      const todayStr = new Date().toISOString().split('T')[0];
+      setSelectedDateFilter(todayStr);
+      setSelectedCalendarDate(todayStr);
+      setSelectedCalendarDates([todayStr]);
       setHasSetDefaultDate(true);
     }
-  }, [uniqueDates, hasSetDefaultDate]);
+  }, [hasSetDefaultDate]);
 
   const formatIndonesianDate = (dateStr: string) => {
     if (!dateStr) return '';
@@ -891,12 +554,16 @@ export const DashboardView: React.FC = () => {
   };
 
   // Helper for timezone-independent date string comparisons
-  const parseUTCDate = (dateStr: string) => {
+  const parseUTCDate = React.useCallback((dateStr: string) => {
     if (!dateStr) return new Date(NaN);
+    const cached = parsedUTCDateCache[dateStr];
+    if (cached) return cached;
     const parts = dateStr.split('-');
     if (parts.length !== 3) return new Date(NaN);
-    return new Date(Date.UTC(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10)));
-  };
+    const dateObj = new Date(Date.UTC(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10)));
+    parsedUTCDateCache[dateStr] = dateObj;
+    return dateObj;
+  }, []);
 
   const formatUTCDate = (date: Date) => {
     if (isNaN(date.getTime())) return '';
@@ -1065,17 +732,10 @@ export const DashboardView: React.FC = () => {
     });
   }, [news, selectedSentimentFilter, selectedCategoryFilter, selectedDateFilter, startDateFilter, endDateFilter, searchFilterQuery, startHour, endHour]);
 
-  // Dynamic calendar date list generated based on latest news available
+  // Dynamic calendar date list generated based on today's date
   const dynamicCalendarDays = React.useMemo(() => {
-    let maxDateStr = '2026-05-31';
-    const publishedNews = news.filter(n => n.status === 'Published');
-    if (publishedNews.length > 0) {
-      const dates = publishedNews.map(n => n.publishDate).filter(Boolean);
-      if (dates.length > 0) {
-        maxDateStr = dates.reduce((max, current) => current > max ? current : max, dates[0]);
-      }
-    }
-    const maxDate = parseUTCDate(maxDateStr);
+    const todayStr = new Date().toISOString().split('T')[0];
+    const maxDate = parseUTCDate(todayStr);
     
     // Generate 31 days back to accommodate full monthly range selection
     const daysArr = [];
@@ -1123,11 +783,6 @@ export const DashboardView: React.FC = () => {
     return '2026-05-31';
   }, [selectedCalendarDate, dynamicCalendarDays]);
 
-  const getMonthName = (date: Date) => {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-    return months[date.getUTCMonth()];
-  };
-
   // Synchronize Global Filters (Slider / Inputs) -> Calendar Carousel selection
   React.useEffect(() => {
     if (activeTabDuration === 'All') return;
@@ -1174,27 +829,34 @@ export const DashboardView: React.FC = () => {
 
     if (isMultiSelectMode) {
       if (selectedCalendarDates.length === 0) return [];
-      return filteredNews.filter(n => {
-        if (!n.publishDate) return false;
-        return selectedCalendarDates.some(date => {
-          const diffDays = getDifferenceInDays(date, n.publishDate);
-          if (isNaN(diffDays)) return false;
+      
+      if (activeTabDuration === 'Days') {
+        const datesSet = new Set(selectedCalendarDates);
+        return filteredNews.filter(n => n.publishDate && datesSet.has(n.publishDate));
+      }
 
-          if (activeTabDuration === 'Days') {
-            return diffDays === 0;
-          }
-          if (activeTabDuration === 'Weeks') {
-            return diffDays >= 0 && diffDays < 7;
-          }
-          if (activeTabDuration === 'Months') {
-            return diffDays >= 0 && diffDays < 30;
-          }
-          if (activeTabDuration === 'Years') {
-            return diffDays >= 0 && diffDays < 365;
-          }
-          return true;
-        });
+      const validPublishDates = new Set<string>();
+      selectedCalendarDates.forEach(dateStr => {
+        const anchor = parseUTCDate(dateStr);
+        if (isNaN(anchor.getTime())) return;
+
+        let numDays = 1;
+        if (activeTabDuration === 'Weeks') numDays = 7;
+        else if (activeTabDuration === 'Months') numDays = 30;
+        else if (activeTabDuration === 'Years') numDays = 365;
+        else return;
+
+        for (let i = 0; i < numDays; i++) {
+          const d = new Date(anchor);
+          d.setUTCDate(anchor.getUTCDate() - i);
+          const yyyy = d.getUTCFullYear();
+          const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+          const dd = String(d.getUTCDate()).padStart(2, '0');
+          validPublishDates.add(`${yyyy}-${mm}-${dd}`);
+        }
       });
+
+      return filteredNews.filter(n => n.publishDate && validPublishDates.has(n.publishDate));
     }
 
     if (!activeCalendarDate) return filteredNews;
@@ -1218,7 +880,7 @@ export const DashboardView: React.FC = () => {
       }
       return true;
     });
-  }, [filteredNews, activeTabDuration, activeCalendarDate, isMultiSelectMode, selectedCalendarDates]);
+  }, [filteredNews, activeTabDuration, activeCalendarDate, isMultiSelectMode, selectedCalendarDates, parseUTCDate]);
 
   // Filter news for map depending on selected activeTabDuration relative to selected calendar date
   const periodFilteredNewsExceptRegion = React.useMemo(() => {
@@ -1228,27 +890,34 @@ export const DashboardView: React.FC = () => {
 
     if (isMultiSelectMode) {
       if (selectedCalendarDates.length === 0) return [];
-      return newsFilteredExceptRegion.filter(n => {
-        if (!n.publishDate) return false;
-        return selectedCalendarDates.some(date => {
-          const diffDays = getDifferenceInDays(date, n.publishDate);
-          if (isNaN(diffDays)) return false;
 
-          if (activeTabDuration === 'Days') {
-            return diffDays === 0;
-          }
-          if (activeTabDuration === 'Weeks') {
-            return diffDays >= 0 && diffDays < 7;
-          }
-          if (activeTabDuration === 'Months') {
-            return diffDays >= 0 && diffDays < 30;
-          }
-          if (activeTabDuration === 'Years') {
-            return diffDays >= 0 && diffDays < 365;
-          }
-          return true;
-        });
+      if (activeTabDuration === 'Days') {
+        const datesSet = new Set(selectedCalendarDates);
+        return newsFilteredExceptRegion.filter(n => n.publishDate && datesSet.has(n.publishDate));
+      }
+
+      const validPublishDates = new Set<string>();
+      selectedCalendarDates.forEach(dateStr => {
+        const anchor = parseUTCDate(dateStr);
+        if (isNaN(anchor.getTime())) return;
+
+        let numDays = 1;
+        if (activeTabDuration === 'Weeks') numDays = 7;
+        else if (activeTabDuration === 'Months') numDays = 30;
+        else if (activeTabDuration === 'Years') numDays = 365;
+        else return;
+
+        for (let i = 0; i < numDays; i++) {
+          const d = new Date(anchor);
+          d.setUTCDate(anchor.getUTCDate() - i);
+          const yyyy = d.getUTCFullYear();
+          const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+          const dd = String(d.getUTCDate()).padStart(2, '0');
+          validPublishDates.add(`${yyyy}-${mm}-${dd}`);
+        }
       });
+
+      return newsFilteredExceptRegion.filter(n => n.publishDate && validPublishDates.has(n.publishDate));
     }
 
     if (!activeCalendarDate) return newsFilteredExceptRegion;
@@ -1272,7 +941,7 @@ export const DashboardView: React.FC = () => {
       }
       return true;
     });
-  }, [newsFilteredExceptRegion, activeTabDuration, activeCalendarDate, isMultiSelectMode, selectedCalendarDates]);
+  }, [newsFilteredExceptRegion, activeTabDuration, activeCalendarDate, isMultiSelectMode, selectedCalendarDates, parseUTCDate]);
 
   // Compile Dynamic Province Stats from registered News Items in the selected calendar period
   const provinceStats = React.useMemo(() => {
@@ -1439,24 +1108,40 @@ export const DashboardView: React.FC = () => {
         };
       });
 
+      const daysMap: Record<string, typeof days[0]> = {};
+      days.forEach(d => {
+        daysMap[d.dateStr] = d;
+      });
+
       filteredNews.forEach(n => {
-        const found = days.find(d => d.dateStr === n.publishDate);
-        if (found) {
-          found.volume += 1;
-          if (n.sentiment === 'Positif') found.positif += 1;
-          else if (n.sentiment === 'Negatif') found.negatif += 1;
-          else found.netral += 1;
+        if (n.publishDate) {
+          const found = daysMap[n.publishDate];
+          if (found) {
+            found.volume += 1;
+            if (n.sentiment === 'Positif') found.positif += 1;
+            else if (n.sentiment === 'Negatif') found.negatif += 1;
+            else found.netral += 1;
+          }
         }
       });
 
       if (comparisonMode !== 'none') {
+        const prevDaysMap: Record<string, typeof days[0]> = {};
+        days.forEach(d => {
+          if (d.prevDateStr) {
+            prevDaysMap[d.prevDateStr] = d;
+          }
+        });
+
         baseFilteredNewsWithoutDateFilters.forEach(n => {
-          const found = days.find(d => d.prevDateStr === n.publishDate);
-          if (found) {
-            found.prevVolume += 1;
-            if (n.sentiment === 'Positif') found.prevPositif += 1;
-            else if (n.sentiment === 'Negatif') found.prevNegatif += 1;
-            else found.prevNetral += 1;
+          if (n.publishDate) {
+            const found = prevDaysMap[n.publishDate];
+            if (found) {
+              found.prevVolume += 1;
+              if (n.sentiment === 'Positif') found.prevPositif += 1;
+              else if (n.sentiment === 'Negatif') found.prevNegatif += 1;
+              else found.prevNetral += 1;
+            }
           }
         });
       }
@@ -1506,24 +1191,40 @@ export const DashboardView: React.FC = () => {
         };
       });
 
+      const daysMap: Record<string, typeof days[0]> = {};
+      days.forEach(d => {
+        daysMap[d.dateStr] = d;
+      });
+
       filteredNews.forEach(n => {
-        const found = days.find(d => d.dateStr === n.publishDate);
-        if (found) {
-          found.volume += 1;
-          if (n.sentiment === 'Positif') found.positif += 1;
-          else if (n.sentiment === 'Negatif') found.negatif += 1;
-          else found.netral += 1;
+        if (n.publishDate) {
+          const found = daysMap[n.publishDate];
+          if (found) {
+            found.volume += 1;
+            if (n.sentiment === 'Positif') found.positif += 1;
+            else if (n.sentiment === 'Negatif') found.negatif += 1;
+            else found.netral += 1;
+          }
         }
       });
 
       if (comparisonMode !== 'none') {
+        const prevDaysMap: Record<string, typeof days[0]> = {};
+        days.forEach(d => {
+          if (d.prevDateStr) {
+            prevDaysMap[d.prevDateStr] = d;
+          }
+        });
+
         baseFilteredNewsWithoutDateFilters.forEach(n => {
-          const found = days.find(d => d.prevDateStr === n.publishDate);
-          if (found) {
-            found.prevVolume += 1;
-            if (n.sentiment === 'Positif') found.prevPositif += 1;
-            else if (n.sentiment === 'Negatif') found.prevNegatif += 1;
-            else found.prevNetral += 1;
+          if (n.publishDate) {
+            const found = prevDaysMap[n.publishDate];
+            if (found) {
+              found.prevVolume += 1;
+              if (n.sentiment === 'Positif') found.prevPositif += 1;
+              else if (n.sentiment === 'Negatif') found.prevNegatif += 1;
+              else found.prevNetral += 1;
+            }
           }
         });
       }
@@ -1652,24 +1353,40 @@ export const DashboardView: React.FC = () => {
         });
       }
 
+      const daysMap: Record<string, typeof days[0]> = {};
+      days.forEach(d => {
+        daysMap[d.dateStr] = d;
+      });
+
       filteredNews.forEach(n => {
-        const found = days.find(d => d.dateStr === n.publishDate);
-        if (found) {
-          found.volume += 1;
-          if (n.sentiment === 'Positif') found.positif += 1;
-          else if (n.sentiment === 'Negatif') found.negatif += 1;
-          else found.netral += 1;
+        if (n.publishDate) {
+          const found = daysMap[n.publishDate];
+          if (found) {
+            found.volume += 1;
+            if (n.sentiment === 'Positif') found.positif += 1;
+            else if (n.sentiment === 'Negatif') found.negatif += 1;
+            else found.netral += 1;
+          }
         }
       });
 
       if (comparisonMode !== 'none') {
+        const prevDaysMap: Record<string, typeof days[0]> = {};
+        days.forEach(d => {
+          if (d.prevDateStr) {
+            prevDaysMap[d.prevDateStr] = d;
+          }
+        });
+
         baseFilteredNewsWithoutDateFilters.forEach(n => {
-          const found = days.find(d => d.prevDateStr === n.publishDate);
-          if (found) {
-            found.prevVolume += 1;
-            if (n.sentiment === 'Positif') found.prevPositif += 1;
-            else if (n.sentiment === 'Negatif') found.prevNegatif += 1;
-            else found.prevNetral += 1;
+          if (n.publishDate) {
+            const found = prevDaysMap[n.publishDate];
+            if (found) {
+              found.prevVolume += 1;
+              if (n.sentiment === 'Positif') found.prevPositif += 1;
+              else if (n.sentiment === 'Negatif') found.prevNegatif += 1;
+              else found.prevNetral += 1;
+            }
           }
         });
       }
@@ -1776,7 +1493,7 @@ export const DashboardView: React.FC = () => {
       const pubDate = parseUTCDate(n.publishDate);
       if (!isNaN(pubDate.getTime()) && pubDate.getUTCFullYear() === year) {
         const monthIdx = pubDate.getUTCMonth();
-        const ml = monthList.find(m => m.monthIdx === monthIdx);
+        const ml = monthList[monthIdx];
         if (ml) {
           ml.volume += 1;
           if (n.sentiment === 'Positif') ml.positif += 1;
@@ -1789,20 +1506,31 @@ export const DashboardView: React.FC = () => {
     if (comparisonMode !== 'none') {
       let prevYear = year;
       if (comparisonMode === 'mom') {
+        const newsByYearMonth: Record<number, typeof filteredNews> = {};
+        baseFilteredNewsWithoutDateFilters.forEach(n => {
+          const pubDate = parseUTCDate(n.publishDate);
+          if (!isNaN(pubDate.getTime())) {
+            const key = pubDate.getUTCFullYear() * 100 + pubDate.getUTCMonth();
+            if (!newsByYearMonth[key]) newsByYearMonth[key] = [];
+            newsByYearMonth[key].push(n);
+          }
+        });
+
         monthList.forEach(ml => {
           const mIdx = ml.monthIdx;
           const targetMonth = mIdx === 0 ? 11 : mIdx - 1;
           const targetYear = mIdx === 0 ? year - 1 : year;
+          const key = targetYear * 100 + targetMonth;
           
-          baseFilteredNewsWithoutDateFilters.forEach(n => {
-            const pubDate = parseUTCDate(n.publishDate);
-            if (!isNaN(pubDate.getTime()) && pubDate.getUTCFullYear() === targetYear && pubDate.getUTCMonth() === targetMonth) {
+          const matchingNews = newsByYearMonth[key];
+          if (matchingNews) {
+            matchingNews.forEach(n => {
               ml.prevVolume += 1;
               if (n.sentiment === 'Positif') ml.prevPositif += 1;
               else if (n.sentiment === 'Negatif') ml.prevNegatif += 1;
               else ml.prevNetral += 1;
-            }
-          });
+            });
+          }
         });
       } else {
         prevYear = year - 1;
@@ -1810,7 +1538,7 @@ export const DashboardView: React.FC = () => {
           const pubDate = parseUTCDate(n.publishDate);
           if (!isNaN(pubDate.getTime()) && pubDate.getUTCFullYear() === prevYear) {
             const monthIdx = pubDate.getUTCMonth();
-            const ml = monthList.find(m => m.monthIdx === monthIdx);
+            const ml = monthList[monthIdx];
             if (ml) {
               ml.prevVolume += 1;
               if (n.sentiment === 'Positif') ml.prevPositif += 1;
@@ -2112,8 +1840,7 @@ export const DashboardView: React.FC = () => {
         </button>
       </div>
 
-      {/* HIGHLIGHT ISSUES HERO CAROUSEL */}
-      <HighlightCarousel key={activeCalendarDate} />
+
 
       {/* PROFESSIONAL ANALYTICS FILTER PANEL */}
       {(() => {

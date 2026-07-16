@@ -2,9 +2,8 @@ import React, { useRef, useState, useEffect } from 'react';
 import { useAppState } from '../AppContext';
 import { 
   ChevronLeft, ChevronRight, Calendar, Clock, MapPin, 
-  ExternalLink, Bookmark, Globe, Tag, Radio, X, Copy, Check, MessageSquare
+  ExternalLink, Globe, Copy, Check, MessageSquare
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
 import { formatDateDDMMYYYY, formatSummaryText } from '../types';
 
 const getsentimentDetails = (sentiment: string) => {
@@ -31,7 +30,7 @@ const getsentimentDetails = (sentiment: string) => {
 };
 
 export const HighlightCarousel: React.FC = () => {
-  const { highlights, theme, setSelectedProvince, setTab, showToast } = useAppState();
+  const { highlights, setSelectedProvince, setTab, showToast } = useAppState();
   const containerRef = useRef<HTMLDivElement>(null);
   
   // Modal Popup state for selected highlight

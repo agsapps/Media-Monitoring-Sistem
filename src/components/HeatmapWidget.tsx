@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  Activity, Info, Search, ShieldAlert, CheckCircle2, 
+  Activity, Info, ShieldAlert, CheckCircle2, 
   MapPin, Calendar, HelpCircle, Plus, X, RotateCcw, Filter
 } from 'lucide-react';
-import { NewsItem, Sentiment } from '../types';
+import { NewsItem } from '../types';
 
 interface HeatmapWidgetProps {
   periodFilteredNews: NewsItem[];
@@ -26,7 +26,6 @@ export const HeatmapWidget: React.FC<HeatmapWidgetProps> = ({
   searchFilterQuery,
   setSearchFilterQuery,
   showToast,
-  selectedProvince,
   setSelectedProvince
 }) => {
   const [viewMode, setViewMode] = useState<'time' | 'location'>('time');

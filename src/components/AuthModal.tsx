@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAppState } from '../AppContext';
-import { Key, UserCheck, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Logo } from './Logo';
 
 interface AuthModalProps {

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useAppState } from '../AppContext';
 import { 
   Send, ShieldCheck, User, Sparkles, AlertCircle, Database, RefreshCw, 
-  Trash2, MessageSquare, HelpCircle, ArrowRight, Mic, MicOff, Volume2, VolumeX
+  Trash2, MessageSquare, Mic, MicOff, Volume2, VolumeX
 } from 'lucide-react';
 
 interface Message {
@@ -355,7 +355,7 @@ export const ChatbotView: React.FC = () => {
     setMessages([
       { 
         role: 'assistant', 
-        content: 'Halo! Saya adalah Security Chat assistant Anda. Saya siap membantu Anda dalam memantau situasi keamanan informasi, mencari berita, menganalisis isu hangat, serta meringkas opini dari database internal secara real-time.\n\nSilakan ajukan pertanyaan Anda!',
+        content: 'Halo! Saya adalah Security Chat assistant Anda. Saya siap membantu Anda dalam memantau situasi keamanan informasi, mencari berita, menganalisis berita, serta meringkas dari database.\n\nSilakan ajukan pertanyaan Anda!',
         timestamp: getFormattedTime()
       }
     ]);
@@ -431,7 +431,7 @@ export const ChatbotView: React.FC = () => {
       const initialMsg: Message[] = [
         { 
           role: 'assistant', 
-          content: 'Halo! Riwayat percakapan telah dibersihkan. Ajukan pertanyaan baru mengenai data media atau pantauan sosmed kita!',
+          content: 'Halo! Riwayat percakapan telah dibersihkan. Ajukan pertanyaan baru mengenai data media atau pantauan sosmed!',
           timestamp: getFormattedTime()
         }
       ];
@@ -585,7 +585,7 @@ export const ChatbotView: React.FC = () => {
               {errorMsg}
               {errorMsg.includes('API Key') && (
                 <span className="block mt-1 text-[10px] text-slate-400 dark:text-slate-500">
-                  Silakan masuk ke menu <strong>Konfigurasi Crawler</strong> (Settings) untuk menyetel API Key Gemini Anda.
+                  Silakan masuk ke menu <strong>Konfigurasi Crawler</strong> (Settings) untuk menyetel API Key Anda.
                 </span>
               )}
             </div>
@@ -662,7 +662,7 @@ export const ChatbotView: React.FC = () => {
         </form>
         <div className="mt-1.5 flex items-center justify-center gap-1 text-[9.5px] font-bold text-slate-400">
           <Sparkles className="w-3 h-3 text-amber-500" />
-          <span>Jawaban hanya bersumber secara akurat dari Database Berita & Pantauan Sosmed Internal.</span>
+          <span>Jawaban hanya bersumber secara akurat dari Database Berita & Sosmed.</span>
         </div>
       </div>
 

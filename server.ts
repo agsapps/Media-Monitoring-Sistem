@@ -3479,7 +3479,7 @@ const saveDatabase = () => {
 // API Helper for generating unique logs
 const logActivity = (userId: string, username: string, role: string, action: string, target: string) => {
   const newLog = {
-    id: `log-${Date.now()}`,
+    id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
     userId,
     username,
     role,
@@ -3606,7 +3606,7 @@ app.post('/api/users', authenticateToken, requireRole(['Admin']), (req, res) => 
   }
 
   const newUser = {
-    id: `user-${Date.now()}`,
+    id: `user-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
     name,
     username: username.trim(),
     email: email.trim(),
@@ -4044,7 +4044,7 @@ app.post('/api/news', authenticateToken, requireRole(['Admin', 'Analis']), async
   const mediaObj = database.medias.find(m => m.id === resolvedMediaId);
 
   const newNews = {
-    id: `news-${Date.now()}`,
+    id: `news-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
     title,
     summary,
     link: decodedLink,
@@ -4748,7 +4748,7 @@ ${caption}
   }
 
   const newSocialNews = {
-    id: `social-${Date.now()}`,
+    id: `social-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
     tanggalInput: new Date().toISOString(),
     jenisSosmed,
     username,
@@ -8937,7 +8937,7 @@ app.post('/api/highlights', authenticateToken, requireRole(['Admin', 'Analis']),
   database.highlights.forEach(h => h.orderIndex = (h.orderIndex || 0) + 1);
 
   const newHighlight = {
-    id: `highlight-${Date.now()}`,
+    id: `highlight-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
     title,
     summary,
     categoryName,
