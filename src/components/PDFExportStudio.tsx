@@ -3,17 +3,19 @@ import { useAppState } from '../AppContext';
 import { 
   FileText, Sparkles, Sliders, Download, Eye, RefreshCw, Check, 
   Layers, ShieldCheck, Info, CheckSquare, Square, Calendar, 
-  User, Building2, MapPin, Search, AlertCircle
+  User, Building2, MapPin, Search, AlertCircle, MessageSquare, Phone, Send
 } from 'lucide-react';
 import { generatePDFReport, splitSummaryParts, getDefaultLogoBase64, saveDefaultLogoBase64, getDefaultLogoRightBase64, saveDefaultLogoRightBase64, getDefaultLogoCoverLeftBase64, getDefaultLogoCoverRightBase64 } from '../utils/pdfReportGenerator';
 import { safeHtml2Canvas } from '../utils/safeHtml2Canvas';
 import { OSMMap } from './OSMMap';
 
 export const PDFExportStudio: React.FC = () => {
-  const { news, showToast, highlights, settings, saveSettings } = useAppState();
+  const { news, showToast, highlights, settings, saveSettings, authFetch } = useAppState();
 
   // Selected province state for the offscreen OSM Map snapshot
   const [selectedProvinceMap, setSelectedProvinceMap] = useState('Nasional');
+
+
 
   // General Customization States
   const [reportTitle, setReportTitle] = useState('LAPORAN KHUSUS MEDIA MONITORING');
@@ -562,7 +564,7 @@ export const PDFExportStudio: React.FC = () => {
       });
 
       // 4. Fire trigger to PDF utility
-      generatePDFReport(
+      await generatePDFReport(
         reportTitle.toUpperCase(),
         reportType,
         dateRangeLabel,
@@ -585,6 +587,8 @@ export const PDFExportStudio: React.FC = () => {
       setIsCompiling(false);
     }
   };
+
+
 
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-slate-50 dark:bg-slate-950 px-4 sm:px-6 pb-6" id="pdf-studio-view">
@@ -1202,8 +1206,6 @@ export const PDFExportStudio: React.FC = () => {
               </div>
             </div>
           </div>
-
-
 
       </div>
 

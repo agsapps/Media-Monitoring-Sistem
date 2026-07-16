@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAppState } from '../AppContext';
 import { generatePDFReport } from '../utils/pdfReportGenerator';
-import { OSMMap } from './OSMMap';
+import { OSMMap, normalizeProvinceName } from './OSMMap';
 import { safeHtml2Canvas } from '../utils/safeHtml2Canvas';
 import { HighlightCarousel } from './HighlightCarousel';
 import { DateRangeSlider } from './DateRangeSlider';
@@ -4047,7 +4047,10 @@ export const DashboardView: React.FC = () => {
                   className="landscape:col-span-4 lg:col-span-4 w-full flex flex-col h-full"
                 >
                   {(() => {
-                    const pData = provinceStats[selectedProvince] || { newsCount: 0, positif: 0, negatif: 0, netral: 0, criticalIssues: [] };
+                    const statsKey = Object.keys(provinceStats).find(
+                      k => normalizeProvinceName(k) === normalizeProvinceName(selectedProvince)
+                    );
+                    const pData = (statsKey ? provinceStats[statsKey] : null) || { newsCount: 0, positif: 0, negatif: 0, netral: 0, criticalIssues: [] };
                     const total = pData.newsCount || 1;
                     const posPct = Math.round((pData.positif / total) * 100);
                     const negPct = Math.round((pData.negatif / total) * 100);

@@ -41,8 +41,8 @@ export const LoginGate: React.FC = () => {
         className="w-full max-w-md bg-white dark:bg-[#121118]/90 border border-slate-205 dark:border-white/5 rounded-[24px] shadow-2xl p-6 sm:p-8"
       >
         <div className="flex flex-col items-center text-center mb-6">
-          <div className="w-20 h-20 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-white/5 p-3 flex items-center justify-center shadow-md mb-3.5">
-            <Logo className="w-14 h-14" />
+          <div className="w-24 h-24 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-white/5 p-3 flex items-center justify-center shadow-md mb-3.5 animate-fade-in">
+            <Logo className="w-18 h-18" />
           </div>
           <h2 className="text-xl font-black font-display text-slate-900 dark:text-white tracking-tight uppercase leading-none">
             LOGIN

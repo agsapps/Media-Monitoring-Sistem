@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAppState } from '../AppContext';
 import { 
   Settings, Save, ShieldCheck, Sparkles, Search, 
-  Play, RefreshCw, Clock, Terminal, Check, Plus, Trash2
+  Play, RefreshCw, Clock, Terminal, Check, Plus, Trash2,
+  ExternalLink, Database, AlertCircle, Activity
 } from 'lucide-react';
 import { ActivityLog } from '../types';
 
@@ -48,10 +49,74 @@ export const SettingsView: React.FC = () => {
   const [openSerpApiKey, setOpenSerpApiKey] = useState<string>(settings.openSerpApiKey || '');
   const [twitterApiIoKey, setTwitterApiIoKey] = useState<string>((settings as any).twitterApiIoKey || '');
   const [newsApiKey, setNewsApiKey] = useState<string>((settings as any).newsApiKey || '');
+  const [fonnteTarget, setFonnteTarget] = useState<string>((settings as any).fonnteTarget || '6281902052373');
+  const [fonnteTargets, setFonnteTargets] = useState<string[]>((settings as any).fonnteTargets || ['6281902052373']);
+  const [fonnteCategories, setFonnteCategories] = useState<string[]>((settings as any).fonnteCategories || ['Negatif']);
+  const [whatsappProvider, setWhatsappProvider] = useState<'fonnte' | 'openwa'>((settings as any).whatsappProvider || 'openwa');
+  const [openWaVpsUrl, setOpenWaVpsUrl] = useState<string>((settings as any).openWaVpsUrl || '');
+  const [openWaToken, setOpenWaToken] = useState<string>((settings as any).openWaToken || '');
+  const [newTargetInput, setNewTargetInput] = useState<string>('');
   const [savingSettings, setSavingSettings] = useState(false);
   const [triggeringCrawl, setTriggeringCrawl] = useState(false);
   const [schedulerLogs, setSchedulerLogs] = useState<ActivityLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
+
+  // --- POSTGRES CUSTOM CONNECTION TEST & LOG STATES ---
+  const [dbTestStatus, setDbTestStatus] = useState<'idle' | 'testing' | 'success' | 'failed'>('idle');
+  const [dbTestMessage, setDbTestMessage] = useState<string>('');
+  const [dbConnectionLogs, setDbConnectionLogs] = useState<any[]>([]);
+  const [loadingDbLogs, setLoadingDbLogs] = useState<boolean>(false);
+
+  const fetchDbConnectionLogs = async () => {
+    setLoadingDbLogs(true);
+    try {
+      const res = await authFetch('/api/admin/postgres-connection-logs');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setDbConnectionLogs(data.logs || []);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch DB connection logs:', err);
+    } finally {
+      setLoadingDbLogs(false);
+    }
+  };
+
+  const handleTestPostgresConnection = async () => {
+    if (dbTestStatus === 'testing') return;
+    setDbTestStatus('testing');
+    setDbTestMessage('Menghubungkan ke database PostgreSQL kustom Anda...');
+    showToast('Memulai pengujian koneksi database...', 'info');
+    try {
+      const res = await authFetch('/api/admin/postgres-test', {
+        method: 'POST'
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setDbTestStatus('success');
+        setDbTestMessage(data.message || 'Koneksi Berhasil!');
+        showToast(data.message || 'Koneksi database kustom berhasil!', 'success');
+      } else {
+        setDbTestStatus('failed');
+        setDbTestMessage(data.message || data.error || 'Koneksi Gagal!');
+        showToast(data.message || 'Koneksi database kustom gagal!', 'error');
+      }
+    } catch (err: any) {
+      setDbTestStatus('failed');
+      setDbTestMessage(`Koneksi Gagal: ${err.message || err}`);
+      showToast('Koneksi terputus saat menguji database.', 'error');
+    } finally {
+      fetchDbConnectionLogs();
+    }
+  };
+
+  useEffect(() => {
+    fetchDbConnectionLogs();
+    const interval = setInterval(fetchDbConnectionLogs, 5000); // poll every 5 seconds
+    return () => clearInterval(interval);
+  }, []);
 
   // --- KEYWORD MANAGEMENT STATES ---
   const [newKeywordInput, setNewKeywordInput] = useState('');
@@ -132,6 +197,12 @@ export const SettingsView: React.FC = () => {
       setOpenSerpApiKey(settings.openSerpApiKey || '');
       setTwitterApiIoKey((settings as any).twitterApiIoKey || '');
       setNewsApiKey((settings as any).newsApiKey || '');
+      setFonnteTarget((settings as any).fonnteTarget || '6281902052373');
+      setFonnteTargets((settings as any).fonnteTargets || ['6281902052373']);
+      setFonnteCategories((settings as any).fonnteCategories || ['Negatif']);
+      setWhatsappProvider('openwa');
+      setOpenWaVpsUrl((settings as any).openWaVpsUrl || '');
+      setOpenWaToken((settings as any).openWaToken || '');
     }
   }, [settings]);
 
@@ -157,11 +228,45 @@ export const SettingsView: React.FC = () => {
       openSerpUrl,
       openSerpApiKey,
       twitterApiIoKey,
-      newsApiKey
+      newsApiKey,
+      fonnteToken: '',
+      fonnteTarget,
+      fonnteTargets,
+      fonnteCategories,
+      whatsappProvider: 'openwa',
+      openWaVpsUrl,
+      openWaToken
     });
     setSavingSettings(false);
     if (success) {
       fetchSchedulerLogs();
+    }
+  };
+
+  const addTargetNumber = () => {
+    if (!newTargetInput.trim()) return;
+    const cleaned = newTargetInput.trim().replace(/[^0-9]/g, '');
+    if (!cleaned) return;
+    if (fonnteTargets.includes(cleaned)) {
+      showToast('Nomor sudah ada di dalam daftar.', 'error');
+      return;
+    }
+    setFonnteTargets([...fonnteTargets, cleaned]);
+    setNewTargetInput('');
+    showToast('Nomor penerima baru berhasil ditambahkan.', 'success');
+  };
+
+  const removeTargetNumber = (num: string) => {
+    const filtered = fonnteTargets.filter(item => item !== num);
+    setFonnteTargets(filtered);
+    showToast('Nomor penerima berhasil dihapus.', 'info');
+  };
+
+  const toggleFonnteCategory = (catName: string) => {
+    if (fonnteCategories.includes(catName)) {
+      setFonnteCategories(fonnteCategories.filter(c => c !== catName));
+    } else {
+      setFonnteCategories([...fonnteCategories, catName]);
     }
   };
 
@@ -614,6 +719,8 @@ export const SettingsView: React.FC = () => {
                     Digunakan untuk memonitor ribuan situs berita online global dan nasional secara real-time via NewsAPI.org.
                   </p>
                 </div>
+
+
               </div>
             </div>
 
@@ -841,6 +948,122 @@ export const SettingsView: React.FC = () => {
                 <span className="text-[9.5px] px-2 py-0.5 rounded-md font-bold bg-amber-55 bg-amber-50 dark:bg-amber-950/35 text-amber-700 dark:text-amber-400">
                   Siaga (Standby)
                 </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Custom PostgreSQL Connection Monitoring Card */}
+          <div className="p-5 bg-white dark:bg-[#121118] border border-slate-150 dark:border-white/5 rounded-2xl shadow-xs space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase">Database Kustom</span>
+                <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-none flex items-center gap-1.5">
+                  <Database className="w-3.5 h-3.5 text-indigo-500" />
+                  Koneksi PostgreSQL Kustom
+                </h4>
+              </div>
+              <button
+                type="button"
+                onClick={fetchDbConnectionLogs}
+                disabled={loadingDbLogs}
+                className="p-1.5 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                title="Segarkan Log"
+              >
+                <RefreshCw className={`w-3 h-3 ${loadingDbLogs ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+
+            {/* Test Connection Button and Status */}
+            <div className="p-3.5 bg-slate-50 dark:bg-slate-950/40 rounded-xl border border-slate-100 dark:border-white/5 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                  Uji konektivitas ke database .env secara real-time:
+                </span>
+                {dbTestStatus === 'success' && (
+                  <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-bold uppercase tracking-wider border border-emerald-500/25">
+                    Sukses
+                  </span>
+                )}
+                {dbTestStatus === 'failed' && (
+                  <span className="px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[9px] font-bold uppercase tracking-wider border border-rose-500/25">
+                    Gagal
+                  </span>
+                )}
+                {dbTestStatus === 'testing' && (
+                  <span className="px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[9px] font-bold uppercase tracking-wider border border-indigo-500/25 animate-pulse">
+                    Menguji...
+                  </span>
+                )}
+              </div>
+
+              {dbTestMessage && (
+                <div className={`p-2 rounded-lg text-[9.5px] leading-relaxed font-mono ${
+                  dbTestStatus === 'success'
+                    ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/20'
+                    : dbTestStatus === 'failed'
+                      ? 'bg-rose-50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-400 border border-rose-100 dark:border-rose-900/20 break-all'
+                      : 'bg-indigo-50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/20'
+                }`}>
+                  {dbTestMessage}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleTestPostgresConnection}
+                disabled={dbTestStatus === 'testing'}
+                className="w-full py-2 px-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white text-[10.5px] font-bold rounded-lg flex items-center justify-center gap-1.5 shadow-sm transition transform active:scale-95 cursor-pointer"
+              >
+                <Activity className={`w-3.5 h-3.5 ${dbTestStatus === 'testing' ? 'animate-spin' : ''}`} />
+                <span>{dbTestStatus === 'testing' ? 'Menguji Koneksi...' : 'Uji Koneksi PostgreSQL ⚡'}</span>
+              </button>
+            </div>
+
+            {/* Connection History Log List */}
+            <div className="space-y-2">
+              <span className="block text-[9.5px] font-bold text-slate-400 dark:text-slate-500 tracking-wider uppercase">
+                Riwayat & Log Koneksi (Real-time)
+              </span>
+
+              <div className="p-3 bg-slate-950 rounded-xl border border-slate-900 font-mono text-[10px] text-slate-350 leading-relaxed max-h-48 overflow-y-auto space-y-2">
+                {dbConnectionLogs.length === 0 ? (
+                  <div className="text-center py-4 text-slate-600 italic">
+                    Belum ada riwayat koneksi database. Klik "Uji Koneksi" di atas untuk mencoba.
+                  </div>
+                ) : (
+                  dbConnectionLogs.map((log) => {
+                    const isSuccess = log.status === 'SUCCESS';
+                    return (
+                      <div key={log.id} className="border-b border-slate-900 pb-2 last:border-b-0 last:pb-0 space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className={`text-[8.5px] font-bold px-1.5 py-0.5 rounded-sm ${
+                            isSuccess 
+                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                              : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                          }`}>
+                            {log.status}
+                          </span>
+                          <span className="text-[8px] text-slate-500">
+                            {log.timestamp ? new Date(log.timestamp).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'medium' }) : ''}
+                          </span>
+                        </div>
+                        
+                        <p className="text-[9px] text-slate-300">
+                          {log.message}
+                        </p>
+                        
+                        <div className="text-[8px] text-slate-550 dark:text-slate-500 space-y-0.5 font-light">
+                          <div>Host: <span className="text-slate-400">{log.host}</span> | DB: <span className="text-slate-400">{log.database}</span></div>
+                          {log.details && (
+                            <div className="mt-1 p-1 bg-slate-900/60 rounded text-[7.5px] text-slate-450 break-all max-h-16 overflow-y-auto">
+                              {log.details}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
           </div>

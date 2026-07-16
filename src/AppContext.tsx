@@ -639,8 +639,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         setNews(data);
       }
-    } catch (err) {
-      console.error('Error fetching news list:', err);
+    } catch (err: any) {
+      const isNetworkError = err instanceof TypeError || (err.message && err.message.toLowerCase().includes('fetch'));
+      if (isNetworkError) {
+        console.warn('Network issue fetching news list:', err.message);
+      } else {
+        console.error('Error fetching news list:', err);
+      }
     }
   }, [activeTab, showToast]);
 
@@ -652,8 +657,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ]);
       if (catRes.ok) setCategories(await catRes.json());
       if (medRes.ok) setMedias(await medRes.json());
-    } catch (e) {
-      console.error('Error loading master lists:', e);
+    } catch (e: any) {
+      const isNetworkError = e instanceof TypeError || (e.message && e.message.toLowerCase().includes('fetch'));
+      if (isNetworkError) {
+        console.warn('Network issue loading master lists:', e.message);
+      } else {
+        console.error('Error loading master lists:', e);
+      }
     }
   }, []);
 
@@ -663,8 +673,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (res.ok) {
         setStats(await res.json());
       }
-    } catch (err) {
-      console.error('Error calculating dashboard numbers:', err);
+    } catch (err: any) {
+      const isNetworkError = err instanceof TypeError || (err.message && err.message.toLowerCase().includes('fetch'));
+      if (isNetworkError) {
+        console.warn('Network issue calculating dashboard numbers:', err.message);
+      } else {
+        console.error('Error calculating dashboard numbers:', err);
+      }
     }
   }, []);
 
@@ -674,8 +689,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (res.ok) {
         setLogs(await res.json());
       }
-    } catch (err) {
-      console.error('Error getting security trails:', err);
+    } catch (err: any) {
+      const isNetworkError = err instanceof TypeError || (err.message && err.message.toLowerCase().includes('fetch'));
+      if (isNetworkError) {
+        console.warn('Network issue getting security trails:', err.message);
+      } else {
+        console.error('Error getting security trails:', err);
+      }
     }
   }, []);
 
@@ -686,8 +706,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const data = await res.json();
         setHighlights(data);
       }
-    } catch (err) {
-      console.error('Error fetching highlights:', err);
+    } catch (err: any) {
+      const isNetworkError = err instanceof TypeError || (err.message && err.message.toLowerCase().includes('fetch'));
+      if (isNetworkError) {
+        console.warn('Network issue fetching highlights:', err.message);
+      } else {
+        console.error('Error fetching highlights:', err);
+      }
     }
   }, []);
 
@@ -765,8 +790,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (res.ok) {
         setKeywords(await res.json());
       }
-    } catch (err) {
-      console.error('Error fetching crawling keywords:', err);
+    } catch (err: any) {
+      const isNetworkError = err instanceof TypeError || (err.message && err.message.toLowerCase().includes('fetch'));
+      if (isNetworkError) {
+        console.warn('Network issue fetching crawling keywords:', err.message);
+      } else {
+        console.error('Error fetching crawling keywords:', err);
+      }
     }
   };
 

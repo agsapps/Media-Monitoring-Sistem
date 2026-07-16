@@ -47,8 +47,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           </button>
           
           <div className="flex flex-col items-center text-center pb-2">
-            <div className="w-28 h-28 bg-slate-50/50 dark:bg-slate-950/50 backdrop-blur-xs rounded-3xl border border-slate-100 dark:border-slate-800 p-4 flex items-center justify-center shadow-xs mb-3">
-              <Logo className="w-20 h-20" id="auth-modal-wolf-logo" />
+            <div className="w-32 h-32 bg-slate-50/50 dark:bg-slate-950/50 backdrop-blur-xs rounded-3xl border border-slate-100 dark:border-slate-800 p-4 flex items-center justify-center shadow-xs mb-3">
+              <Logo className="w-24 h-24" id="auth-modal-wolf-logo" />
             </div>
             <h2 className="text-xl font-extrabold font-display text-slate-900 dark:text-white tracking-tight">Autentikasi Portal</h2>
             <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">Sesi Kredensial Diperlukan</p>

@@ -67,9 +67,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, onLoginClic
       >
         <div className="flex flex-col flex-1 overflow-hidden h-full rounded-[24px]">
           {/* Brand Icon Header */}
-          <div className="flex items-center p-4 gap-3 border-b border-slate-100 dark:border-white/5 overflow-hidden min-h-[5.5rem] py-4 transition-all duration-500">
+          <div className={`flex items-center gap-3 border-b border-slate-100 dark:border-white/5 overflow-hidden min-h-[5.5rem] py-4 transition-all duration-500 ${isOpen ? 'p-4' : 'px-3 py-4'}`}>
             <div className="flex items-center justify-center flex-shrink-0 cursor-pointer hover:scale-105 transition" onClick={() => { setTab('portal'); if (window.innerWidth < 768) setIsOpen(false); }}>
-              <Logo className="w-10 h-10 flex-shrink-0 transition-all duration-550" />
+              <Logo className={`${isOpen ? 'w-14 h-14' : 'w-10 h-10'} flex-shrink-0 transition-all duration-300`} />
             </div>
             <div className={`transition-all duration-500 flex-1 min-w-0 origin-left ${
               isOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4 pointer-events-none scale-95'

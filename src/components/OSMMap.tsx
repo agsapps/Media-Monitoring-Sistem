@@ -14,12 +14,12 @@ const PROVINCE_COORDINATES: ProvinceCoords = {
   'Sumatera Utara': [2.1121, 99.1386],
   'Sumatera Barat': [-0.7399, 100.8000],
   'Riau': [0.5071, 101.5408],
-  'Kepulauan Riau': [3.9161, 108.2483],
+  'Kepulauan Riau': [1.1500, 104.4500],
   'Jambi': [-1.6101, 103.6131],
   'Sumatera Selatan': [-3.3194, 103.9144],
   'Kepulauan Bangka Belitung': [-2.7410, 106.4406],
   'Bengkulu': [-3.7928, 102.2608],
-  'Lampung': [-4.5586, 105.4000],
+  'Lampung': [-5.1300, 105.2600],
   'DKI Jakarta': [-6.2088, 106.8456],
   'Jawa Barat': [-6.9175, 107.6191],
   'Jawa Tengah': [-7.1509, 110.1402],
@@ -48,6 +48,39 @@ const PROVINCE_COORDINATES: ProvinceCoords = {
   'Papua Tengah': [-3.9511, 136.2163],
   'Papua Pegunungan': [-4.0931, 138.8540],
   'Papua Barat Daya': [-0.9329, 131.5422]
+};
+
+export const normalizeProvinceName = (name: string): string => {
+  if (!name) return 'Nasional';
+  const clean = name.trim().toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+    .replace(/^provinsi/, '')
+    .replace(/^prov/, '');
+
+  if (clean === 'diy' || clean === 'diyogyakarta' || clean === 'daerahistimewayogyakarta' || clean === 'dikyogyakarta') {
+    return 'DI Yogyakarta';
+  }
+  if (clean === 'dkijakarta' || clean === 'daerahkhususibukotajakarta' || clean === 'jakarta') {
+    return 'DKI Jakarta';
+  }
+  if (clean === 'kepri' || clean === 'kepulauanriau') {
+    return 'Kepulauan Riau';
+  }
+  if (clean === 'babel' || clean === 'kepulauanbangkabelitung' || clean === 'bangkabelitung') {
+    return 'Kepulauan Bangka Belitung';
+  }
+  if (clean === 'papuabaratdaya') return 'Papua Barat Daya';
+  if (clean === 'papuabarat') return 'Papua Barat';
+  if (clean === 'papuaselatan') return 'Papua Selatan';
+  if (clean === 'papuatengah') return 'Papua Tengah';
+  if (clean === 'papuapegunungan') return 'Papua Pegunungan';
+
+  const matchedKey = Object.keys(PROVINCE_COORDINATES).find(key => {
+    const kClean = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return kClean === clean;
+  });
+
+  return matchedKey || name;
 };
 
 interface OSMMapProps {
@@ -81,6 +114,19 @@ export const OSMMap: React.FC<OSMMapProps> = React.memo(({
     return typeof window !== 'undefined' ? window.innerWidth > 768 : true;
   });
 
+  const [isLeafletReady, setIsLeafletReady] = useState(() => typeof window !== 'undefined' && !!(window as any).L);
+
+  useEffect(() => {
+    if (isLeafletReady) return;
+    const interval = setInterval(() => {
+      if (typeof window !== 'undefined' && (window as any).L) {
+        setIsLeafletReady(true);
+        clearInterval(interval);
+      }
+    }, 50);
+    return () => clearInterval(interval);
+  }, [isLeafletReady]);
+
   const [showLatestTicker, setShowLatestTicker] = useState(false);
   const [tickerIndex, setTickerIndex] = useState(0);
 
@@ -88,9 +134,10 @@ export const OSMMap: React.FC<OSMMapProps> = React.memo(({
   const top3RecentNews = useMemo(() => {
     let source = filteredNews !== undefined ? filteredNews : (news || []);
     let filtered = [...source].filter(n => n.status === 'Published' || !n.status);
-    if (selectedProvince && selectedProvince !== 'Nasional') {
+    const normSelected = normalizeProvinceName(selectedProvince);
+    if (normSelected && normSelected !== 'Nasional') {
       filtered = filtered.filter(
-        n => (n.location || '').trim().toLowerCase() === selectedProvince.trim().toLowerCase()
+        n => normalizeProvinceName(n.location) === normSelected
       );
     }
     return filtered
@@ -309,8 +356,9 @@ export const OSMMap: React.FC<OSMMapProps> = React.memo(({
   // Helper to compile sentiment trend data of a province
   const getProvinceSentimentTrendData = (provName: string) => {
     // Collect all news for this province
+    const normProv = normalizeProvinceName(provName);
     const provinceNews = (filteredNews || []).filter(
-      (item: any) => item.location?.trim().toLowerCase() === provName.trim().toLowerCase()
+      (item: any) => normalizeProvinceName(item.location) === normProv
     );
 
     if (provinceNews.length === 0) return [];
@@ -484,7 +532,10 @@ export const OSMMap: React.FC<OSMMapProps> = React.memo(({
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
       subdomains: 'abcd',
       maxZoom: 20,
-      crossOrigin: true
+      crossOrigin: true,
+      updateWhenIdle: true, // Only load tiles when panning has ended to save network bandwidth and avoid browser rendering lag
+      updateWhenZooming: false, // Turn off continuous tile loading during zooming animations to maintain buttery-smooth rendering
+      keepBuffer: 4 // Cache 4 lines of offscreen tiles in memory to instantly render them when panning back slightly
     }).addTo(mapInstance);
 
     tileLayerRef.current = tileLayerInstance;
@@ -506,7 +557,7 @@ export const OSMMap: React.FC<OSMMapProps> = React.memo(({
       });
       quakesMarkersRef.current = [];
     };
-  }, []);
+  }, [isLeafletReady]);
 
   // Update Tile Layer if dark/light theme changes
   useEffect(() => {
@@ -679,15 +730,16 @@ export const OSMMap: React.FC<OSMMapProps> = React.memo(({
     const L = (window as any).L;
     if (!L || !mapRef.current) return;
 
-    const coords = PROVINCE_COORDINATES[selectedProvince];
+    const normalizedSelected = normalizeProvinceName(selectedProvince);
+    const coords = PROVINCE_COORDINATES[normalizedSelected];
     if (coords) {
-      if (selectedProvince === 'Nasional') {
+      if (normalizedSelected === 'Nasional') {
         const targetZoom = isOffscreen ? 4.8 : (typeof window !== 'undefined' && window.innerWidth < 768 ? 4 : 5);
         const targetCenter: [number, number] = isOffscreen ? [-2.5, 118.0] : coords;
         mapRef.current.setView(targetCenter, targetZoom, { animate: !isOffscreen });
       } else {
-        // Zoom in a bit if we focus on a province (zoom 6), but center beautifully
-        mapRef.current.panTo(coords, { animate: !isOffscreen });
+        // Zoom to focus beautifully (zoom 7)
+        mapRef.current.setView(coords, 7, { animate: !isOffscreen });
       }
     }
   }, [selectedProvince]);
@@ -704,8 +756,11 @@ export const OSMMap: React.FC<OSMMapProps> = React.memo(({
 
     // Create markers for active or representative provinces in PROVINCE_COORDINATES
     Object.entries(PROVINCE_COORDINATES).forEach(([provinceName, coords]) => {
-      const stats = provinceStats[provinceName] || { newsCount: 0, mediaCount: 0, positif: 0, negatif: 0, netral: 0 };
-      const isSelected = selectedProvince === provinceName;
+      const statsKey = Object.keys(provinceStats).find(
+        k => normalizeProvinceName(k) === normalizeProvinceName(provinceName)
+      );
+      const stats = (statsKey ? provinceStats[statsKey] : null) || { newsCount: 0, mediaCount: 0, positif: 0, negatif: 0, netral: 0 };
+      const isSelected = normalizeProvinceName(selectedProvince) === normalizeProvinceName(provinceName);
 
       // Dynamic verification & calculation matching the sentiment data provided from the dashboard state
       let posCount = stats.positif ?? 0;
@@ -716,7 +771,7 @@ export const OSMMap: React.FC<OSMMapProps> = React.memo(({
       // Logic check: Validate and load dynamically from filteredNews if available to guarantee live visual consistency
       if (filteredNews && filteredNews.length > 0) {
         const provinceNews = filteredNews.filter(
-          item => (item.location || 'Nasional').toLowerCase().trim() === provinceName.toLowerCase().trim()
+          item => normalizeProvinceName(item.location) === normalizeProvinceName(provinceName)
         );
         if (provinceNews.length > 0) {
           let dynPos = 0;

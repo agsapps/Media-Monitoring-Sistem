@@ -87,6 +87,53 @@ const DashboardLayout: React.FC = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showTicker, setShowTicker] = useState(true);
 
+  // --- DATABASE DIAGNOSTICS FOR CUSTOM POSTGRES ---
+  const [isDiagModalOpen, setIsDiagModalOpen] = useState(false);
+  const [diagLoading, setDiagLoading] = useState(false);
+  const [diagResult, setDiagResult] = useState<any>(null);
+  const [diagError, setDiagError] = useState<string | null>(null);
+  const [diagTab, setDiagTab] = useState<'tables' | 'queries'>('tables');
+  const [diagQueries, setDiagQueries] = useState<any[]>([]);
+  const [diagQueriesLoading, setDiagQueriesLoading] = useState(false);
+
+  const fetchQueryHistory = async () => {
+    setDiagQueriesLoading(true);
+    try {
+      const res = await authFetch('/api/diagnostics/db-queries');
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setDiagQueries(data.queries || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch query logs:', err);
+    } finally {
+      setDiagQueriesLoading(false);
+    }
+  };
+
+  const runDbDiagnostics = async () => {
+    setDiagLoading(true);
+    setDiagError(null);
+    setDiagResult(null);
+    try {
+      const res = await authFetch('/api/diagnostics/db-tables');
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setDiagResult(data);
+        showToast('Diagnostik PostgreSQL berhasil dimuat!', 'success');
+      } else {
+        setDiagError(data.message || 'Gagal terhubung ke database.');
+        showToast('Koneksi PostgreSQL kustom gagal!', 'error');
+      }
+      await fetchQueryHistory();
+    } catch (err: any) {
+      setDiagError(err.message || 'Gagal menghubungi server diagnostik.');
+      showToast('Koneksi server gagal!', 'error');
+    } finally {
+      setDiagLoading(false);
+    }
+  };
+
   // Helper for Ticker (Running Text)
   const isNewItem = (item: any) => {
     const isRecent = item.createdAt ? (new Date().getTime() - new Date(item.createdAt).getTime()) / (1000 * 60 * 60) <= 24 : false;
@@ -138,6 +185,15 @@ const DashboardLayout: React.FC = () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
   }, []);
+
+  // Sync favicon with settings.logoUrl
+  React.useEffect(() => {
+    const favicon = document.getElementById('dynamic-favicon') as HTMLLinkElement;
+    if (favicon) {
+      const activeLogoUrl = settings?.logoUrl || "https://www.image2url.com/r2/default/images/1780156246537-cd69ae8e-001c-4401-bc28-6450bd31ace9.png";
+      favicon.href = activeLogoUrl;
+    }
+  }, [settings?.logoUrl]);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -560,6 +616,19 @@ const DashboardLayout: React.FC = () => {
                     )}
                   </AnimatePresence>
                 </div>
+
+                {/* Presence Group 2 - PostgreSQL Connection Diagnostics */}
+                <button
+                  onClick={() => {
+                    setIsDiagModalOpen(true);
+                    runDbDiagnostics();
+                  }}
+                  className="flex items-center gap-2 bg-indigo-500/10 dark:bg-indigo-500/20 px-3.5 py-1.5 rounded-full border border-indigo-500/20 hover:border-indigo-500/50 hover:bg-indigo-500/20 cursor-pointer select-none text-[10.5px] text-indigo-700 dark:text-indigo-400 font-extrabold shadow-xs transition active:scale-[0.98]"
+                  title="Klik untuk Diagnostik PostgreSQL Kustom"
+                >
+                  <Database className="w-3.5 h-3.5 text-indigo-500 animate-pulse" />
+                  <span>Diag Postgres</span>
+                </button>
               </div>
             )}
           </div>
@@ -931,6 +1000,292 @@ const DashboardLayout: React.FC = () => {
                     </button>
                   </div>
                 </form>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* PostgreSQL Connection Diagnostics Modal Dialog */}
+        <AnimatePresence>
+          {isDiagModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              {/* Overlay Backdrop with Blur */}
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs cursor-pointer"
+                onClick={() => setIsDiagModalOpen(false)}
+              />
+
+              {/* Modal Container */}
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                transition={{ type: "spring", duration: 0.4 }}
+                className="relative bg-white dark:bg-[#121118] border border-slate-200 dark:border-white/5 rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden p-6 z-10 flex flex-col max-h-[85vh]"
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-white/5 mb-5 shrink-0">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 bg-indigo-50 dark:bg-indigo-950/30 rounded-lg text-indigo-800 dark:text-indigo-400">
+                      <Database className="w-4 h-4" />
+                    </div>
+                    <h3 className="text-sm font-black text-slate-800 dark:text-white">Diagnostik PostgreSQL Kustom</h3>
+                  </div>
+                  <button 
+                    onClick={() => setIsDiagModalOpen(false)}
+                    className="p-1.5 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full text-slate-400 hover:text-slate-650 dark:hover:text-white transition cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto pr-1 flex flex-col min-h-0">
+                  
+                  {/* Tabs Selector */}
+                  {diagResult && !diagLoading && (
+                    <div className="flex border-b border-slate-100 dark:border-white/5 mb-4 select-none shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setDiagTab('tables')}
+                        className={`flex-1 pb-2 text-xs font-black text-center border-b-2 transition-all cursor-pointer ${
+                          diagTab === 'tables'
+                            ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400 font-extrabold'
+                            : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 font-medium'
+                        }`}
+                      >
+                        Skema & Tabel ({diagResult.tables?.length || 0})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDiagTab('queries');
+                          fetchQueryHistory();
+                        }}
+                        className={`flex-1 pb-2 text-xs font-black text-center border-b-2 transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                          diagTab === 'queries'
+                            ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400 font-extrabold'
+                            : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 font-medium'
+                        }`}
+                      >
+                        <span>Histori Query</span>
+                        <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-white/10 text-[9px] rounded-full text-slate-500 dark:text-slate-400 font-bold">
+                          {diagQueries.length}
+                        </span>
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="space-y-4 flex-1">
+                    {/* Status Banner */}
+                    {diagLoading ? (
+                      <div className="p-6 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/10 border border-indigo-100 dark:border-indigo-950/30 flex flex-col items-center justify-center gap-3">
+                        <RefreshCw className="w-8 h-8 text-indigo-500 animate-spin" />
+                        <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Menghubungkan ke PostgreSQL kustom...</p>
+                        <p className="text-[10px] text-slate-400">Memeriksa kredensial di .env dan mengambil tabel...</p>
+                      </div>
+                    ) : diagError ? (
+                      <div className="p-4.5 rounded-2xl bg-rose-50 dark:bg-rose-950/10 border border-rose-100 dark:border-rose-950/30 space-y-2">
+                        <div className="flex items-center gap-2 text-rose-800 dark:text-rose-400">
+                          <ShieldAlert className="w-5 h-5 shrink-0" />
+                          <span className="text-xs font-black">Koneksi Database Gagal!</span>
+                        </div>
+                        <p className="text-xs text-slate-600 dark:text-slate-350 bg-white/50 dark:bg-black/20 p-2.5 rounded-lg border border-rose-200/20 dark:border-white/5 font-mono text-xs overflow-x-auto max-h-36">
+                          {diagError}
+                        </p>
+                        <p className="text-[10px] text-slate-400">
+                          Silakan periksa variabel kredensial <code className="font-bold font-mono">CUSTOM_SQL_HOST</code>, <code className="font-bold font-mono">CUSTOM_SQL_USER</code>, <code className="font-bold font-mono">CUSTOM_SQL_PASSWORD</code>, dan <code className="font-bold font-mono">CUSTOM_SQL_DB_NAME</code> di panel konfigurasi <code className="font-bold font-mono">.env</code> Anda.
+                        </p>
+                      </div>
+                    ) : diagResult ? (
+                      diagTab === 'tables' ? (
+                        <div className="space-y-4">
+                          {/* Connection Success Banner */}
+                          <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/10 border border-emerald-100 dark:border-emerald-950/30 flex items-center gap-3">
+                            <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-full text-emerald-800 dark:text-emerald-400">
+                              <ShieldCheck className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <p className="text-xs font-black text-slate-800 dark:text-white">{diagResult.message}</p>
+                              <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold">Kredensial valid dan dapat diakses sepenuhnya oleh backend!</p>
+                            </div>
+                          </div>
+
+                          {/* Connection Metadata */}
+                          <div className="bg-slate-50 dark:bg-[#181622] border border-slate-200/80 dark:border-white/5 rounded-2xl p-3.5 space-y-2.5">
+                            <div className="flex items-center justify-between text-xs pb-2 border-b border-slate-200/50 dark:border-white/5">
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kredensial Terdeteksi (.env)</span>
+                              <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-700 dark:text-blue-400 font-extrabold text-[8.5px] tracking-wide rounded border border-blue-500/10">PostgreSQL Kustom Saya</span>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-3 text-xs font-semibold">
+                              <div>
+                                <span className="block text-[9px] text-slate-400 dark:text-slate-500 uppercase">Database Name</span>
+                                <span className="font-mono text-slate-800 dark:text-slate-200 font-bold break-all">{diagResult.config?.database || '-'}</span>
+                              </div>
+                              <div>
+                                <span className="block text-[9px] text-slate-400 dark:text-slate-500 uppercase">Database Host</span>
+                                <span className="font-mono text-slate-800 dark:text-slate-200 font-bold break-all">{diagResult.config?.host || '-'}</span>
+                              </div>
+                              <div className="col-span-2 pt-1">
+                                <span className="block text-[9px] text-slate-400 dark:text-slate-500 uppercase">Database User</span>
+                                <span className="font-mono text-slate-800 dark:text-slate-200 font-bold break-all">{diagResult.config?.user || '-'}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Discovered Tables List */}
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-sans">Daftar Tabel Terdeteksi ({diagResult.tables?.length || 0})</span>
+                              <span className="text-[10px] font-bold text-slate-450 uppercase font-mono">Public Schema</span>
+                            </div>
+                            
+                            {(!diagResult.tables || diagResult.tables.length === 0) ? (
+                              <div className="p-4 text-center text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-[#181622] rounded-2xl border border-dashed border-slate-200 dark:border-white/5">
+                                Tidak ditemukan tabel di dalam skema publik database.
+                              </div>
+                            ) : (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-0.5">
+                                {diagResult.tables.map((t: any) => (
+                                  <div 
+                                    key={t.name}
+                                    className="p-2.5 bg-slate-50 dark:bg-white/[0.03] hover:bg-slate-100 hover:dark:bg-white/[0.06] border border-slate-150 dark:border-white/5 rounded-xl flex items-center justify-between transition-all"
+                                  >
+                                    <div className="flex items-center gap-1.5 truncate">
+                                      <FileText className="w-3.5 h-3.5 text-indigo-500/80 shrink-0" />
+                                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate font-mono">{t.name}</span>
+                                    </div>
+                                    <span className="px-1.5 py-0.5 bg-slate-150 dark:bg-white/10 rounded-md text-[9.5px] font-mono font-bold text-slate-500 dark:text-slate-400">
+                                      {t.columnCount} col
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        /* Queries history log tab */
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between shrink-0">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-sans">Histori Query (10 Terakhir)</span>
+                            <button
+                              type="button"
+                              onClick={fetchQueryHistory}
+                              disabled={diagQueriesLoading}
+                              className="text-[9.5px] font-extrabold text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 cursor-pointer flex items-center gap-1 transition-all select-none"
+                            >
+                              <RefreshCw className={`w-3 h-3 ${diagQueriesLoading ? 'animate-spin' : ''}`} />
+                              <span>Refresh Query</span>
+                            </button>
+                          </div>
+
+                          {diagQueriesLoading && diagQueries.length === 0 ? (
+                            <div className="p-10 text-center flex flex-col items-center justify-center gap-2">
+                              <RefreshCw className="w-6 h-6 animate-spin text-indigo-500" />
+                              <span className="text-xs font-semibold text-slate-500">Memuat log histori...</span>
+                            </div>
+                          ) : diagQueries.length === 0 ? (
+                            <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-[#181622] rounded-2xl border border-dashed border-slate-200 dark:border-white/5 font-sans">
+                              Belum ada query yang dijalankan backend sejak aplikasi dihidupkan.
+                            </div>
+                          ) : (
+                            <div className="space-y-3 max-h-[360px] overflow-y-auto pr-0.5">
+                              {diagQueries.map((entry: any, i: number) => (
+                                <div 
+                                  key={i} 
+                                  className="p-3 bg-slate-50 dark:bg-white/[0.03] border border-slate-200/60 dark:border-white/5 rounded-2xl space-y-2 hover:border-indigo-500/10 dark:hover:border-indigo-500/20 transition-all"
+                                >
+                                  {/* Entry header metadata */}
+                                  <div className="flex items-center justify-between text-[10px]">
+                                    <div className="flex items-center gap-2 font-sans font-bold">
+                                      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8.5px] tracking-wider uppercase font-black ${
+                                        entry.status === 'SUCCESS' 
+                                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' 
+                                          : 'bg-rose-500/10 text-rose-600 dark:text-rose-450'
+                                      }`}>
+                                        <span className={`w-1.5 h-1.5 rounded-full ${entry.status === 'SUCCESS' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                                        {entry.status}
+                                      </span>
+                                      <span className="font-mono text-slate-400 dark:text-slate-500 font-semibold">
+                                        {new Date(entry.timestamp).toLocaleTimeString()}
+                                      </span>
+                                    </div>
+                                    <span className="font-mono text-slate-500 dark:text-slate-400 font-extrabold bg-slate-150 dark:bg-white/10 px-1.5 py-0.5 rounded text-[9px]">
+                                      {entry.duration} ms
+                                    </span>
+                                  </div>
+
+                                  {/* Entry Query Text Container */}
+                                  <div className="relative group">
+                                    <pre className="font-mono text-[9.5px] leading-relaxed break-all bg-slate-900 text-emerald-400 dark:bg-black p-3 rounded-xl border border-white/5 select-all font-semibold max-h-36 overflow-y-auto overflow-x-hidden whitespace-pre-wrap">
+                                      {entry.query}
+                                    </pre>
+                                  </div>
+
+                                  {/* Params JSON if exists and non-empty */}
+                                  {entry.params && entry.params.length > 0 && (
+                                    <div className="font-sans text-[9px] text-slate-400 dark:text-slate-500 flex items-center gap-1.5 bg-slate-100/50 dark:bg-white/[0.01] p-1.5 rounded-lg border border-slate-200/20 dark:border-white/5 truncate">
+                                      <span className="font-black uppercase tracking-wider text-[8px] text-indigo-500">Parameters:</span>
+                                      <code className="font-mono font-bold text-slate-650 dark:text-slate-350 truncate">{JSON.stringify(entry.params)}</code>
+                                    </div>
+                                  )}
+
+                                  {/* Error string if failure */}
+                                  {entry.status === 'FAILED' && entry.error && (
+                                    <div className="p-2 rounded-lg bg-rose-500/5 border border-rose-500/10 text-rose-600 dark:text-rose-400 font-mono text-[9px] leading-normal whitespace-pre-wrap">
+                                      <span className="font-black uppercase tracking-wider text-[8px] mr-1 block text-rose-500">Error Message:</span>
+                                      {entry.error}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    ) : (
+                      <div className="p-6 text-center text-xs text-slate-500 dark:text-slate-400">
+                        Klik tombol dibawah untuk melakukan pengujian diagnostik koneksi database.
+                      </div>
+                    )}
+                  </div>
+
+                </div>
+
+                {/* Footer buttons */}
+                <div className="mt-5 pt-3.5 border-t border-slate-100 dark:border-white/5 flex gap-3 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setIsDiagModalOpen(false)}
+                    className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-[#181622] dark:hover:bg-slate-800/80 rounded-xl text-xs font-bold text-slate-650 dark:text-slate-350 transition cursor-pointer"
+                  >
+                    Tutup
+                  </button>
+                  <button
+                    type="button"
+                    onClick={runDbDiagnostics}
+                    disabled={diagLoading}
+                    className="flex-1 py-2.5 bg-indigo-800 hover:bg-indigo-900 dark:bg-indigo-700 dark:hover:bg-indigo-800 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-800/20 dark:shadow-none transition cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    {diagLoading ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Menguji...</span>
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        <span>Mulai Diagnostik</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
               </motion.div>
             </div>
           )}

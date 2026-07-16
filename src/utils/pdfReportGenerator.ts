@@ -347,9 +347,60 @@ export function drawSentimentBadge(doc: jsPDF, sentiment: string, x: number, y: 
 }
 
 /**
+ * Automatically compress a base64 image down to smaller size and convert to JPEG format.
+ */
+export function compressBase64Image(base64Str: string, maxW = 800, maxH = 800, quality = 0.6): Promise<string> {
+  return new Promise((resolve) => {
+    if (!base64Str || !base64Str.startsWith('data:image')) {
+      return resolve(base64Str);
+    }
+    if (typeof window === "undefined" || typeof document === "undefined") {
+      return resolve(base64Str);
+    }
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        let width = img.width;
+        let height = img.height;
+        if (width > maxW || height > maxH) {
+          if (width > height) {
+            height = Math.round((height * maxW) / width);
+            width = maxW;
+          } else {
+            width = Math.round((width * maxH) / height);
+            height = maxH;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = "#FFFFFF";
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL('image/jpeg', quality);
+          resolve(compressed);
+        } else {
+          resolve(base64Str);
+        }
+      } catch (err) {
+        console.warn("Failed to compress image canvas draw:", err);
+        resolve(base64Str);
+      }
+    };
+    img.onerror = () => {
+      resolve(base64Str);
+    };
+    img.src = base64Str;
+  });
+}
+
+/**
  * Enterprise presentation portrait PDF reporter representing Media Monitoring.
  */
-export function generatePDFReport(
+export async function generatePDFReport(
   reportTitle: string,
   reportType: 'Weekly' | 'Monthly' | 'Custom',
   dateString: string,
@@ -368,11 +419,39 @@ export function generatePDFReport(
   highlights?: any[],
   filteredNews?: any[],
   customLogo?: string,
-  uploadedImages?: string[],
-  customLogoRight?: string
+  uploadedImages?: any[],
+  customLogoRight?: string,
+  returnBase64Only?: boolean
 ) {
-  // 1. Create a Portrait jsPDF Document
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  // 0. Automatically compress all images to dramatically decrease PDF output file size
+  if (customLogo) {
+    customLogo = await compressBase64Image(customLogo, 500, 500, 0.7);
+  }
+  if (customLogoRight) {
+    customLogoRight = await compressBase64Image(customLogoRight, 500, 500, 0.7);
+  }
+  if (mapImgUrl) {
+    mapImgUrl = await compressBase64Image(mapImgUrl, 1000, 600, 0.7);
+  }
+  if (uploadedImages && uploadedImages.length > 0) {
+    uploadedImages = await Promise.all(
+      uploadedImages.map(async (imgItem: any) => {
+        if (typeof imgItem === 'string') {
+          return await compressBase64Image(imgItem, 800, 800, 0.6);
+        } else if (imgItem && typeof imgItem === 'object' && imgItem.src) {
+          const compressedSrc = await compressBase64Image(imgItem.src, 800, 800, 0.6);
+          return {
+            ...imgItem,
+            src: compressedSrc
+          };
+        }
+        return imgItem;
+      })
+    );
+  }
+
+  // 1. Create a Portrait jsPDF Document with flate compression enabled
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
 
   const colorPalette = {
     darkSlate: [15, 23, 42],      // Slate 900
@@ -1698,9 +1777,17 @@ export function generatePDFReport(
   }
 
   // ===================================
-  // SAVE DOCUMENT
+  // SAVE DOCUMENT / RETURN BASE64
   // ===================================
   const formattedDate = new Date().toISOString().slice(0, 10);
   const filePrefix = reportType === 'Weekly' ? 'Laporan-Mingguan' : (reportType === 'Monthly' ? 'Laporan-Bulanan' : 'Laporan-Kustom');
+  
+  const dataUri = doc.output('datauristring');
+  
+  if (returnBase64Only) {
+    return dataUri;
+  }
+  
   doc.save(`${filePrefix}_A4_Portrait_MediaMonitoring_${formattedDate}.pdf`);
+  return dataUri;
 }

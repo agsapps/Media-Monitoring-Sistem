@@ -202,8 +202,13 @@ export const ManageView: React.FC = () => {
           console.warn('[Crawler Logs] Received non-JSON response from /api/crawler-logs:', response.status);
         }
       }
-    } catch (err) {
-      console.error('Error fetching crawler logs:', err);
+    } catch (err: any) {
+      const isNetworkError = err instanceof TypeError || (err.message && err.message.toLowerCase().includes('fetch'));
+      if (isNetworkError) {
+        console.warn('Network issue fetching crawler logs in ManageView:', err.message);
+      } else {
+        console.error('Error fetching crawler logs:', err);
+      }
     } finally {
       setIsFetchingLogs(false);
     }

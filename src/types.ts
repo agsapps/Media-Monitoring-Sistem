@@ -90,6 +90,13 @@ export interface CustomSettings {
   pdfExportLogoCoverRight?: string;
   twitterApiIoKey?: string;
   newsApiKey?: string;
+  fonnteToken?: string;
+  fonnteTarget?: string;
+  fonnteTargets?: string[];
+  fonnteCategories?: string[];
+  whatsappProvider?: 'fonnte' | 'openwa';
+  openWaVpsUrl?: string;
+  openWaToken?: string;
 }
 
 export interface CrawlKeyword {

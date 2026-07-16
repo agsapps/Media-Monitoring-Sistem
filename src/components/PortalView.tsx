@@ -494,18 +494,6 @@ export const PortalView: React.FC = () => {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleShare = (item: NewsItem, platform: 'wa' | 'x' | 'tel') => {
-    const cleanTitle = encodeURIComponent(item.title);
-    const link = encodeURIComponent(item.link || `${window.location.origin}/news/${item.id}`);
-    
-    let url = '';
-    if (platform === 'wa') {
-      url = `https://api.whatsapp.com/send?text=*${cleanTitle}*%0A%0ASumber:%20${link}`;
-    }
-
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
-
   // ===================================
   // enterprise hI-FIDELITY PDF GENERATOR
   // ===================================
@@ -2128,19 +2116,8 @@ export const PortalView: React.FC = () => {
             </div>
 
             {/* Modal Footer Share Tools */}
-            <div className="p-4 md:p-5 bg-slate-50/50 dark:bg-slate-950/40 border-t border-slate-50 dark:border-slate-850 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="p-4 md:p-5 bg-slate-50/50 dark:bg-slate-950/40 border-t border-slate-50 dark:border-slate-850 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
               
-              <div className="flex flex-wrap gap-2 text-[11px] font-medium text-slate-605 dark:text-slate-400 items-center">
-                <span>Bagikan Isu:</span>
-                <button
-                  onClick={() => handleShare(activeItem, 'wa')}
-                  className="px-2 py-1 bg-white dark:bg-slate-900 hover:bg-emerald-55 dark:hover:bg-emerald-950 border border-slate-200 dark:border-slate-800 hover:border-emerald-350 rounded-lg text-emerald-600 dark:text-emerald-400 transition cursor-pointer flex items-center gap-1 shadow-sm hover:shadow"
-                >
-                  <MessageSquare className="w-3.5 h-3.5" id="share-wa-icon" />
-                  <span>WhatsApp</span>
-                </button>
-              </div>
-
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => generatePDFReport(activeItem)}

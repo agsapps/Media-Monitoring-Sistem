@@ -1,4 +1,8 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
+import compression from 'compression';
 import { chromium } from 'playwright';
 import { GoogleDecoder } from 'google-news-url-decoder';
 
@@ -23,7 +27,7 @@ import https from 'https';
 import http from 'http';
 import * as cheerio from 'cheerio';
 import { eq, sql, desc } from 'drizzle-orm';
-import { db as sqlDb } from './src/db/index.ts';
+import { db as sqlDb, refreshDatabaseConnection, pool, ensureConnection, queryHistory } from './src/db/index.ts';
 import {
   users as sqlUsers,
   categories as sqlCategories,
@@ -37,6 +41,9 @@ import {
   aiTokenUsage as sqlAiTokenUsage
 } from './src/db/schema.ts';
 
+// Bypass SSL/TLS Certificate Verification Errors globally for scraping websites with self-signed or invalid certs
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
 // =========================================================================
 // CONFIGURATION (CONFIG) - ANTI-BLOCKING, DELAYS, AND SCRAPING BEHAVIORS
 // =========================================================================
@@ -49,7 +56,7 @@ const SCRAPER_CONFIG = {
   timeoutMs: 9000,
 
   // Aktifkan detail logging analisis error jika proses scraping gagal
-  showDetailedErrorLogs: true,
+  showDetailedErrorLogs: false,
 
   // Kumpulan User-Agent browser modern yang realistis agar terhindar dari bot detection / IP blocking
   userAgents: [
@@ -81,6 +88,7 @@ async function sleepRandomDelay(): Promise<void> {
 
 // Initialize App
 const app = express();
+app.use(compression());
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 // Universal CORS, preflight options, and request logging middleware
@@ -182,6 +190,68 @@ app.get('/api/debug-status', (req, res) => {
     distExists: fs.existsSync(distPath),
     distContent: fs.existsSync(distPath) ? fs.readdirSync(distPath) : null,
     rootContent: fs.readdirSync(process.cwd())
+  });
+});
+
+// Diagnostic endpoint to verify CUSTOM_SQL_DB_NAME database tables connection
+app.get('/api/diagnostics/db-tables', async (req, res) => {
+  try {
+    const host = process.env.CUSTOM_SQL_HOST;
+    const user = process.env.CUSTOM_SQL_USER;
+    const databaseName = process.env.CUSTOM_SQL_DB_NAME;
+
+    if (!host || !user || !databaseName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Variabel lingkungan CUSTOM_SQL_* belum diatur lengkap di file .env!',
+        config: { host: host || null, user: user || null, dbName: databaseName || null }
+      });
+    }
+
+    // Fetch list of tables with column count from the active Postgres pool
+    const tableRes = await pool.query(`
+      SELECT table_name, 
+             (SELECT count(*) FROM information_schema.columns WHERE table_name = t.table_name) as column_count
+      FROM information_schema.tables t
+      WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+      ORDER BY table_name;
+    `);
+
+    const tables = tableRes.rows.map(row => ({
+      name: row.table_name,
+      columnCount: parseInt(row.column_count || '0', 10)
+    }));
+
+    res.json({
+      success: true,
+      message: 'Koneksi ke PostgreSQL kustom berhasil!',
+      config: {
+        host: host,
+        database: databaseName,
+        user: user,
+      },
+      tables
+    });
+  } catch (err: any) {
+    console.error('[Diagnostics Error] Failed to connect & fetch tables:', err);
+    res.status(500).json({
+      success: false,
+      message: `Gagal menghubungkan ke database: ${err.message}`,
+      error: err.stack || err.message,
+      config: {
+        host: process.env.CUSTOM_SQL_HOST || null,
+        database: process.env.CUSTOM_SQL_DB_NAME || null,
+        user: process.env.CUSTOM_SQL_USER || null
+      }
+    });
+  }
+});
+
+// Diagnostic endpoint to get the last 10 query history log entries
+app.get('/api/diagnostics/db-queries', (req, res) => {
+  res.json({
+    success: true,
+    queries: queryHistory.slice(0, 10)
   });
 });
 
@@ -1909,6 +1979,13 @@ const defaultSettings = {
   openSerpApiKey: '',
   twitterApiIoKey: '',
   newsApiKey: '',
+  fonnteToken: 'esFzhYvkCUCJ1bpndE43EBFTYVAEJfAHX5UX7YPr',
+  fonnteTarget: '6281902052373',
+  fonnteTargets: ['6281902052373'],
+  fonnteCategories: ['Negatif'],
+  whatsappProvider: 'openwa' as 'fonnte' | 'openwa',
+  openWaVpsUrl: 'http://101.32.141.172:3005',
+  openWaToken: '',
 };
 
 const defaultKeywords = [
@@ -2275,6 +2352,37 @@ const sortNewsList = (newsItems: any[]): any[] => {
   });
 };
 
+const precalculateTimestamps = () => {
+  console.log('[Database] Precalculating timestamps and cleaning titles for optimal performance...');
+  if (database.news && Array.isArray(database.news)) {
+    database.news.forEach(n => {
+      n.title = cleanNewsTitle(n.title);
+      getNewsUnixTime(n);
+      if (typeof n._createdTime !== 'number') {
+        n._createdTime = n.createdAt ? new Date(n.createdAt).getTime() : 0;
+      }
+    });
+  }
+  if (database.socialNews && Array.isArray(database.socialNews)) {
+    database.socialNews.forEach(sn => {
+      if (typeof sn._timeValue !== 'number') {
+        sn._timeValue = new Date(sn.waktuPosting || sn.tanggalInput || 0).getTime();
+      }
+    });
+    database.socialNews.sort((a, b) => (b._timeValue || 0) - (a._timeValue || 0));
+  }
+  if (database.logs && Array.isArray(database.logs)) {
+    database.logs.sort((a, b) => {
+      const timeA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+      const timeB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+      return timeB - timeA;
+    });
+    if (database.logs.length > 100) {
+      database.logs = database.logs.slice(0, 100);
+    }
+  }
+};
+
 const isGenericDomainLink = (urlStr: string): boolean => {
   try {
     const cleanUrl = urlStr.trim().toLowerCase().replace(/\/$/, '');
@@ -2382,7 +2490,11 @@ const isSocialNewsLinkDuplicate = (linkStr: string, currentId?: string): boolean
   });
 };
 
-const hasSqlConfig = !!(process.env.SQL_HOST && process.env.SQL_USER && process.env.SQL_PASSWORD && process.env.SQL_DB_NAME);
+let hasSqlConfig = !!(process.env.CUSTOM_SQL_HOST && process.env.CUSTOM_SQL_USER && process.env.CUSTOM_SQL_PASSWORD && process.env.CUSTOM_SQL_DB_NAME);
+
+const updateSqlConfigFlag = () => {
+  hasSqlConfig = !!(process.env.CUSTOM_SQL_HOST && process.env.CUSTOM_SQL_USER && process.env.CUSTOM_SQL_PASSWORD && process.env.CUSTOM_SQL_DB_NAME);
+};
 
 const saveToFirestoreCol = async (collectionName: string, id: string, data: any) => {
   // 1. Write to PostgreSQL in background (only if configured)
@@ -2578,10 +2690,445 @@ const deleteFromFirestoreCol = async (collectionName: string, id: string) => {
   }
 };
 
+let isExternalSyncing = false;
+
+const syncFromExternalSource = async () => {
+  const EXTERNAL_BASE_URL = 'https://media-monitoring-745708369616.asia-southeast1.run.app';
+  console.log('[External Sync] Starting background data integration from external Media Monitoring server...');
+  console.log(`[External Sync] Source URL: ${EXTERNAL_BASE_URL}`);
+
+  // Helper for batching with conflict handling
+  const batchInsert = async (table: any, items: any[], tableName: string) => {
+    if (!items || items.length === 0) return;
+    const batchSize = 100;
+    console.log(`[External Sync] Syncing ${items.length} items to ${tableName}...`);
+    let inserted = 0;
+    for (let i = 0; i < items.length; i += batchSize) {
+      const chunk = items.slice(i, i + batchSize);
+      try {
+        await sqlDb.insert(table).values(chunk).onConflictDoNothing();
+        inserted += chunk.length;
+      } catch (err: any) {
+        console.error(`[External Sync ERROR] Error inserting chunk into ${tableName}:`, err.message);
+      }
+    }
+    console.log(`[External Sync] Completed ${tableName} sync: added/checked ${inserted} items.`);
+  };
+
+  // 1. Settings
+  try {
+    const settingsRes = await fetch(`${EXTERNAL_BASE_URL}/api/settings`);
+    if (settingsRes.ok) {
+      const settingsObj = await settingsRes.json();
+      const mappedSettings = Object.entries(settingsObj).map(([key, val]) => ({
+        key,
+        value: typeof val === 'object' ? JSON.stringify(val) : String(val),
+      }));
+      for (const item of mappedSettings) {
+        await sqlDb.insert(sqlSettings)
+          .values(item)
+          .onConflictDoUpdate({
+            target: sqlSettings.key,
+            set: { value: item.value }
+          });
+      }
+      console.log('[External Sync] Settings synced successfully.');
+    }
+  } catch (err: any) {
+    console.error('[External Sync ERROR] Settings:', err.message);
+  }
+
+  // 2. Categories
+  try {
+    const res = await fetch(`${EXTERNAL_BASE_URL}/api/categories`);
+    if (res.ok) {
+      const items = await res.json();
+      const mapped = items.map((item: any) => ({
+        id: item.id,
+        color: item.color || null,
+        slug: item.slug || null,
+        name: item.name,
+      }));
+      await batchInsert(sqlCategories, mapped, 'categories');
+    }
+  } catch (err: any) {
+    console.error('[External Sync ERROR] Categories:', err.message);
+  }
+
+  // 3. Medias
+  try {
+    const res = await fetch(`${EXTERNAL_BASE_URL}/api/medias`);
+    if (res.ok) {
+      const items = await res.json();
+      const mapped = items.map((item: any) => ({
+        id: item.id,
+        date: item.date || null,
+        name: item.name,
+        provinsi: item.provinsi || null,
+        type: item.type || null,
+        reach: item.reach || null,
+      }));
+      await batchInsert(sqlMedias, mapped, 'medias');
+    }
+  } catch (err: any) {
+    console.error('[External Sync ERROR] Medias:', err.message);
+  }
+
+  // 4. Keywords
+  try {
+    const res = await fetch(`${EXTERNAL_BASE_URL}/api/keywords`);
+    if (res.ok) {
+      const items = await res.json();
+      const mapped = items.map((item: any) => ({
+        id: item.id,
+        text: item.text,
+        active: typeof item.active === 'boolean' ? item.active : true,
+        createdAt: item.createdAt || null,
+      }));
+      await batchInsert(sqlKeywords, mapped, 'keywords');
+    }
+  } catch (err: any) {
+    console.error('[External Sync ERROR] Keywords:', err.message);
+  }
+
+  // 5. Highlights
+  try {
+    const res = await fetch(`${EXTERNAL_BASE_URL}/api/highlights`);
+    if (res.ok) {
+      const items = await res.json();
+      const mapped = items.map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        summary: item.summary || null,
+        publishDate: item.publishDate || null,
+        publishTime: item.publishTime || null,
+        location: item.location || null,
+        categoryName: item.categoryName || null,
+        mediaName: item.mediaName || null,
+        link: item.link || null,
+        imageUrl: item.imageUrl || null,
+        sentiment: item.sentiment || null,
+        isPinned: typeof item.isPinned === 'boolean' ? item.isPinned : false,
+        orderIndex: typeof item.orderIndex === 'number' ? item.orderIndex : 0,
+        createdAt: item.createdAt || null,
+      }));
+      await batchInsert(sqlHighlights, mapped, 'highlights');
+    }
+  } catch (err: any) {
+    console.error('[External Sync ERROR] Highlights:', err.message);
+  }
+
+  // 6. News
+  try {
+    const res = await fetch(`${EXTERNAL_BASE_URL}/api/news`);
+    if (res.ok) {
+      const items = await res.json();
+      const mapped = items.map((item: any) => ({
+        id: item.id,
+        createdAt: item.createdAt || null,
+        status: item.status || null,
+        publishDate: item.publishDate || null,
+        link: item.link || null,
+        updatedAt: item.updatedAt || null,
+        mediaId: item.mediaId || null,
+        tags: Array.isArray(item.tags) ? item.tags : null,
+        title: item.title,
+        mediaName: item.mediaName || null,
+        location: item.location || null,
+        summary: item.summary || null,
+        imageUrl: item.imageUrl || null,
+        categoryId: item.categoryId || null,
+        publishTime: item.publishTime || null,
+        categoryName: item.categoryName || null,
+        statusWaktu: item.statusWaktu || null,
+        sentiment: item.sentiment || null,
+        isFeatured: typeof item.isFeatured === 'boolean' ? item.isFeatured : null,
+        unixTime: typeof item._unixTime === 'number' ? item._unixTime : (typeof item.unixTime === 'number' ? item.unixTime : null),
+        createdTime: typeof item._createdTime === 'number' ? item._createdTime : (typeof item.createdTime === 'number' ? item.createdTime : null),
+        isGeneric: typeof item._isGeneric === 'boolean' ? item._isGeneric : (typeof item.isGeneric === 'boolean' ? item.isGeneric : null),
+      }));
+      await batchInsert(sqlNews, mapped, 'news');
+    }
+  } catch (err: any) {
+    console.error('[External Sync ERROR] News:', err.message);
+  }
+
+  // 7. Social News
+  try {
+    const res = await fetch(`${EXTERNAL_BASE_URL}/api/social-news`);
+    if (res.ok) {
+      const items = await res.json();
+      const mapped = items.map((item: any) => ({
+        id: item.id,
+        lokasi: item.lokasi || null,
+        tanggalInput: item.tanggalInput || null,
+        caption: item.caption,
+        username: item.username,
+        ringkasan: item.ringkasan || null,
+        urgensi: item.urgensi || null,
+        analisis: typeof item.analisis === 'object' ? JSON.stringify(item.analisis) : (item.analisis || null),
+        sentimen: item.sentimen || null,
+        kategori: item.kategori || null,
+        waktuPosting: item.waktuPosting || null,
+        createdAt: item.createdAt || null,
+        updatedAt: item.updatedAt || null,
+        link: item.link || null,
+        jenisSosmed: item.jenisSosmed || null,
+      }));
+      await batchInsert(sqlSocialNews, mapped, 'social_news');
+    }
+  } catch (err: any) {
+    console.error('[External Sync ERROR] Social News:', err.message);
+  }
+
+  console.log('[External Sync] 🎉 Background external data integration completed successfully!');
+};
+
+// PostgreSQL Custom Connection logging and testing system
+interface PostgresConnectionLog {
+  id: string;
+  timestamp: string;
+  status: 'SUCCESS' | 'FAILED';
+  host: string;
+  database: string;
+  message: string;
+  details?: string;
+}
+
+const CONNECTION_LOGS_FILE = path.join(DATA_DIR, 'postgres-connection-logs.json');
+let connectionLogs: PostgresConnectionLog[] = [];
+
+// Load logs on startup
+try {
+  if (fs.existsSync(CONNECTION_LOGS_FILE)) {
+    connectionLogs = JSON.parse(fs.readFileSync(CONNECTION_LOGS_FILE, 'utf-8'));
+  }
+} catch (e) {
+  console.error('[Database] Failed to load connection logs from file:', e);
+}
+
+const addConnectionLog = (status: 'SUCCESS' | 'FAILED', host: string, database: string, message: string, details?: string) => {
+  const log: PostgresConnectionLog = {
+    id: 'cl_' + Math.random().toString(36).substring(2, 11),
+    timestamp: new Date().toISOString(),
+    status,
+    host: host || 'unknown',
+    database: database || 'unknown',
+    message,
+    details
+  };
+  connectionLogs.unshift(log); // newest first
+  if (connectionLogs.length > 100) {
+    connectionLogs.pop(); // keep last 100
+  }
+  try {
+    fs.writeFileSync(CONNECTION_LOGS_FILE, JSON.stringify(connectionLogs, null, 2), 'utf-8');
+  } catch (e) {
+    console.error('[Database] Failed to save connection logs to file:', e);
+  }
+};
+
+const ensureSqlTablesExist = async () => {
+  if (!hasSqlConfig) return;
+  
+  const host = process.env.CUSTOM_SQL_HOST || 'unknown';
+  const databaseName = process.env.CUSTOM_SQL_DB_NAME || 'unknown';
+
+  // Proactively test and negotiate SSL fallback if needed
+  try {
+    await ensureConnection();
+    addConnectionLog(
+      'SUCCESS',
+      host,
+      databaseName,
+      'Koneksi awal PostgreSQL saat startup berhasil diverifikasi.',
+      'Sistem berhasil terhubung ke database PostgreSQL pada startup.'
+    );
+  } catch (err: any) {
+    console.error('[Database ERROR] Connection test failed on startup:', err.message);
+    addConnectionLog(
+      'FAILED',
+      host,
+      databaseName,
+      `Koneksi awal PostgreSQL saat startup gagal: ${err.message}`,
+      err.stack || err.message
+    );
+  }
+
+  console.log('[Database] Checking / ensuring custom PostgreSQL tables exist...');
+  const tableDefinitions = [
+    {
+      name: 'users',
+      sql: `CREATE TABLE IF NOT EXISTS "users" (
+        "id" text PRIMARY KEY,
+        "username" text NOT NULL,
+        "name" text NOT NULL,
+        "email" text,
+        "role" text NOT NULL,
+        "status" text,
+        "created_at" text,
+        "last_login" text,
+        "password_hash" text
+      );`
+    },
+    {
+      name: 'categories',
+      sql: `CREATE TABLE IF NOT EXISTS "categories" (
+        "id" text PRIMARY KEY,
+        "color" text,
+        "slug" text,
+        "name" text NOT NULL
+      );`
+    },
+    {
+      name: 'medias',
+      sql: `CREATE TABLE IF NOT EXISTS "medias" (
+        "id" text PRIMARY KEY,
+        "date" text,
+        "name" text NOT NULL,
+        "provinsi" text,
+        "type" text,
+        "reach" text
+      );`
+    },
+    {
+      name: 'settings',
+      sql: `CREATE TABLE IF NOT EXISTS "settings" (
+        "key" text PRIMARY KEY,
+        "value" text NOT NULL
+      );`
+    },
+    {
+      name: 'logs',
+      sql: `CREATE TABLE IF NOT EXISTS "logs" (
+        "id" text PRIMARY KEY,
+        "user_id" text,
+        "username" text NOT NULL,
+        "role" text,
+        "action" text NOT NULL,
+        "target" text,
+        "timestamp" text
+      );`
+    },
+    {
+      name: 'keywords',
+      sql: `CREATE TABLE IF NOT EXISTS "keywords" (
+        "id" text PRIMARY KEY,
+        "text" text NOT NULL,
+        "active" boolean DEFAULT true,
+        "created_at" text
+      );`
+    },
+    {
+      name: 'highlights',
+      sql: `CREATE TABLE IF NOT EXISTS "highlights" (
+        "id" text PRIMARY KEY,
+        "title" text NOT NULL,
+        "summary" text,
+        "publish_date" text,
+        "publish_time" text,
+        "location" text,
+        "category_name" text,
+        "media_name" text,
+        "link" text,
+        "image_url" text,
+        "sentiment" text,
+        "is_pinned" boolean DEFAULT false,
+        "order_index" integer DEFAULT 0,
+        "created_at" text
+      );`
+    },
+    {
+      name: 'news',
+      sql: `CREATE TABLE IF NOT EXISTS "news" (
+        "id" text PRIMARY KEY,
+        "created_at" text,
+        "status" text,
+        "publish_date" text,
+        "link" text,
+        "updated_at" text,
+        "media_id" text,
+        "tags" jsonb,
+        "title" text NOT NULL,
+        "media_name" text,
+        "location" text,
+        "summary" text,
+        "image_url" text,
+        "category_id" text,
+        "publish_time" text,
+        "category_name" text,
+        "status_waktu" text,
+        "sentiment" text,
+        "is_featured" boolean,
+        "unix_time" double precision,
+        "created_time" double precision,
+        "is_generic" boolean
+      );`
+    },
+    {
+      name: 'social_news',
+      sql: `CREATE TABLE IF NOT EXISTS "social_news" (
+        "id" text PRIMARY KEY,
+        "lokasi" text,
+        "tanggal_input" text,
+        "caption" text NOT NULL,
+        "username" text NOT NULL,
+        "ringkasan" text,
+        "urgensi" text,
+        "analisis" text,
+        "sentimen" text,
+        "kategori" text,
+        "waktu_posting" text,
+        "created_at" text,
+        "updated_at" text,
+        "link" text,
+        "jenis_sosmed" text
+      );`
+    },
+    {
+      name: 'ai_token_usage',
+      sql: `CREATE TABLE IF NOT EXISTS "ai_token_usage" (
+        "id" text PRIMARY KEY,
+        "model" text NOT NULL,
+        "endpoint" text NOT NULL,
+        "prompt_tokens" integer NOT NULL,
+        "completion_tokens" integer NOT NULL,
+        "total_tokens" integer NOT NULL,
+        "thought_tokens" integer DEFAULT 0,
+        "cached_tokens" integer DEFAULT 0,
+        "tool_use_tokens" integer DEFAULT 0,
+        "timestamp" text NOT NULL
+      );`
+    }
+  ];
+
+  for (const table of tableDefinitions) {
+    try {
+      await sqlDb.execute(sql.raw(table.sql));
+      console.log(`[Database] Table "${table.name}" checked/created successfully.`);
+    } catch (err: any) {
+      console.error(`[Database ERROR] Failed to check/create table "${table.name}":`, err.message);
+    }
+  }
+
+  // Ensure table migration updates (e.g. newly introduced columns on existing tables)
+  try {
+    await sqlDb.execute(sql.raw(`ALTER TABLE "ai_token_usage" ADD COLUMN IF NOT EXISTS "thought_tokens" integer DEFAULT 0;`));
+    await sqlDb.execute(sql.raw(`ALTER TABLE "ai_token_usage" ADD COLUMN IF NOT EXISTS "cached_tokens" integer DEFAULT 0;`));
+    await sqlDb.execute(sql.raw(`ALTER TABLE "ai_token_usage" ADD COLUMN IF NOT EXISTS "tool_use_tokens" integer DEFAULT 0;`));
+    console.log('[Database] Migrated missing columns for "ai_token_usage" successfully.');
+  } catch (err: any) {
+    console.error('[Database ERROR] Failed to run column migrations for "ai_token_usage":', err.message);
+  }
+};
+
 const loadDatabase = async () => {
   // 1. Try loading from PostgreSQL (only if configured)
   if (hasSqlConfig) {
     try {
+      // Create tables programmatically if they don't exist
+      await ensureSqlTablesExist();
+
       console.log('[Database] Loading collections from PostgreSQL in parallel...');
       const [
         sqlSettingsRows,
@@ -2631,7 +3178,11 @@ const loadDatabase = async () => {
         database.users = sqlUsersRows;
       }
       if (sqlCategoriesRows && sqlCategoriesRows.length > 0) {
-        database.categories = sqlCategoriesRows;
+        const existingIds = new Set(sqlCategoriesRows.map((c: any) => c.id));
+        database.categories = [
+          ...sqlCategoriesRows,
+          ...defaultCategories.filter(c => !existingIds.has(c.id))
+        ];
       }
       if (sqlMediasRows && sqlMediasRows.length > 0) {
         database.medias = sqlMediasRows;
@@ -2644,6 +3195,28 @@ const loadDatabase = async () => {
           _isGeneric: n.isGeneric,
           tags: n.tags || []
         }));
+
+        // Dynamically discover custom categories present in the news table but missing from categories list
+        const existingCategoryIds = new Set(database.categories.map(c => c.id));
+        const discoveredCategories: any[] = [];
+        const seenDiscoveredIds = new Set<string>();
+
+        database.news.forEach((n: any) => {
+          if (n.categoryId && n.categoryName && !existingCategoryIds.has(n.categoryId) && !seenDiscoveredIds.has(n.categoryId)) {
+            seenDiscoveredIds.add(n.categoryId);
+            discoveredCategories.push({
+              id: n.categoryId,
+              name: n.categoryName,
+              slug: n.categoryName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+              color: 'bg-blue-500 text-white'
+            });
+          }
+        });
+
+        if (discoveredCategories.length > 0) {
+          database.categories = [...database.categories, ...discoveredCategories];
+          console.log(`[Database] Discovered ${discoveredCategories.length} additional custom categories from news table:`, discoveredCategories.map(c => c.name));
+        }
       }
       if (sqlLogsRows && sqlLogsRows.length > 0) {
         database.logs = sqlLogsRows;
@@ -2670,10 +3243,46 @@ const loadDatabase = async () => {
       }
 
       console.log(`[Database] PostgreSQL load completed. Users: ${database.users.length}, Categories: ${database.categories.length}, Medias: ${database.medias.length}, News: ${database.news.length}, Logs: ${database.logs.length}, Highlights: ${database.highlights.length}, Keywords: ${database.keywords.length}, SocialNews: ${database.socialNews.length}`);
+      precalculateTimestamps();
       saveDatabase();
+
+      // Log successful startup/load connection
+      addConnectionLog(
+        'SUCCESS', 
+        process.env.CUSTOM_SQL_HOST || '', 
+        process.env.CUSTOM_SQL_DB_NAME || '', 
+        'Koneksi berhasil! Semua tabel berhasil diverifikasi dan data dimuat ke memori.', 
+        `Ringkasan entri dimuat: Users: ${database.users.length}, News: ${database.news.length}, Categories: ${database.categories.length}`
+      );
+
+      // If SQL database is empty (0 news rows), run background external sync
+      if ((!sqlNewsRows || sqlNewsRows.length === 0) && !isExternalSyncing) {
+        console.log('[Database] PostgreSQL news table is empty! Triggering background sync from external Media Monitoring server...');
+        isExternalSyncing = true;
+        setTimeout(() => {
+          syncFromExternalSource()
+            .then(() => {
+              console.log('[Database] Background external sync complete. Reloading database rows...');
+              isExternalSyncing = false;
+              loadDatabase();
+            })
+            .catch((err) => {
+              isExternalSyncing = false;
+              console.error('[Database ERROR] Background external sync failed:', err.message);
+            });
+        }, 1000);
+      }
       return;
     } catch (err: any) {
       console.error('[Database ERROR] Failed to load from PostgreSQL. Falling back to local/Firestore:', err.message);
+      // Log connection failure
+      addConnectionLog(
+        'FAILED', 
+        process.env.CUSTOM_SQL_HOST || '', 
+        process.env.CUSTOM_SQL_DB_NAME || '', 
+        `Gagal memuat data dari PostgreSQL kustom: ${err.message}`, 
+        err.stack || err.message
+      );
     }
   } else {
     console.log('[Database] SQL not configured. Skipping SQL load and using local/Firestore.');
@@ -2727,6 +3336,14 @@ const loadDatabase = async () => {
         const firstDoc = settingsSnap.docs[0];
         database.settings = firstDoc.data() as any;
         console.log('[Database Fallback] Loaded CustomSettings from cloud.');
+        
+        // Auto-upgrade empty settings to default Open-WA VPS URL if not set
+        if (!database.settings.openWaVpsUrl || !database.settings.whatsappProvider) {
+          database.settings.openWaVpsUrl = database.settings.openWaVpsUrl || 'http://101.32.141.172:3005';
+          database.settings.whatsappProvider = database.settings.whatsappProvider || 'openwa';
+          console.log('[Database Fallback] Auto-upgrading settings with Open-WA VPS defaults...');
+          saveToFirestoreCol('settings', 'default', database.settings).catch(e => console.warn('[Database] Sync updated settings issue:', e.message));
+        }
       } else if (settingsSnap && settingsSnap.empty) {
         console.log('[Database Fallback] Cloud settings collection is empty. Populating with default settings...');
         saveToFirestoreCol('settings', 'default', database.settings).catch(e => console.warn('[Database] Sync default settings issue:', e.message));
@@ -2839,14 +3456,24 @@ const loadDatabase = async () => {
     saveDatabase();
     console.log('[Database Fallback] Local fallback database initialized.');
   }
+  
+  precalculateTimestamps();
 };
 
+let saveTimeout: NodeJS.Timeout | null = null;
 const saveDatabase = () => {
-  try {
-    fs.writeFileSync(DB_FILE, JSON.stringify(database, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('Error saving database to file:', err);
+  if (saveTimeout) {
+    clearTimeout(saveTimeout);
   }
+  saveTimeout = setTimeout(() => {
+    fs.writeFile(DB_FILE, JSON.stringify(database), 'utf-8', (err) => {
+      if (err) {
+        console.error('Error saving database asynchronously to file:', err);
+      } else {
+        console.log('[Database] Database saved asynchronously (compact mode).');
+      }
+    });
+  }, 1000); // 1000ms debounce
 };
 
 // API Helper for generating unique logs
@@ -3241,13 +3868,16 @@ app.get('/api/news', (req, res) => {
     }
   }
 
-  // Deduplicate and sort the filtered list (ensuring no duplicate URL links and order by publishDate + publishTime desc)
-  const cleanFilteredList = deduplicateNewsList(filtered);
+  // The database.news list is already completely sorted, deduplicated, and clean-titled
+  let sanitizedList = filtered;
 
-  const sanitizedList = cleanFilteredList.map(item => ({
-    ...item,
-    title: cleanNewsTitle(item.title)
-  }));
+  const { limit, all } = req.query;
+  if (limit) {
+    const maxLimit = parseInt(String(limit), 10);
+    if (!isNaN(maxLimit) && sanitizedList.length > maxLimit) {
+      sanitizedList = sanitizedList.slice(0, maxLimit);
+    }
+  }
 
   res.json(sanitizedList);
 });
@@ -3612,12 +4242,15 @@ app.post('/api/news/batch-delete', authenticateToken, requireRole(['Admin', 'Ana
 });
 
 app.get('/api/social-news', (req, res) => {
-  const items = [...(database.socialNews || [])];
-  items.sort((a, b) => {
-    const timeA = new Date(a.waktuPosting || a.tanggalInput || 0).getTime();
-    const timeB = new Date(b.waktuPosting || b.tanggalInput || 0).getTime();
-    return timeB - timeA;
-  });
+  const { limit, all } = req.query;
+  let items = database.socialNews || [];
+  
+  if (limit) {
+    const maxLimit = parseInt(String(limit), 10);
+    if (!isNaN(maxLimit) && items.length > maxLimit) {
+      items = items.slice(0, maxLimit);
+    }
+  }
   res.json(items);
 });
 
@@ -7659,19 +8292,149 @@ app.post('/api/active-sessions', (req, res) => {
   });
 });
 
+app.post('/api/admin/postgres-test', authenticateToken, requireRole(['Admin']), async (req, res) => {
+  // Try to reload environment variables from .env if possible
+  try {
+    const dotenv = await import('dotenv');
+    dotenv.config({ override: true });
+  } catch (e) {}
+
+  const host = process.env.CUSTOM_SQL_HOST;
+  const portStr = process.env.CUSTOM_SQL_PORT;
+  const port = portStr ? parseInt(portStr, 10) : 5432;
+  const user = process.env.CUSTOM_SQL_USER;
+  const password = process.env.CUSTOM_SQL_PASSWORD;
+  const databaseName = process.env.CUSTOM_SQL_DB_NAME;
+
+  if (!host || !user || !databaseName) {
+    const msg = 'Konfigurasi PostgreSQL kustom di .env atau variabel lingkungan sistem belum lengkap!';
+    addConnectionLog('FAILED', host || '', databaseName || '', msg, 'Pastikan CUSTOM_SQL_HOST, CUSTOM_SQL_USER, CUSTOM_SQL_PASSWORD, dan CUSTOM_SQL_DB_NAME sudah diatur.');
+    return res.status(400).json({
+      success: false,
+      message: msg,
+      error: 'Missing environment variables'
+    });
+  }
+
+  console.log(`[Postgres Test API] Testing connection dynamically to ${user}@${host}:${port}/${databaseName}...`);
+  
+  // Use a temporary direct pool to test the connection.
+  // This avoids utilizing a stale pool initialized on startup.
+  const isLocal = !host || host.startsWith('/') || host.includes('localhost') || host.includes('127.0.0.1');
+  let ssl: any = isLocal ? undefined : { rejectUnauthorized: false };
+  
+  let testPool = new (pool.constructor as any)({
+    host,
+    port,
+    user,
+    password,
+    database: databaseName,
+    connectionTimeoutMillis: 5000,
+    ssl,
+  }) as any;
+
+  let client;
+  let connectionSuccess = false;
+  let fallbackAttempted = false;
+
+  try {
+    try {
+      client = await testPool.connect();
+      connectionSuccess = true;
+    } catch (connectErr: any) {
+      if (connectErr.message && connectErr.message.includes('does not support SSL connections') && ssl) {
+        console.log('[Postgres Test API] Target server does not support SSL. Re-trying test without SSL...');
+        fallbackAttempted = true;
+        try {
+          await testPool.end();
+        } catch (e) {}
+        
+        ssl = undefined;
+        testPool = new (pool.constructor as any)({
+          host,
+          port,
+          user,
+          password,
+          database: databaseName,
+          connectionTimeoutMillis: 5000,
+          ssl,
+        }) as any;
+        
+        client = await testPool.connect();
+        connectionSuccess = true;
+      } else {
+        throw connectErr;
+      }
+    }
+
+    if (connectionSuccess && client) {
+      await client.query('SELECT 1;');
+      client.release();
+      await testPool.end();
+    }
+
+    const successMsg = 'Koneksi ke PostgreSQL kustom berhasil!' + (fallbackAttempted ? ' (Terhubung dengan fallback non-SSL)' : '');
+    addConnectionLog(
+      'SUCCESS',
+      host,
+      databaseName,
+      successMsg,
+      `Kueri uji SELECT 1 berhasil dieksekusi dengan konfigurasi terbaru.`
+    );
+
+    // Refresh the main app connection pool to use these credentials!
+    const poolRefreshed = refreshDatabaseConnection(fallbackAttempted);
+    updateSqlConfigFlag();
+
+    // Trigger full database table check/creation and load into memory!
+    let dataLoaded = false;
+    let loadError = '';
+    if (poolRefreshed) {
+      try {
+        await loadDatabase();
+        dataLoaded = true;
+      } catch (err: any) {
+        loadError = err.message;
+        console.error('[Postgres Test API] Connection succeeded but failed to load data:', err);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: successMsg + (dataLoaded ? ' Data berhasil dimuat dari PostgreSQL ke aplikasi!' : ' (Koneksi diperbarui, tetapi gagal memuat tabel: ' + loadError + ')'),
+      config: { host, port, user, database: databaseName }
+    });
+  } catch (err: any) {
+    const failMsg = `Koneksi ke PostgreSQL kustom gagal: ${err.message}`;
+    addConnectionLog(
+      'FAILED',
+      host,
+      databaseName,
+      failMsg,
+      err.stack || err.message
+    );
+    try {
+      await testPool.end();
+    } catch (e) {}
+    res.status(500).json({
+      success: false,
+      message: 'Koneksi gagal!',
+      error: err.message
+    });
+  }
+});
+
+app.get('/api/admin/postgres-connection-logs', authenticateToken, requireRole(['Admin']), (req, res) => {
+  res.json({
+    success: true,
+    logs: connectionLogs
+  });
+});
+
 app.get('/api/logs', authenticateToken, requireRole(['Admin']), (req, res) => {
   try {
     const logs = Array.isArray(database.logs) ? database.logs : [];
-    const sorted = [...logs]
-      .filter(log => log && typeof log.timestamp === 'string')
-      .sort((a, b) => {
-        try {
-          return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
-        } catch {
-          return 0;
-        }
-      });
-    res.json(sorted);
+    res.json(logs);
   } catch (err: any) {
     console.error('Error in /api/logs route:', err);
     res.status(500).json({ status: 'error', message: 'Failed to retrieve logs gracefully.' });
@@ -7895,6 +8658,8 @@ app.get('/api/settings', (req, res) => {
     if (redacted.openSerpApiKey) redacted.openSerpApiKey = '••••••••';
     if (redacted.twitterApiIoKey) redacted.twitterApiIoKey = '••••••••';
     if (redacted.newsApiKey) redacted.newsApiKey = '••••••••';
+    if (redacted.fonnteToken) redacted.fonnteToken = '••••••••';
+    if (redacted.openWaToken) redacted.openWaToken = '••••••••';
     res.json(redacted);
   }
 });
@@ -7971,7 +8736,7 @@ app.get('/api/default-logo-base64', async (req, res) => {
 });
 
 app.post('/api/settings', authenticateToken, requireRole(['Admin']), (req, res) => {
-  const { companyName, headerText, footerText, primaryColor, enableAiAssistant, autoRefreshDashboard, theme, googleSpreadsheetId, googleSheetName, googleSheetSosmedName, googleSpreadsheetUrl, schedulerIntervalMinutes, autoCrawlKeywords, autoCrawlMethod, schedulerMaxItemsPerKeyword, autoCrawlTargetCategory, autoCrawlDefaultStatus, serpApiKey, openSerpUrl, openSerpApiKey, pdfExportLogoLeft, pdfExportLogoRight, pdfExportLogoCoverLeft, pdfExportLogoCoverRight, twitterApiIoKey, newsApiKey } = req.body;
+  const { companyName, headerText, footerText, primaryColor, enableAiAssistant, autoRefreshDashboard, theme, googleSpreadsheetId, googleSheetName, googleSheetSosmedName, googleSpreadsheetUrl, schedulerIntervalMinutes, autoCrawlKeywords, autoCrawlMethod, schedulerMaxItemsPerKeyword, autoCrawlTargetCategory, autoCrawlDefaultStatus, serpApiKey, openSerpUrl, openSerpApiKey, pdfExportLogoLeft, pdfExportLogoRight, pdfExportLogoCoverLeft, pdfExportLogoCoverRight, twitterApiIoKey, newsApiKey, fonnteToken, fonnteTarget, fonnteTargets, fonnteCategories, whatsappProvider, openWaVpsUrl, openWaToken } = req.body;
   const author = req.user;
 
   // Preserve existing keys if submitted as placeholder dots (censored)
@@ -7979,6 +8744,8 @@ app.post('/api/settings', authenticateToken, requireRole(['Admin']), (req, res) 
   const updatedOpenSerpKey = openSerpApiKey === '••••••••' ? database.settings.openSerpApiKey : openSerpApiKey;
   const updatedTwitterKey = twitterApiIoKey === '••••••••' ? database.settings.twitterApiIoKey : twitterApiIoKey;
   const updatedNewsApiKey = newsApiKey === '••••••••' ? database.settings.newsApiKey : newsApiKey;
+  const updatedFonnteToken = fonnteToken === '••••••••' ? database.settings.fonnteToken : fonnteToken;
+  const updatedOpenWaToken = openWaToken === '••••••••' ? database.settings.openWaToken : openWaToken;
 
   database.settings = {
     ...database.settings,
@@ -8007,7 +8774,14 @@ app.post('/api/settings', authenticateToken, requireRole(['Admin']), (req, res) 
     ...(pdfExportLogoCoverLeft !== undefined && { pdfExportLogoCoverLeft }),
     ...(pdfExportLogoCoverRight !== undefined && { pdfExportLogoCoverRight }),
     ...(updatedTwitterKey !== undefined && { twitterApiIoKey: updatedTwitterKey }),
-    ...(updatedNewsApiKey !== undefined && { newsApiKey: updatedNewsApiKey })
+    ...(updatedNewsApiKey !== undefined && { newsApiKey: updatedNewsApiKey }),
+    ...(updatedFonnteToken !== undefined && { fonnteToken: updatedFonnteToken }),
+    ...(fonnteTarget !== undefined && { fonnteTarget }),
+    ...(fonnteTargets !== undefined && { fonnteTargets }),
+    ...(fonnteCategories !== undefined && { fonnteCategories }),
+    ...(whatsappProvider !== undefined && { whatsappProvider }),
+    ...(openWaVpsUrl !== undefined && { openWaVpsUrl }),
+    ...(updatedOpenWaToken !== undefined && { openWaToken: updatedOpenWaToken })
   };
   
   saveDatabase();
@@ -8025,6 +8799,10 @@ app.post('/api/settings', authenticateToken, requireRole(['Admin']), (req, res) 
 
   res.json(database.settings);
 });
+
+// ===================================
+// WHATSAPP INTEGRATION REMOVED
+// ===================================
 
 // ===================================
 // ACTIVE SCRAPER KEYWORDS ENDPOINTS (PENGELOLAAN TOPIK)
@@ -10352,10 +11130,14 @@ async function robustFetch(urlStr: string, timeoutMs: number = 8000): Promise<st
       return await response.text();
     }
     standardFetchErrorMsg = `HTTP status ${response.status} (${response.statusText})`;
-    console.log(`[robustFetch] Standard fetch returned non-OK status: ${standardFetchErrorMsg} for ${urlStr}. Advancing to native HTTP fallback...`);
+    if (SCRAPER_CONFIG.showDetailedErrorLogs) {
+      console.log(`[robustFetch] Standard fetch returned non-OK status: ${standardFetchErrorMsg} for ${urlStr}. Advancing to native HTTP fallback...`);
+    }
   } catch (fe: any) {
     standardFetchErrorMsg = fe.message || String(fe);
-    console.log(`[robustFetch] Standard fetch failed: ${standardFetchErrorMsg} for ${urlStr}. Advancing to native HTTP fallback...`);
+    if (SCRAPER_CONFIG.showDetailedErrorLogs) {
+      console.log(`[robustFetch] Standard fetch failed: ${standardFetchErrorMsg} for ${urlStr}. Advancing to native HTTP fallback...`);
+    }
   }
 
   // 2. Retry via Node.js native https/http module with certificate rejection bypass (rejectUnauthorized: false)
@@ -11393,15 +12175,29 @@ app.get('/api/scheduler/status', authenticateToken, requireRole(['Admin', 'Anali
   });
 });
 
-// REST route to trigger manual Firestore synchronisation across isolated processes
+// REST route to trigger manual Firestore and External Server synchronisation
 app.post('/api/database/sync', authenticateToken, async (req: any, res: any) => {
   try {
     const operator = req.user?.username || 'user';
-    console.log(`[Sync API] Manual Firestore database reload triggered by user: @${operator}`);
+    console.log(`[Sync API] Manual database reload/sync triggered by user: @${operator}`);
+    
+    // First reload what's in memory/local DB
     await loadDatabase();
+
+    // If SQL is configured, trigger background sync from external Media Monitoring server
+    if (hasSqlConfig) {
+      console.log(`[Sync API] SQL configured. Triggering background sync from external Media Monitoring server...`);
+      syncFromExternalSource().then(() => {
+        console.log(`[Sync API] Background external sync complete. Reloading master database...`);
+        loadDatabase();
+      }).catch(err => {
+        console.error(`[Sync API ERROR] Background external sync failed:`, err.message);
+      });
+    }
+
     res.json({ 
       success: true, 
-      message: 'Database berhasil disinkronisasi ulang dengan Google Cloud Firestore!' 
+      message: 'Database berhasil disinkronisasi ulang dengan Firestore' + (hasSqlConfig ? ' dan sinkronisasi eksternal telah dimulai di latar belakang!' : '!')
     });
   } catch (err: any) {
     console.error('[Sync API ERROR] Database reload failed:', err.message);

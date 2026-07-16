@@ -72,7 +72,12 @@ export const TerminalMonitoringView: React.FC = () => {
         throw new Error(data.message || 'Error tidak diketahui');
       }
     } catch (err: any) {
-      console.error(err);
+      const isNetworkError = err instanceof TypeError || (err.message && err.message.toLowerCase().includes('fetch'));
+      if (isNetworkError) {
+        console.warn('Network issue fetching stats:', err.message);
+      } else {
+        console.error(err);
+      }
       if (!background) {
         showToast(err.message || 'Gagal memuat statistik monitoring', 'error');
       }
@@ -90,8 +95,13 @@ export const TerminalMonitoringView: React.FC = () => {
         const data = await res.json();
         setCrawlerLogs(data);
       }
-    } catch (err) {
-      console.error('Failed to fetch crawler logs:', err);
+    } catch (err: any) {
+      const isNetworkError = err instanceof TypeError || (err.message && err.message.toLowerCase().includes('fetch'));
+      if (isNetworkError) {
+        console.warn('Network issue fetching crawler logs:', err.message);
+      } else {
+        console.error('Failed to fetch crawler logs:', err);
+      }
     } finally {
       if (!background) setCrawlerLoading(false);
     }
