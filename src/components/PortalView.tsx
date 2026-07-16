@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAppState } from '../AppContext';
-import { VirtualScroll } from './VirtualScroll';
 import { 
   Search, Filter, ExternalLink, Calendar, 
   ChevronRight, Copy, Check, AlertCircle, FileText, Globe, RefreshCcw, X,
@@ -318,33 +317,6 @@ export const PortalView: React.FC = () => {
 
   // Pagination simulator
   const [visibleCount, setVisibleCount] = useState(6);
-
-  // Responsive state for VirtualScroll column & height sizing
-  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
-
-  useEffect(() => {
-    const handleResize = () => setWindowWidth(window.innerWidth);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const activeColumns = useMemo(() => {
-    if (viewMode === 'list') return 1;
-    if (windowWidth >= 1024) return 3;
-    if (windowWidth >= 640) return 2;
-    return 1;
-  }, [viewMode, windowWidth]);
-
-  const virtualItemHeight = useMemo(() => {
-    if (viewMode === 'list') return 180;
-    if (windowWidth < 640) return 430;
-    return 400;
-  }, [viewMode, windowWidth]);
-
-  const virtualGap = useMemo(() => {
-    if (viewMode === 'list') return 16;
-    return windowWidth >= 768 ? 24 : 16;
-  }, [viewMode, windowWidth]);
 
   // Responsive state for mobile filters panel
   const [showMobileFilters, setShowMobileFilters] = useState(false);
