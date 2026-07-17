@@ -96,7 +96,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
       
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 focus-within:ring-2 focus-within:ring-blue-500/20 cursor-pointer shadow-xs transition hover:border-slate-350 dark:hover:border-slate-700 min-h-[36px]"
+        className="flex items-center justify-between w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 focus-within:ring-2 focus-within:ring-blue-500/20 cursor-pointer shadow-xs transition hover:border-slate-300 dark:hover:border-slate-700 min-h-[36px]"
       >
         <span className="truncate max-w-[150px] text-left">
           {displayText()}
@@ -1138,7 +1138,7 @@ export const PortalView: React.FC = () => {
       case 'Negatif':
         return 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900/30';
       default:
-        return 'bg-blue-50 text-blue-750 border-blue-200 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/30';
+        return 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/30';
     }
   };
 
@@ -1409,7 +1409,7 @@ export const PortalView: React.FC = () => {
                 {/* Hour Range Filter */}
                 <div className="sm:col-span-2 lg:col-span-2 xl:col-span-2">
                   <label className="block text-[10px] md:text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1.5 tracking-wider">Rentang Jam</label>
-                  <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs h-[38px] justify-between shadow-xs transition hover:border-slate-350 dark:hover:border-slate-705">
+                  <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs h-[38px] justify-between shadow-xs transition hover:border-slate-300 dark:hover:border-slate-705">
                     <select
                       value={startHour}
                       onChange={(e) => {
@@ -1483,7 +1483,7 @@ export const PortalView: React.FC = () => {
                     const next = selectedCat.split(',').filter(id => id !== catId);
                     setSelectedCat(next.length === 0 ? 'all' : next.join(','));
                   }} 
-                  className="hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full p-0.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-350 cursor-pointer transition ml-1"
+                  className="hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full p-0.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer transition ml-1"
                   title="Hapus topik"
                 >
                   <X className="w-3 h-3" />
@@ -1497,7 +1497,7 @@ export const PortalView: React.FC = () => {
               <span>Sentimen: {selectedSent}</span>
               <button 
                 onClick={() => setSelectedSent('all')} 
-                className="hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full p-0.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-350 cursor-pointer transition ml-1"
+                className="hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full p-0.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer transition ml-1"
                 title="Hapus sentimen"
               >
                 <X className="w-3 h-3" />
@@ -1510,7 +1510,7 @@ export const PortalView: React.FC = () => {
               <span>Media: {medias.find(m => m.id === selectedMed)?.name || selectedMed}</span>
               <button 
                 onClick={() => setSelectedMed('all')} 
-                className="hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full p-0.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-350 cursor-pointer transition ml-1"
+                className="hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full p-0.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer transition ml-1"
                 title="Hapus media"
               >
                 <X className="w-3 h-3" />
@@ -1523,7 +1523,7 @@ export const PortalView: React.FC = () => {
               <span>Tanggal: {formatDateDDMMYYYY(selectedDate)}</span>
               <button 
                 onClick={() => setSelectedDate('')} 
-                className="hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full p-0.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-350 cursor-pointer transition ml-1"
+                className="hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full p-0.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer transition ml-1"
                 title="Hapus tanggal"
               >
                 <X className="w-3 h-3" />
@@ -1565,7 +1565,7 @@ export const PortalView: React.FC = () => {
                   const next = portalLocationFilter.split(',').filter(id => id !== prov);
                   setPortalLocationFilter(next.length === 0 ? 'all' : next.join(','));
                 }} 
-                className="hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full p-0.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-350 cursor-pointer transition ml-1"
+                className="hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full p-0.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer transition ml-1"
                 title="Hapus lokasi"
               >
                 <X className="w-3 h-3" />
@@ -1581,7 +1581,7 @@ export const PortalView: React.FC = () => {
                   setStartHour(0);
                   setEndHour(23);
                 }} 
-                className="hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full p-0.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-350 cursor-pointer transition ml-1"
+                className="hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full p-0.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer transition ml-1"
                 title="Hapus rentang jam"
               >
                 <X className="w-3 h-3" />
@@ -1610,7 +1610,7 @@ export const PortalView: React.FC = () => {
               onClick={() => setViewMode('grid')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer select-none ${
                 viewMode === 'grid'
-                  ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-450 shadow-xs'
+                  ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
               }`}
             >
@@ -1621,7 +1621,7 @@ export const PortalView: React.FC = () => {
               onClick={() => setViewMode('list')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer select-none ${
                 viewMode === 'list'
-                  ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-450 shadow-xs'
+                  ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
               }`}
             >
@@ -1688,7 +1688,7 @@ export const PortalView: React.FC = () => {
                             setTab('dashboard');
                             showToast(`Menampilkan lokasi ${item.location || 'DKI Jakarta'} di Peta OpenStreetMap`, 'info');
                           }}
-                          className="text-blue-600 dark:text-blue-450 font-bold hover:underline cursor-pointer"
+                          className="text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer"
                           title="Klik untuk melihat sebaran isu di Peta Analitik"
                         >
                           📍 {item.location || 'DKI Jakarta'}
@@ -2009,10 +2009,10 @@ export const PortalView: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm overflow-y-auto">
           <div className="relative w-full max-w-[500px] bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-2xl overflow-hidden my-4">
             {/* Upper colored band */}
-            <div className="h-1.5 bg-gradient-to-r from-blue-650 to-blue-700" />
+            <div className="h-1.5 bg-gradient-to-r from-blue-600 to-blue-700" />
             
             {/* Header row */}
-            <div className="p-4 md:p-5 pb-3 border-b border-slate-50 dark:border-slate-850 flex items-start justify-between gap-2">
+            <div className="p-4 md:p-5 pb-3 border-b border-slate-50 dark:border-slate-800 flex items-start justify-between gap-2">
               <div className="space-y-1 max-w-[88%]">
                 <div className="flex flex-wrap gap-1.5 items-center text-[9px] font-bold text-slate-400 font-mono uppercase font-sans">
                   {isRecentItem(activeItem.createdAt) && (
@@ -2049,7 +2049,7 @@ export const PortalView: React.FC = () => {
 
               <button 
                 onClick={() => setActiveItem(null)}
-                className="p-1 px-2 hover:bg-slate-150 dark:hover:bg-slate-800/80 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white text-[11px] font-bold tracking-tight transition"
+                className="p-1 px-2 hover:bg-slate-200 dark:hover:bg-slate-800/80 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white text-[11px] font-bold tracking-tight transition"
               >
                 Tutup
               </button>
@@ -2092,7 +2092,7 @@ export const PortalView: React.FC = () => {
             </div>
 
             {/* Modal Footer Share Tools */}
-            <div className="p-4 md:p-5 bg-slate-50/50 dark:bg-slate-950/40 border-t border-slate-50 dark:border-slate-850 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
+            <div className="p-4 md:p-5 bg-slate-50/50 dark:bg-slate-950/40 border-t border-slate-50 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
               
               <div className="flex items-center gap-2">
                 <button
@@ -2164,7 +2164,7 @@ export const PortalView: React.FC = () => {
                   type="text"
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   placeholder="Masukkan judul berita..."
                 />
               </div>
@@ -2176,7 +2176,7 @@ export const PortalView: React.FC = () => {
                   value={editSummary}
                   onChange={(e) => setEditSummary(e.target.value)}
                   rows={4}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 leading-relaxed"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 leading-relaxed"
                   placeholder="Masukkan ringkasan atau detail analisis isu..."
                 />
               </div>
@@ -2188,7 +2188,7 @@ export const PortalView: React.FC = () => {
                   <select
                     value={editCategoryId}
                     onChange={(e) => setEditCategoryId(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   >
                     <option value="" disabled>Pilih Kategori</option>
                     {categories.map(c => (
@@ -2203,7 +2203,7 @@ export const PortalView: React.FC = () => {
                   <select
                     value={editMediaId}
                     onChange={(e) => setEditMediaId(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   >
                     <option value="" disabled>Pilih Media</option>
                     {medias.map(m => (
@@ -2218,7 +2218,7 @@ export const PortalView: React.FC = () => {
                   <select
                     value={editLocation}
                     onChange={(e) => setEditLocation(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   >
                     {PROVINCES.map(prov => (
                       <option key={prov} value={prov}>{prov}</option>
@@ -2232,7 +2232,7 @@ export const PortalView: React.FC = () => {
                   <select
                     value={editSentiment}
                     onChange={(e) => setEditSentiment(e.target.value as Sentiment)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   >
                     <option value="Positif">POSITIF</option>
                     <option value="Netral">NETRAL</option>
@@ -2247,7 +2247,7 @@ export const PortalView: React.FC = () => {
                     type="date"
                     value={editPublishDate}
                     onChange={(e) => setEditPublishDate(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
 
@@ -2258,7 +2258,7 @@ export const PortalView: React.FC = () => {
                     type="text"
                     value={editPublishTime}
                     onChange={(e) => setEditPublishTime(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                     placeholder="12:00"
                   />
                 </div>
@@ -2271,7 +2271,7 @@ export const PortalView: React.FC = () => {
                   type="text"
                   value={editLink}
                   onChange={(e) => setEditLink(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   placeholder="https://example.com/..."
                 />
               </div>
@@ -2283,7 +2283,7 @@ export const PortalView: React.FC = () => {
                   type="text"
                   value={editImageUrl}
                   onChange={(e) => setEditImageUrl(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   placeholder="https://images.unsplash.com/..."
                 />
               </div>
@@ -2294,7 +2294,7 @@ export const PortalView: React.FC = () => {
                 <select
                   value={editStatus}
                   onChange={(e) => setEditStatus(e.target.value as 'Draft' | 'Published')}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 >
                   <option value="Published">Published (Tampil di Portal)</option>
                   <option value="Draft">Draft (Hanya di Dashboard Admin)</option>
@@ -2364,7 +2364,7 @@ export const PortalView: React.FC = () => {
                   <h3 className="text-sm font-black text-slate-800 dark:text-white">Unduh Laporan Berita PDF</h3>
                 </div>
                 
-                <div className="p-4 bg-blue-50/50 dark:bg-blue-950/20 border border-blue-150/40 dark:border-blue-900/30 rounded-2xl space-y-2">
+                <div className="p-4 bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/40 dark:border-blue-900/30 rounded-2xl space-y-2">
                   <div className="flex items-center gap-1.5 text-blue-700 dark:text-blue-400 font-black text-xs uppercase tracking-wider">
                     <span>💡 Tips: Ubah Filter Dahulu</span>
                   </div>
@@ -2386,7 +2386,7 @@ export const PortalView: React.FC = () => {
                       }, 150);
                       showToast('Silakan ubah filter saringan di atas.', 'info');
                     }}
-                    className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-[#181622] dark:hover:bg-slate-800/80 text-slate-650 dark:text-slate-350 rounded-xl text-xs font-bold transition cursor-pointer text-center"
+                    className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-[#181622] dark:hover:bg-slate-800/80 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold transition cursor-pointer text-center"
                   >
                     Ubah Filter Dahulu
                   </button>

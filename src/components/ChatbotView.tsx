@@ -450,13 +450,13 @@ export const ChatbotView: React.FC = () => {
     <div className="flex flex-col h-[calc(100vh-10rem)] max-h-[800px] bg-white dark:bg-[#09080d] border border-slate-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm transition-all" id="chatbot-view-container">
       
       {/* Top bar header */}
-      <div className="px-4 py-3 border-b border-slate-150 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] flex items-center justify-between flex-shrink-0">
+      <div className="px-4 py-3 border-b border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-blue-800/15 border border-blue-700/20 flex items-center justify-center text-blue-800 dark:text-blue-400">
             <ShieldCheck className="w-4 h-4 animate-pulse" />
           </div>
           <div>
-            <h3 className="text-xs font-extrabold text-slate-800 dark:text-slate-150 tracking-wide font-display">
+            <h3 className="text-xs font-extrabold text-slate-800 dark:text-slate-200 tracking-wide font-display">
               Security Chat
             </h3>
             <p className="text-[10px] text-slate-400 font-bold flex items-center gap-1">
@@ -596,7 +596,7 @@ export const ChatbotView: React.FC = () => {
       </div>
 
       {/* Input Form area */}
-      <div className="p-3 bg-white dark:bg-[#09080d] border-t border-slate-150 dark:border-white/5 flex-shrink-0">
+      <div className="p-3 bg-white dark:bg-[#09080d] border-t border-slate-200 dark:border-white/5 flex-shrink-0">
         <form 
           onSubmit={(e) => {
             e.preventDefault();

@@ -276,7 +276,7 @@ export const MasterDataView: React.FC = () => {
                       type="button"
                       key={prov}
                       onClick={() => setMedProvinsi(prov)}
-                      className="text-[9px] text-slate-550 dark:text-slate-400 hover:text-indigo-650 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/40 bg-slate-50 dark:bg-slate-900 px-1.5 py-0.5 rounded font-sans transition"
+                      className="text-[9px] text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/40 bg-slate-50 dark:bg-slate-900 px-1.5 py-0.5 rounded font-sans transition"
                     >
                       {prov}
                     </button>
@@ -312,11 +312,11 @@ export const MasterDataView: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setMedDate(new Date().toISOString().slice(0, 10))}
-                    className="text-[10px] font-medium text-slate-500 dark:text-slate-400 hover:text-indigo-650 dark:hover:text-indigo-400 hover:underline transition-colors"
+                    className="text-[10px] font-medium text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline transition-colors"
                   >
                     Hari Ini
                   </button>
-                  <span className="text-[9px] text-slate-350 dark:text-slate-700 select-none">•</span>
+                  <span className="text-[9px] text-slate-300 dark:text-slate-700 select-none">•</span>
                   <button
                     type="button"
                     onClick={() => {
@@ -324,7 +324,7 @@ export const MasterDataView: React.FC = () => {
                       yesterday.setDate(yesterday.getDate() - 1);
                       setMedDate(yesterday.toISOString().slice(0, 10));
                     }}
-                    className="text-[10px] font-medium text-slate-500 dark:text-slate-400 hover:text-indigo-650 dark:hover:text-indigo-400 hover:underline transition-colors"
+                    className="text-[10px] font-medium text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline transition-colors"
                   >
                     Kemarin
                   </button>

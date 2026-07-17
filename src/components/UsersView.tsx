@@ -283,7 +283,7 @@ export const UsersView: React.FC = () => {
           <button 
             onClick={fetchUsers}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-350 border border-slate-200 dark:border-white/5 text-xs font-bold rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/5 text-xs font-bold rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span>Segarkan</span>
@@ -297,7 +297,7 @@ export const UsersView: React.FC = () => {
         {/* Stat Card 1 */}
         <div className="p-4 bg-white dark:bg-[#121118] border border-slate-100 dark:border-white/5 rounded-2xl shadow-xs flex items-center gap-3">
           <div className="w-9 h-9 bg-slate-50 dark:bg-white/5 rounded-xl flex items-center justify-center text-slate-500 shrink-0">
-            <Users className="w-5 h-5 text-indigo-505 text-indigo-500" />
+            <Users className="w-5 h-5 text-indigo-500 text-indigo-500" />
           </div>
           <div>
             <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Total Pengguna</span>
@@ -330,7 +330,7 @@ export const UsersView: React.FC = () => {
         {/* Stat Card 4 */}
         <div className="p-4 bg-white dark:bg-[#121118] border border-slate-100 dark:border-white/5 rounded-2xl shadow-xs flex items-center gap-3">
           <div className="w-9 h-9 bg-emerald-50 dark:bg-emerald-950/10 rounded-xl flex items-center justify-center shrink-0">
-            <CheckCircle className="w-5 h-5 text-emerald-505 text-emerald-500" />
+            <CheckCircle className="w-5 h-5 text-emerald-500 text-emerald-500" />
           </div>
           <div>
             <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Status Aktif</span>
@@ -376,7 +376,7 @@ export const UsersView: React.FC = () => {
           </div>
 
           {/* User Table Element */}
-          <div className="overflow-x-auto rounded-xl border border-slate-150 border-slate-105 border-slate-100 dark:border-white/5">
+          <div className="overflow-x-auto rounded-xl border border-slate-200 border-slate-105 border-slate-100 dark:border-white/5">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/70 dark:bg-slate-900/35 border-b border-slate-100 dark:border-white/5 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
@@ -415,7 +415,7 @@ export const UsersView: React.FC = () => {
                           <div className="flex items-center gap-2.5">
                             <div className={`w-8 h-8 rounded-lg font-bold text-xs uppercase flex items-center justify-center shrink-0 ${
                               item.role === 'Admin' 
-                                ? 'bg-amber-100 dark:bg-amber-955 bg-amber-550 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400' 
+                                ? 'bg-amber-100 dark:bg-amber-955 bg-amber-500 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400' 
                                 : item.role === 'Analis'
                                 ? 'bg-indigo-55 bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400'
                                 : 'bg-slate-105 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400'
@@ -437,7 +437,7 @@ export const UsersView: React.FC = () => {
                         </td>
 
                         {/* Column 2: Account Details */}
-                        <td className="py-3 px-4 font-mono text-[11px] text-slate-650 dark:text-slate-400">
+                        <td className="py-3 px-4 font-mono text-[11px] text-slate-600 dark:text-slate-400">
                           {item.email || '-'}
                           {item.createdAt && (
                             <span className="block text-[9.5px] font-sans font-light text-slate-400 dark:text-slate-500">
@@ -485,7 +485,7 @@ export const UsersView: React.FC = () => {
                             <button
                               onClick={() => handleEditClick(item)}
                               title="Sunting Informasi Pengguna"
-                              className="p-1 px-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-150 border-slate-200 dark:border-white/5 text-slate-650 hover:text-slate-900 dark:text-slate-350 dark:hover:text-white rounded-lg transition active:scale-95 cursor-pointer"
+                              className="p-1 px-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-200 border-slate-200 dark:border-white/5 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white rounded-lg transition active:scale-95 cursor-pointer"
                             >
                               <Edit3 className="w-3.5 h-3.5" />
                             </button>
@@ -500,7 +500,7 @@ export const UsersView: React.FC = () => {
                                 setConfirmNewPassword('');
                               }}
                               title="Ubah Kata Sandi"
-                              className="p-1 px-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-205 border-slate-200 dark:border-white/5 text-slate-650 hover:text-slate-900 dark:text-slate-350 dark:hover:text-white rounded-lg transition active:scale-95 cursor-pointer"
+                              className="p-1 px-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-205 border-slate-200 dark:border-white/5 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white rounded-lg transition active:scale-95 cursor-pointer"
                             >
                               <Key className="w-3.5 h-3.5" />
                             </button>
@@ -525,7 +525,7 @@ export const UsersView: React.FC = () => {
           </div>
 
           {/* Security Information Panel */}
-          <div className="p-4 bg-indigo-50/40 dark:bg-indigo-950/10 rounded-xl border border-indigo-150 border-indigo-100 dark:border-indigo-900/10 flex gap-3 text-[11px] leading-relaxed text-slate-605 text-slate-600 dark:text-slate-400">
+          <div className="p-4 bg-indigo-50/40 dark:bg-indigo-950/10 rounded-xl border border-indigo-200 border-indigo-100 dark:border-indigo-900/10 flex gap-3 text-[11px] leading-relaxed text-slate-605 text-slate-600 dark:text-slate-400">
             <Info className="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
             <div className="space-y-1">
               <span className="font-bold text-slate-700 dark:text-slate-200">Panduan Klasifikasi Peran Keamanan (RBAC):</span>
@@ -630,7 +630,7 @@ export const UsersView: React.FC = () => {
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="w-full py-2 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-350 text-xs font-bold rounded-xl transition duration-150 cursor-pointer"
+                  className="w-full py-2 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition duration-150 cursor-pointer"
                 >
                   Gagalkan Perubahan
                 </button>
@@ -715,7 +715,7 @@ export const UsersView: React.FC = () => {
                       className={`flex-1 py-2 px-2.5 text-[10.5px] font-bold rounded-xl border transition duration-150 cursor-pointer text-center ${
                         status === 'Aktif'
                           ? 'bg-emerald-500 border-transparent text-white shadow-sm'
-                          : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-350 border-slate-200 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-slate-800'
                       }`}
                     >
                       Aktif
@@ -726,7 +726,7 @@ export const UsersView: React.FC = () => {
                       className={`flex-1 py-2 px-2.5 text-[10.5px] font-bold rounded-xl border transition duration-150 cursor-pointer text-center ${
                         status === 'Nonaktif'
                           ? 'bg-rose-500 border-transparent text-white shadow-sm'
-                          : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-350 border-slate-200 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-slate-800'
                       }`}
                     >
                       Non-Aktif
@@ -746,7 +746,7 @@ export const UsersView: React.FC = () => {
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="w-full py-2 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-350 text-xs font-bold rounded-xl transition duration-150 cursor-pointer"
+                  className="w-full py-2 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition duration-150 cursor-pointer"
                 >
                   Batal
                 </button>
@@ -804,7 +804,7 @@ export const UsersView: React.FC = () => {
 
                 {/* Password Policy info */}
                 <div className="p-2.5 bg-slate-50 dark:bg-slate-905 bg-slate-950/20 border border-slate-100 dark:border-white/5 rounded-xl text-[9.5px] leading-relaxed text-slate-500 dark:text-slate-400 space-y-1">
-                  <span className="font-bold text-slate-700 dark:text-slate-350 block">Kebijakan Kata Sandi Sistem:</span>
+                  <span className="font-bold text-slate-700 dark:text-slate-300 block">Kebijakan Kata Sandi Sistem:</span>
                   <p>Min 8 Karakter, kombinasi Huruf Besar, Kecil, Angka, &amp; Simbol.</p>
                 </div>
 
@@ -867,7 +867,7 @@ export const UsersView: React.FC = () => {
                       className={`flex-1 py-1.5 px-2 text-[10.5px] font-bold rounded-xl border transition duration-150 cursor-pointer text-center ${
                         status === 'Aktif'
                           ? 'bg-emerald-500 border-transparent text-white shadow-sm'
-                          : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-350 border-slate-200 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-slate-800'
                       }`}
                     >
                       Aktif
@@ -878,7 +878,7 @@ export const UsersView: React.FC = () => {
                       className={`flex-1 py-1.5 px-2 text-[10.5px] font-bold rounded-xl border transition duration-150 cursor-pointer text-center ${
                         status === 'Nonaktif'
                           ? 'bg-rose-500 border-transparent text-white shadow-sm'
-                          : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-350 border-slate-200 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-slate-800'
                       }`}
                     >
                       Nonaktif

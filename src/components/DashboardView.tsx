@@ -1767,7 +1767,7 @@ export const DashboardView: React.FC = () => {
           <div className="flex items-center gap-2 bg-slate-105 hover:bg-slate-200/60 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200/40 dark:border-white/5 rounded-xl px-2.5 py-1.5 transition">
             <button
               onClick={() => setAutoRefreshEnabled(!autoRefreshEnabled)}
-              className="flex items-center gap-1.5 text-[11px] font-extrabold cursor-pointer select-none text-slate-750 dark:text-slate-200"
+              className="flex items-center gap-1.5 text-[11px] font-extrabold cursor-pointer select-none text-slate-700 dark:text-slate-200"
               title={autoRefreshEnabled ? "Matikan Auto-Refresh" : "Aktifkan Auto-Refresh"}
             >
               <div className={`w-2 h-2 rounded-full transition-all duration-300 ${autoRefreshEnabled ? 'bg-emerald-500 animate-pulse ring-2 ring-emerald-500/30' : 'bg-slate-400'}`} />
@@ -1790,7 +1790,7 @@ export const DashboardView: React.FC = () => {
           <button
             onClick={handleRefresh}
             disabled={isRefreshing || isCrawlSyncing}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-105 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-750 dark:text-slate-200 rounded-xl text-[11px] font-bold transition disabled:opacity-50 cursor-pointer border border-slate-200/40 dark:border-white/5"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-105 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 rounded-xl text-[11px] font-bold transition disabled:opacity-50 cursor-pointer border border-slate-200/40 dark:border-white/5"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing || isCrawlSyncing ? 'animate-spin' : ''}`} />
             <span>{isCrawlSyncing ? 'Menyinkronkan...' : 'Perbarui Data'}</span>
@@ -1883,7 +1883,7 @@ export const DashboardView: React.FC = () => {
                   {searchFilterQuery && (
                     <button
                       onClick={() => setSearchFilterQuery('')}
-                      className="absolute right-2.5 text-slate-450 hover:text-slate-600 dark:hover:text-slate-200 h-5 w-5 flex items-center justify-center cursor-pointer"
+                      className="absolute right-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 h-5 w-5 flex items-center justify-center cursor-pointer"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -1999,7 +1999,7 @@ export const DashboardView: React.FC = () => {
                               (e.currentTarget as any).showPicker();
                             } catch (err) {}
                           }}
-                          className="w-full pl-3 pr-8 py-2 text-xs bg-white dark:bg-[#1c1a24] border border-slate-200 dark:border-white/5 rounded-xl text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-700/20 cursor-pointer shadow-xs font-semibold hover:border-slate-350 transition duration-150"
+                          className="w-full pl-3 pr-8 py-2 text-xs bg-white dark:bg-[#1c1a24] border border-slate-200 dark:border-white/5 rounded-xl text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-700/20 cursor-pointer shadow-xs font-semibold hover:border-slate-300 transition duration-150"
                         />
                         <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-slate-500 pointer-events-none group-hover/date:text-blue-700 transition-colors" />
                       </div>
@@ -2021,7 +2021,7 @@ export const DashboardView: React.FC = () => {
                               (e.currentTarget as any).showPicker();
                             } catch (err) {}
                           }}
-                          className="w-full pl-3 pr-8 py-2 text-xs bg-white dark:bg-[#1c1a24] border border-slate-200 dark:border-white/5 rounded-xl text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-700/20 cursor-pointer shadow-xs font-semibold hover:border-slate-350 transition duration-150"
+                          className="w-full pl-3 pr-8 py-2 text-xs bg-white dark:bg-[#1c1a24] border border-slate-200 dark:border-white/5 rounded-xl text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-700/20 cursor-pointer shadow-xs font-semibold hover:border-slate-300 transition duration-150"
                         />
                         <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-slate-500 pointer-events-none group-hover/date:text-blue-700 transition-colors" />
                       </div>
@@ -2148,7 +2148,7 @@ export const DashboardView: React.FC = () => {
             <button
               onClick={handleGenerateAiReport}
               disabled={isLoadingReport || filteredNews.length === 0}
-              className={`px-5 py-2.5 bg-gradient-to-r from-blue-800 to-indigo-600 hover:from-blue-700 hover:to-indigo-500 disabled:from-slate-800 disabled:to-slate-850 text-white rounded-xl text-xs font-extrabold transition-all duration-205 shadow-md shadow-blue-700/10 flex items-center gap-2 active:scale-95 cursor-pointer disabled:cursor-not-allowed`}
+              className={`px-5 py-2.5 bg-gradient-to-r from-blue-800 to-indigo-600 hover:from-blue-700 hover:to-indigo-500 disabled:from-slate-800 disabled:to-slate-800 text-white rounded-xl text-xs font-extrabold transition-all duration-205 shadow-md shadow-blue-700/10 flex items-center gap-2 active:scale-95 cursor-pointer disabled:cursor-not-allowed`}
             >
               {isLoadingReport ? (
                 <>
@@ -2203,7 +2203,7 @@ export const DashboardView: React.FC = () => {
                         navigator.clipboard.writeText(reportData);
                         showToast('Laporan berhasil disalin ke clipboard!', 'success');
                       }}
-                      className="px-3 py-1.5 hover:bg-slate-150 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/5 rounded-lg text-[11px] font-semibold transition active:scale-95 flex items-center gap-1 cursor-pointer"
+                      className="px-3 py-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/5 rounded-lg text-[11px] font-semibold transition active:scale-95 flex items-center gap-1 cursor-pointer"
                     >
                       <Copy className="w-3.5 h-3.5" />
                       <span>Salin Laporan</span>
@@ -2306,7 +2306,7 @@ export const DashboardView: React.FC = () => {
                   className={`group relative p-4 rounded-2xl border bg-white dark:bg-[#121118] border-slate-200/50 dark:border-white/5 transition-all duration-300 cursor-pointer overflow-hidden shadow-sm dark:shadow-none select-none ${
                     selectedSentimentFilter === 'Semua'
                       ? 'bg-gradient-to-br from-blue-700/10 to-indigo-500/10 border-blue-700/30 dark:border-blue-700/40 shadow-lg ring-1 ring-blue-700/20'
-                      : 'hover:border-slate-350 dark:hover:border-white/10 hover:bg-slate-100/40 dark:hover:bg-white/[0.02] hover:shadow-md'
+                      : 'hover:border-slate-300 dark:hover:border-white/10 hover:bg-slate-100/40 dark:hover:bg-white/[0.02] hover:shadow-md'
                   }`}
                 >
                   {/* Small card level controls on hover */}
@@ -2339,7 +2339,7 @@ export const DashboardView: React.FC = () => {
                       <Newspaper className="w-5 h-5" />
                     </div>
                     <div>
-                      <span className="text-[10px] font-extrabold text-slate-450 dark:text-slate-500 uppercase tracking-widest block">Jumlah Berita</span>
+                      <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Jumlah Berita</span>
                       <div className="flex items-baseline gap-1.5 mt-0.5">
                         <span className="text-xl sm:text-2xl font-black font-display text-slate-900 dark:text-white leading-none">
                           {periodMetrics.total}
@@ -2348,7 +2348,7 @@ export const DashboardView: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="mt-3 flex items-center justify-between text-[9px] font-bold text-slate-400 dark:text-slate-505 border-t border-slate-100 dark:border-white/[0.03] pt-2">
+                  <div className="mt-3 flex items-center justify-between text-[9px] font-bold text-slate-400 dark:text-slate-500 border-t border-slate-100 dark:border-white/[0.03] pt-2">
                     <span>Seluruh cakupan data</span>
                     {selectedSentimentFilter === 'Semua' && (
                       <span className="text-[8px] tracking-widest text-blue-800 dark:text-blue-400 bg-blue-700/10 px-1.5 py-0.5 rounded uppercase font-black">Aktif</span>
@@ -2407,23 +2407,23 @@ export const DashboardView: React.FC = () => {
                     <div className={`p-2.5 rounded-xl ${
                       selectedSentimentFilter === 'Positif'
                         ? 'bg-emerald-500 text-white shadow-md'
-                        : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-450 group-hover:bg-emerald-500 group-hover:text-white group-hover:shadow-md'
+                        : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-500 group-hover:text-white group-hover:shadow-md'
                     } transition-all duration-300`}>
                       <Smile className="w-5 h-5" />
                     </div>
                     <div>
-                      <span className="text-[10px] font-extrabold text-slate-450 dark:text-slate-500 uppercase tracking-widest block">Sentimen Positif</span>
+                      <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Sentimen Positif</span>
                       <div className="flex items-baseline gap-1.5 mt-0.5">
                         <span className="text-xl sm:text-2xl font-black font-display text-emerald-600 dark:text-emerald-400 leading-none">
                           {periodMetrics.positive}
                         </span>
-                        <span className="text-[9.5px] font-mono font-bold text-emerald-650 dark:text-emerald-400 bg-emerald-500/10 dark:bg-emerald-500/20 px-1.5 py-0.5 rounded leading-none">
+                        <span className="text-[9.5px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 dark:bg-emerald-500/20 px-1.5 py-0.5 rounded leading-none">
                           {periodMetrics.positivePct}%
                         </span>
                       </div>
                     </div>
                   </div>
-                  <div className="mt-3 flex items-center justify-between text-[9px] font-bold text-slate-400 dark:text-slate-505 border-t border-slate-100 dark:border-white/[0.03] pt-2">
+                  <div className="mt-3 flex items-center justify-between text-[9px] font-bold text-slate-400 dark:text-slate-500 border-t border-slate-100 dark:border-white/[0.03] pt-2">
                     <span>Tren apresiatif & optimis</span>
                     {selectedSentimentFilter === 'Positif' && (
                       <span className="text-[8px] tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded uppercase font-black">Aktif</span>
@@ -2470,7 +2470,7 @@ export const DashboardView: React.FC = () => {
                     <button 
                       onClick={(e) => { e.stopPropagation(); moveMetricCard('netral', 'right'); }}
                       disabled={metricCardsOrder.indexOf('netral') === metricCardsOrder.length - 1}
-                      className="text-slate-400 hover:text-indigo-505 disabled:opacity-20 disabled:pointer-events-none p-0.5 cursor-pointer"
+                      className="text-slate-400 hover:text-indigo-500 disabled:opacity-20 disabled:pointer-events-none p-0.5 cursor-pointer"
                       title="Geser ke kanan"
                     >
                       <ChevronRight className="w-2.5 h-2.5" />
@@ -2482,17 +2482,17 @@ export const DashboardView: React.FC = () => {
                     <div className={`p-2.5 rounded-xl ${
                       selectedSentimentFilter === 'Neutral' || selectedSentimentFilter === 'Netral'
                         ? 'bg-blue-500 text-white shadow-md'
-                        : 'bg-blue-550/10 text-blue-600 dark:text-blue-400 group-hover:bg-blue-500 group-hover:text-white group-hover:shadow-md'
+                        : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 group-hover:bg-blue-500 group-hover:text-white group-hover:shadow-md'
                     } transition-all duration-300`}>
                       <Meh className="w-5 h-5" />
                     </div>
                     <div>
-                      <span className="text-[10px] font-extrabold text-slate-450 dark:text-slate-500 uppercase tracking-widest block">Sentimen Netral</span>
+                      <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Sentimen Netral</span>
                       <div className="flex items-baseline gap-1.5 mt-0.5">
                         <span className="text-xl sm:text-2xl font-black font-display text-blue-600 dark:text-blue-400 leading-none">
                           {periodMetrics.neutral}
                         </span>
-                        <span className="text-[9.5px] font-mono font-bold text-blue-650 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-500/20 px-1.5 py-0.5 rounded leading-none">
+                        <span className="text-[9.5px] font-mono font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-500/20 px-1.5 py-0.5 rounded leading-none">
                           {periodMetrics.neutralPct}%
                         </span>
                       </div>
@@ -2562,7 +2562,7 @@ export const DashboardView: React.FC = () => {
                       <Frown className="w-5 h-5" />
                     </div>
                     <div>
-                      <span className="text-[10px] font-extrabold text-slate-450 dark:text-slate-500 uppercase tracking-widest block">Sentimen Negatif</span>
+                      <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Sentimen Negatif</span>
                       <div className="flex items-baseline gap-1.5 mt-0.5">
                         <span className="text-xl sm:text-2xl font-black font-display text-red-500 dark:text-red-400 leading-none">
                           {periodMetrics.negative}
@@ -2573,7 +2573,7 @@ export const DashboardView: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="mt-3 flex items-center justify-between text-[9px] font-bold text-slate-400 dark:text-slate-505 border-t border-slate-100 dark:border-white/[0.03] pt-2">
+                  <div className="mt-3 flex items-center justify-between text-[9px] font-bold text-slate-400 dark:text-slate-500 border-t border-slate-100 dark:border-white/[0.03] pt-2">
                     <span>Protes, kritik & ancaman isu</span>
                     {selectedSentimentFilter === 'Negatif' && (
                       <span className="text-[8px] tracking-widest text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded uppercase font-black">Aktif</span>
@@ -2616,7 +2616,7 @@ export const DashboardView: React.FC = () => {
           <div className="grid grid-cols-1 landscape:grid-cols-5 lg:grid-cols-5 gap-6 pt-6 sm: pt-0">
             
             {/* Left part: Trends, Duration Switcher, Calendar Carousel, Line Chart (lg:col-span-3) */}
-            <div className={`landscape:col-span-3 lg:col-span-3 space-y-6 transition-all duration-500 ease-in-out ${isLayoutOrderSwapped ? 'landscape:order-2 lg:order-2 border-t landscape:border-t-0 lg:border-t-0 landscape:border-l lg:border-l border-slate-150/40 dark:border-white/[0.04] pt-6 landscape:pt-0 lg:pt-0 landscape:pl-6 lg:pl-6' : 'landscape:order-1 lg:order-1'}`}>
+            <div className={`landscape:col-span-3 lg:col-span-3 space-y-6 transition-all duration-500 ease-in-out ${isLayoutOrderSwapped ? 'landscape:order-2 lg:order-2 border-t landscape:border-t-0 lg:border-t-0 landscape:border-l lg:border-l border-slate-200/40 dark:border-white/[0.04] pt-6 landscape:pt-0 lg:pt-0 landscape:pl-6 lg:pl-6' : 'landscape:order-1 lg:order-1'}`}>
               
               {/* Statistics Top Row with Duration Switcher and Multi-Select Control */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2">
@@ -3161,7 +3161,7 @@ export const DashboardView: React.FC = () => {
             </div>
 
             {/* Right part: Detailed Period Analytics (lg:col-span-2) */}
-            <div className={`landscape:col-span-2 lg:col-span-2 flex flex-col justify-between space-y-6 transition-all duration-500 ease-in-out ${isLayoutOrderSwapped ? 'landscape:order-1 lg:order-1 landscape:pr-6 lg:pr-6' : 'landscape:order-2 lg:order-2 border-t landscape:border-t-0 lg:border-t-0 landscape:border-l lg:border-l border-slate-150/40 dark:border-white/[0.04] pt-6 landscape:pt-0 lg:pt-0 landscape:pl-6 lg:pl-6'}`}>
+            <div className={`landscape:col-span-2 lg:col-span-2 flex flex-col justify-between space-y-6 transition-all duration-500 ease-in-out ${isLayoutOrderSwapped ? 'landscape:order-1 lg:order-1 landscape:pr-6 lg:pr-6' : 'landscape:order-2 lg:order-2 border-t landscape:border-t-0 lg:border-t-0 landscape:border-l lg:border-l border-slate-200/40 dark:border-white/[0.04] pt-6 landscape:pt-0 lg:pt-0 landscape:pl-6 lg:pl-6'}`}>
                        <div>
                 <div className="flex items-start justify-between gap-3 mb-6">
                   <div>
@@ -3236,7 +3236,7 @@ export const DashboardView: React.FC = () => {
                             className={`space-y-2 p-2.5 rounded-2xl border border-transparent hover:bg-slate-50/45 dark:hover:bg-white/[0.01] transition-all duration-200 relative group/widget ${activeMobileDetailTab === 'sentiment' ? 'block' : 'hidden landscape:block sm:block'}`}
                           >
                             <div className="flex items-center justify-between pb-1">
-                              <span className="block text-[10px] font-extrabold uppercase text-slate-450 dark:text-slate-500 tracking-wider">Sentimen</span>
+                              <span className="block text-[10px] font-extrabold uppercase text-slate-400 dark:text-slate-500 tracking-wider">Sentimen</span>
                             </div>
                             <div className="space-y-2 pb-1">
                               <div className="space-y-1">
@@ -3725,7 +3725,7 @@ export const DashboardView: React.FC = () => {
                 {isMapDetailPanelOpen ? <ChevronUp className="w-3.5 h-3.5 animate-pulse" /> : <ChevronDown className="w-3.5 h-3.5" />}
               </button>
 
-              <div className="text-[9.5px] uppercase font-mono font-extrabold text-emerald-600 dark:text-emerald-450 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/20 flex items-center gap-1.5">
+              <div className="text-[9.5px] uppercase font-mono font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/20 flex items-center gap-1.5">
                 <Activity className="w-3.5 h-3.5 animate-pulse" />
                 <span>Interaktif</span>
               </div>
@@ -3739,7 +3739,7 @@ export const DashboardView: React.FC = () => {
             <div className={`transition-all duration-500 ease-in-out flex flex-col justify-between ${
               isMapDetailPanelOpen ? "landscape:col-span-8 lg:col-span-8 w-full" : "landscape:col-span-12 lg:col-span-12 w-full"
             }`}>
-              <div className="w-full h-[300px] sm:h-[390px] lg:h-[450px] rounded-[20px] sm:rounded-[24px] overflow-hidden border border-slate-250/35 dark:border-white/5 relative z-0 shadow-inner group">
+              <div className="w-full h-[300px] sm:h-[390px] lg:h-[450px] rounded-[20px] sm:rounded-[24px] overflow-hidden border border-slate-200/35 dark:border-white/5 relative z-0 shadow-inner group">
                 <OSMMap 
                   selectedProvince={selectedProvince}
                   setSelectedProvince={(prov) => {
@@ -3784,7 +3784,7 @@ export const DashboardView: React.FC = () => {
                     const netPct = 100 - posPct - negPct;
 
                     let warningText = "SITUASI KONDUSIF";
-                    let warningColorClass = "text-emerald-650 dark:text-emerald-400 bg-emerald-500/5 dark:bg-emerald-500/10 border-emerald-500/20";
+                    let warningColorClass = "text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 dark:bg-emerald-500/10 border-emerald-500/20";
                     let WarningIcon = CheckCircle2;
 
                     if (pData.newsCount === 0) {
@@ -3793,7 +3793,7 @@ export const DashboardView: React.FC = () => {
                       WarningIcon = Info;
                     } else if (pData.negatif > pData.positif + pData.netral) {
                       warningText = "MASALAH NEGATIF DOMINAN";
-                      warningColorClass = "text-red-650 dark:text-red-400 bg-red-500/5 dark:bg-red-500/10 border-red-500/20";
+                      warningColorClass = "text-red-600 dark:text-red-400 bg-red-500/5 dark:bg-red-500/10 border-red-500/20";
                       WarningIcon = AlertTriangle;
                     } else if (pData.negatif > pData.positif) {
                       warningText = "PERINGATAN: RISIKO ISU MENINGKAT";
@@ -3801,7 +3801,7 @@ export const DashboardView: React.FC = () => {
                       WarningIcon = AlertTriangle;
                     } else if (pData.positif > pData.negatif) {
                       warningText = "DOMINAN POSITIF";
-                      warningColorClass = "text-emerald-650 dark:text-emerald-400 bg-emerald-500/5 dark:bg-emerald-500/10 border-emerald-500/10";
+                      warningColorClass = "text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 dark:bg-emerald-500/10 border-emerald-500/10";
                       WarningIcon = CheckCircle2;
                     } else {
                       warningText = "TREN PUBLIK NETRAL";
@@ -3844,10 +3844,10 @@ export const DashboardView: React.FC = () => {
                             initial={{ opacity: 0, y: 12, scale: 0.98 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             transition={{ duration: 0.45, ease: "easeOut" }}
-                            className={`bg-white dark:bg-[#1a1924]/60 border border-slate-150/40 dark:border-white/5 rounded-xl flex items-center justify-between shadow-xs transition-all ${isDetailCompact ? 'p-2' : 'p-3'}`}
+                            className={`bg-white dark:bg-[#1a1924]/60 border border-slate-200/40 dark:border-white/5 rounded-xl flex items-center justify-between shadow-xs transition-all ${isDetailCompact ? 'p-2' : 'p-3'}`}
                           >
                             <div>
-                              <span className="text-[9px] uppercase font-bold text-slate-400 dark:text-slate-550 tracking-wider block">Total Isu Wilayah</span>
+                              <span className="text-[9px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider block">Total Isu Wilayah</span>
                               <div className={`font-black font-display font-mono text-violet-605 dark:text-blue-400 mt-0.5 ${isDetailCompact ? 'text-base' : 'text-lg'}`}>
                                 {pData.newsCount} <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Laporan</span>
                               </div>
@@ -3858,21 +3858,21 @@ export const DashboardView: React.FC = () => {
                           </motion.div>
 
                           {/* Section 1: Sebaran & Statistik Sentimen */}
-                          <div className="border border-slate-150/20 dark:border-white/5 rounded-xl bg-slate-100/10 dark:bg-slate-900/10 overflow-hidden">
+                          <div className="border border-slate-200/20 dark:border-white/5 rounded-xl bg-slate-100/10 dark:bg-slate-900/10 overflow-hidden">
                             <div className={`w-full flex items-center justify-between text-[8px] uppercase font-black tracking-widest text-slate-500 dark:text-slate-400 font-mono select-none ${isDetailCompact ? 'px-2 py-1.5' : 'px-3 py-2'}`}>
                               <span className="flex items-center gap-1">RASIO SENTIMEN</span>
                             </div>
 
-                            <div className={`border-t border-slate-150/10 dark:border-white/5 transition-all ${isDetailCompact ? 'p-1.5 space-y-1.5' : 'p-3 space-y-3'}`}>
+                            <div className={`border-t border-slate-200/10 dark:border-white/5 transition-all ${isDetailCompact ? 'p-1.5 space-y-1.5' : 'p-3 space-y-3'}`}>
                                 {/* Grid: 3 Sentiment values cards */}
                                 <div className="grid grid-cols-3 gap-1.5">
                                   <motion.div 
                                     initial={{ opacity: 0, scale: 0.93, y: 8 }}
                                     animate={{ opacity: 1, scale: 1, y: 0 }}
                                     transition={{ duration: 0.4, delay: 0.05, ease: "easeOut" }}
-                                    className="bg-white dark:bg-[#1a1924]/60 border border-slate-150/40 dark:border-white/5 p-1.5 rounded-xl flex flex-col hover:border-emerald-500/20 transition-all duration-300 shadow-xs"
+                                    className="bg-white dark:bg-[#1a1924]/60 border border-slate-200/40 dark:border-white/5 p-1.5 rounded-xl flex flex-col hover:border-emerald-500/20 transition-all duration-300 shadow-xs"
                                   >
-                                    <span className="text-[8px] uppercase font-bold text-emerald-600 dark:text-emerald-450 tracking-wider">Positif</span>
+                                    <span className="text-[8px] uppercase font-bold text-emerald-600 dark:text-emerald-400 tracking-wider">Positif</span>
                                     <div className="flex items-baseline gap-0.5 mt-0.5">
                                       <span className="text-xs font-black font-mono text-emerald-500">{pData.positif}</span>
                                       {pData.newsCount > 0 && <span className="text-[7.5px] font-bold text-emerald-500">({posPct}%)</span>}
@@ -3883,7 +3883,7 @@ export const DashboardView: React.FC = () => {
                                     initial={{ opacity: 0, scale: 0.93, y: 8 }}
                                     animate={{ opacity: 1, scale: 1, y: 0 }}
                                     transition={{ duration: 0.4, delay: 0.1, ease: "easeOut" }}
-                                    className="bg-white dark:bg-[#1a1924]/60 border border-slate-150/40 dark:border-white/5 p-1.5 rounded-xl flex flex-col hover:border-red-500/20 transition-all duration-300 shadow-xs"
+                                    className="bg-white dark:bg-[#1a1924]/60 border border-slate-200/40 dark:border-white/5 p-1.5 rounded-xl flex flex-col hover:border-red-500/20 transition-all duration-300 shadow-xs"
                                   >
                                     <span className="text-[8px] uppercase font-bold text-red-500 dark:text-red-400 tracking-wider">Negatif</span>
                                     <div className="flex items-baseline gap-0.5 mt-0.5">
@@ -3896,7 +3896,7 @@ export const DashboardView: React.FC = () => {
                                     initial={{ opacity: 0, scale: 0.93, y: 8 }}
                                     animate={{ opacity: 1, scale: 1, y: 0 }}
                                     transition={{ duration: 0.4, delay: 0.15, ease: "easeOut" }}
-                                    className="bg-white dark:bg-[#1a1924]/60 border border-slate-150/40 dark:border-white/5 p-1.5 rounded-xl flex flex-col hover:border-blue-500/20 transition-all duration-300 shadow-xs"
+                                    className="bg-white dark:bg-[#1a1924]/60 border border-slate-200/40 dark:border-white/5 p-1.5 rounded-xl flex flex-col hover:border-blue-500/20 transition-all duration-300 shadow-xs"
                                   >
                                     <span className="text-[8px] uppercase font-bold text-blue-500 dark:text-blue-400 tracking-wider">Netral</span>
                                     <div className="flex items-baseline gap-0.5 mt-0.5">
@@ -3926,15 +3926,15 @@ export const DashboardView: React.FC = () => {
                           </div>
 
                           {/* Section 2: Diagnosis & Pilihan Isu */}
-                          <div className="border border-slate-150/20 dark:border-white/5 rounded-xl bg-slate-100/10 dark:bg-slate-900/10 overflow-hidden">
+                          <div className="border border-slate-200/20 dark:border-white/5 rounded-xl bg-slate-100/10 dark:bg-slate-900/10 overflow-hidden">
                             <div className={`w-full flex items-center justify-between text-[8px] uppercase font-black tracking-widest text-slate-500 dark:text-slate-400 font-mono select-none ${isDetailCompact ? 'px-2 py-1.5' : 'px-3 py-2'}`}>
                               <span className="flex items-center gap-1">INTERAKSI TOPIK</span>
                             </div>
 
-                            <div className={`border-t border-slate-150/10 dark:border-white/5 space-y-3.5 transition-all ${isDetailCompact ? 'p-1.5' : 'p-3'}`}>
+                            <div className={`border-t border-slate-200/10 dark:border-white/5 space-y-3.5 transition-all ${isDetailCompact ? 'p-1.5' : 'p-3'}`}>
                                 {/* Status Diagnosis Sentimen */}
                                 <div>
-                                  <span className="text-[8px] text-slate-450 dark:text-slate-500 font-extrabold uppercase tracking-widest block mb-1">Status Sentimen</span>
+                                  <span className="text-[8px] text-slate-400 dark:text-slate-500 font-extrabold uppercase tracking-widest block mb-1">Status Sentimen</span>
                                   <div className={`rounded-xl border flex items-center gap-2 text-xs font-semibold leading-relaxed ${warningColorClass} ${isDetailCompact ? 'p-2' : 'p-3'}`}>
                                     <WarningIcon className="w-4 h-4 shrink-0 animate-pulse" />
                                     <span className="text-[9px] uppercase font-extrabold tracking-wide">{warningText}</span>
@@ -3981,11 +3981,11 @@ export const DashboardView: React.FC = () => {
                                   }
 
                                   return (
-                                    <div className="space-y-3 pt-2.5 border-t border-slate-150/10 dark:border-white/5">
+                                    <div className="space-y-3 pt-2.5 border-t border-slate-200/10 dark:border-white/5">
                                       {/* Topik Terdeteksi */}
                                       {sortedCategories.length > 0 && (
                                         <div className="space-y-1">
-                                          <span className="text-[8px] text-slate-450 dark:text-slate-505 font-bold uppercase tracking-widest block">
+                                          <span className="text-[8px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest block">
                                             Topik Terdeteksi ({sortedCategories.length})
                                           </span>
                                           <div className="flex flex-wrap gap-1">
@@ -4026,7 +4026,7 @@ export const DashboardView: React.FC = () => {
                                       {/* Kata Kunci / Tags Terdeteksi */}
                                       {sortedTags.length > 0 && (
                                         <div className="space-y-1">
-                                          <span className="text-[8px] text-slate-450 dark:text-slate-505 font-bold uppercase tracking-widest block">
+                                          <span className="text-[8px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest block">
                                             Kata Kunci Isu ({Math.min(8, sortedTags.length)})
                                           </span>
                                           <div className="flex flex-wrap gap-1">

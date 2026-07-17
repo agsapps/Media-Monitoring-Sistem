@@ -576,13 +576,13 @@ export const PDFExportStudio: React.FC = () => {
                 
                 {/* Default Logo Left */}
                 <div className="space-y-2">
-                  <h4 className="text-[10px] font-bold text-slate-700 dark:text-slate-350 uppercase">1. Logo Default Kiri (Sistem)</h4>
+                  <h4 className="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase">1. Logo Default Kiri (Sistem)</h4>
                   <div className="flex items-center gap-2 bg-slate-50 dark:bg-white/[0.01] border border-slate-100 dark:border-white/5 p-2 rounded-xl justify-between">
                     <div className="flex items-center gap-2 min-w-0">
                       <img
                         src={defaultLogo}
                         alt="Logo Kiri Default"
-                        className="w-10 h-10 rounded-lg object-contain bg-white border border-slate-150 p-0.5"
+                        className="w-10 h-10 rounded-lg object-contain bg-white border border-slate-200 p-0.5"
                       />
                       <div className="min-w-0">
                         <p className="text-[10px] font-bold text-slate-800 dark:text-slate-200 truncate">Logo Kiri Sistem</p>
@@ -619,14 +619,14 @@ export const PDFExportStudio: React.FC = () => {
 
                 {/* Custom Left Logo (Temporary) */}
                 <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-white/5">
-                  <h4 className="text-[10px] font-bold text-slate-700 dark:text-slate-350 uppercase">2. Logo Kustom Kiri (Sekali Cetak)</h4>
+                  <h4 className="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase">2. Logo Kustom Kiri (Sekali Cetak)</h4>
                   {customLogo ? (
                     <div className="flex items-center gap-2 bg-slate-50 dark:bg-white/[0.01] border border-slate-100 dark:border-white/5 p-2 rounded-xl justify-between">
                       <div className="flex items-center gap-2 min-w-0">
                         <img
                           src={customLogo}
                           alt="Logo Kustom Kiri"
-                          className="w-10 h-10 rounded-lg object-contain bg-white border border-slate-150 p-0.5"
+                          className="w-10 h-10 rounded-lg object-contain bg-white border border-slate-200 p-0.5"
                         />
                         <div className="min-w-0">
                           <p className="text-[10px] font-bold text-slate-800 dark:text-slate-200 truncate">Logo Kiri Temporer</p>
@@ -687,13 +687,13 @@ export const PDFExportStudio: React.FC = () => {
 
                 {/* Default Logo Right */}
                 <div className="space-y-2">
-                  <h4 className="text-[10px] font-bold text-slate-700 dark:text-slate-350 uppercase">1. Logo Default Kanan (Sistem)</h4>
+                  <h4 className="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase">1. Logo Default Kanan (Sistem)</h4>
                   <div className="flex items-center gap-2 bg-slate-50 dark:bg-white/[0.01] border border-slate-100 dark:border-white/5 p-2 rounded-xl justify-between">
                     <div className="flex items-center gap-2 min-w-0">
                       <img
                         src={defaultLogoRight}
                         alt="Logo Kanan Default"
-                        className="w-10 h-10 rounded-lg object-contain bg-white border border-slate-150 p-0.5"
+                        className="w-10 h-10 rounded-lg object-contain bg-white border border-slate-200 p-0.5"
                       />
                       <div className="min-w-0">
                         <p className="text-[10px] font-bold text-slate-800 dark:text-slate-200 truncate">Logo Kanan Sistem</p>
@@ -730,14 +730,14 @@ export const PDFExportStudio: React.FC = () => {
 
                 {/* Custom Right Logo (Temporary) */}
                 <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-white/5">
-                  <h4 className="text-[10px] font-bold text-slate-700 dark:text-slate-350 uppercase">2. Logo Kustom Kanan (Sekali Cetak)</h4>
+                  <h4 className="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase">2. Logo Kustom Kanan (Sekali Cetak)</h4>
                   {customLogoRight ? (
                     <div className="flex items-center gap-2 bg-slate-50 dark:bg-white/[0.01] border border-slate-100 dark:border-white/5 p-2 rounded-xl justify-between">
                       <div className="flex items-center gap-2 min-w-0">
                         <img
                           src={customLogoRight}
                           alt="Logo Kustom Kanan"
-                          className="w-10 h-10 rounded-lg object-contain bg-white border border-slate-150 p-0.5"
+                          className="w-10 h-10 rounded-lg object-contain bg-white border border-slate-200 p-0.5"
                         />
                         <div className="min-w-0">
                           <p className="text-[10px] font-bold text-slate-800 dark:text-slate-200 truncate">Logo Kanan Temporer</p>
@@ -804,13 +804,13 @@ export const PDFExportStudio: React.FC = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <h4 className="text-[10px] font-bold text-slate-700 dark:text-slate-350 uppercase">Logo Default Cover Kiri</h4>
+                    <h4 className="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase">Logo Default Cover Kiri</h4>
                     <div className="flex items-center gap-2 bg-slate-50 dark:bg-white/[0.01] border border-slate-100 dark:border-white/5 p-2 rounded-xl justify-between">
                       <div className="flex items-center gap-2 min-w-0">
                         <img
                           src={defaultLogoCoverLeft}
                           alt="Logo Cover Kiri Default"
-                          className="w-10 h-10 rounded-lg object-contain bg-white border border-slate-150 p-0.5"
+                          className="w-10 h-10 rounded-lg object-contain bg-white border border-slate-200 p-0.5"
                         />
                         <div className="min-w-0">
                           <p className="text-[10px] font-bold text-slate-800 dark:text-slate-200 truncate">Logo Cover Kiri</p>
@@ -853,13 +853,13 @@ export const PDFExportStudio: React.FC = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <h4 className="text-[10px] font-bold text-slate-700 dark:text-slate-350 uppercase">Logo Default Cover Kanan</h4>
+                    <h4 className="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase">Logo Default Cover Kanan</h4>
                     <div className="flex items-center gap-2 bg-slate-50 dark:bg-white/[0.01] border border-slate-100 dark:border-white/5 p-2 rounded-xl justify-between">
                       <div className="flex items-center gap-2 min-w-0">
                         <img
                           src={defaultLogoCoverRight}
                           alt="Logo Cover Kanan Default"
-                          className="w-10 h-10 rounded-lg object-contain bg-white border border-slate-150 p-0.5"
+                          className="w-10 h-10 rounded-lg object-contain bg-white border border-slate-200 p-0.5"
                         />
                         <div className="min-w-0">
                           <p className="text-[10px] font-bold text-slate-800 dark:text-slate-200 truncate">Logo Cover Kanan</p>
@@ -982,7 +982,7 @@ export const PDFExportStudio: React.FC = () => {
                                   onClick={() => updateAttachmentSize(index, sz)}
                                   className={`text-[9.5px] font-black py-1 px-0.5 rounded-md transition duration-150 ${
                                     img.size === sz
-                                      ? 'bg-violet-650 text-white shadow-sm ring-1 ring-blue-700 dark:bg-blue-800'
+                                      ? 'bg-violet-600 text-white shadow-sm ring-1 ring-blue-700 dark:bg-blue-800'
                                       : 'bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-white/5 dark:hover:bg-white/10 dark:text-slate-300'
                                   }`}
                                 >

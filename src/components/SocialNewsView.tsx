@@ -1792,7 +1792,7 @@ export const SocialNewsView: React.FC = () => {
               {/* Caption Section */}
               <div className="space-y-1">
                 <span className="block text-[10px] uppercase font-bold tracking-wider text-slate-400">Caption Postingan</span>
-                <div className="p-3 bg-slate-50/50 dark:bg-slate-900/40 border border-slate-250/20 dark:border-white/5 rounded-xl text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
+                <div className="p-3 bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200/20 dark:border-white/5 rounded-xl text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
                   {selectedItem.caption}
                 </div>
               </div>

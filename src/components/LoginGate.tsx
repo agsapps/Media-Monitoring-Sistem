@@ -38,7 +38,7 @@ export const LoginGate: React.FC = () => {
         initial={{ opacity: 0, scale: 0.96, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
-        className="w-full max-w-md bg-white dark:bg-[#121118]/90 border border-slate-205 dark:border-white/5 rounded-[24px] shadow-2xl p-6 sm:p-8"
+        className="w-full max-w-md bg-white dark:bg-[#121118]/90 border border-slate-200 dark:border-white/5 rounded-[24px] shadow-2xl p-6 sm:p-8"
       >
         <div className="flex flex-col items-center text-center mb-6">
           <div className="w-24 h-24 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-white/5 p-3 flex items-center justify-center shadow-md mb-3.5 animate-fade-in">
@@ -47,7 +47,7 @@ export const LoginGate: React.FC = () => {
           <h2 className="text-xl font-black font-display text-slate-900 dark:text-white tracking-tight uppercase leading-none">
             LOGIN
           </h2>
-          <p className="text-[10px] uppercase font-bold tracking-widest text-slate-400 dark:text-slate-550 mt-1.5">
+          <p className="text-[10px] uppercase font-bold tracking-widest text-slate-400 dark:text-slate-500 mt-1.5">
             {settings.companyName || 'Media Intelligence Monitoring'}
           </p>
         </div>
@@ -78,7 +78,7 @@ export const LoginGate: React.FC = () => {
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Masukkan username Anda"
                 disabled={loading}
-                className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-white/5 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400/70 focus:outline-none focus:ring-2 focus:ring-blue-700/20 focus:border-blue-700 transition-all font-medium disabled:opacity-50"
+                className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/5 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400/70 focus:outline-none focus:ring-2 focus:ring-blue-700/20 focus:border-blue-700 transition-all font-medium disabled:opacity-50"
                 required
               />
             </div>
@@ -98,7 +98,7 @@ export const LoginGate: React.FC = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 disabled={loading}
-                className="w-full pl-10 pr-10 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-white/5 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400/70 focus:outline-none focus:ring-2 focus:ring-blue-700/20 focus:border-blue-700 transition-all font-mono disabled:opacity-50"
+                className="w-full pl-10 pr-10 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/5 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400/70 focus:outline-none focus:ring-2 focus:ring-blue-700/20 focus:border-blue-700 transition-all font-mono disabled:opacity-50"
                 required
               />
               <button
@@ -114,7 +114,7 @@ export const LoginGate: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-slate-900 hover:bg-slate-800 dark:bg-blue-800 dark:hover:bg-violet-650 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-lg hover:shadow-blue-700/10 active:scale-[0.98] transition-all disabled:opacity-50 cursor-pointer uppercase tracking-wider"
+            className="w-full flex items-center justify-center gap-2 py-3 bg-slate-900 hover:bg-slate-800 dark:bg-blue-800 dark:hover:bg-violet-600 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-lg hover:shadow-blue-700/10 active:scale-[0.98] transition-all disabled:opacity-50 cursor-pointer uppercase tracking-wider"
           >
             {loading ? 'Mengotentikasi...' : 'Masuk Portal'}
           </button>

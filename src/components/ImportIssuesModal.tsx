@@ -483,7 +483,7 @@ export const ImportIssuesModal: React.FC<ImportIssuesModalProps> = ({ isOpen, on
                       value={pasteText}
                       onChange={e => setPasteText(e.target.value)}
                       placeholder={'Judul Berita\tURL/Tautan\tSumber Media\ttanggal Publikasi\t...\nContoh Berita\thttps://..\tDetikcom\t2026-05-29\t...'}
-                      className="flex-1 w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 p-3 rounded-xl text-xs font-mono text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 leading-relaxed min-h-[140px]"
+                      className="flex-1 w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-3 rounded-xl text-xs font-mono text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 leading-relaxed min-h-[140px]"
                     />
                     <button
                       type="button"
@@ -502,7 +502,7 @@ export const ImportIssuesModal: React.FC<ImportIssuesModalProps> = ({ isOpen, on
             // Preview Step
             <div className="space-y-5">
               {/* Validation Summary Stats banner */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-slate-50 dark:bg-slate-950/40 rounded-2xl border border-slate-200/55 dark:border-slate-850 gap-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-slate-50 dark:bg-slate-950/40 rounded-2xl border border-slate-200/55 dark:border-slate-800 gap-3">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center">
                     <Database className="w-5.5 h-5.5 text-emerald-600 dark:text-emerald-400" />
@@ -532,11 +532,11 @@ export const ImportIssuesModal: React.FC<ImportIssuesModalProps> = ({ isOpen, on
               </div>
 
               {/* Data Rows Preview Container Table */}
-              <div className="border border-slate-100 dark:border-slate-850 rounded-2xl overflow-hidden bg-white dark:bg-slate-900">
+              <div className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900">
                 <div className="overflow-x-auto max-h-[42vh]">
                   <table className="w-full text-left border-collapse min-w-[1000px]">
                     <thead>
-                      <tr className="bg-slate-50 dark:bg-slate-950/40 text-slate-400 font-bold font-mono text-[9.5px] uppercase tracking-wider border-b border-slate-150 dark:border-slate-850">
+                      <tr className="bg-slate-50 dark:bg-slate-950/40 text-slate-400 font-bold font-mono text-[9.5px] uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
                         <th className="py-2.5 px-3">Status Data</th>
                         <th className="py-2.5 px-3">Judul Berita</th>
                         <th className="py-2.5 px-3">Highlight / Ringkasan</th>
@@ -548,9 +548,9 @@ export const ImportIssuesModal: React.FC<ImportIssuesModalProps> = ({ isOpen, on
                         <th className="py-2.5 px-3">Tags & Tautan</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-850 text-[11px] text-slate-700 dark:text-slate-300">
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-[11px] text-slate-700 dark:text-slate-300">
                       {parsedData.map((item, index) => (
-                        <tr key={index} className={`hover:bg-slate-50/50 dark:hover:bg-slate-850/15 transition ${!item.isValid ? 'bg-rose-50/20 dark:bg-rose-950/5' : ''}`}>
+                        <tr key={index} className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/15 transition ${!item.isValid ? 'bg-rose-50/20 dark:bg-rose-950/5' : ''}`}>
                           
                           {/* Match State Badge */}
                           <td className="py-3 px-3">
@@ -653,7 +653,7 @@ export const ImportIssuesModal: React.FC<ImportIssuesModalProps> = ({ isOpen, on
           ) : (
             <button
               onClick={() => setImportStep('upload')}
-              className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-700 bg-white dark:bg-slate-850 hover:bg-slate-50 hover:border-slate-300 border border-slate-200 dark:border-slate-800 rounded-xl transition cursor-pointer order-2 sm:order-1"
+              className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 hover:border-slate-300 border border-slate-200 dark:border-slate-800 rounded-xl transition cursor-pointer order-2 sm:order-1"
             >
               Kembali ke Upload
             </button>

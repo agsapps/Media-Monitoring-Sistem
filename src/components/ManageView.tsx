@@ -2106,7 +2106,7 @@ export const ManageView: React.FC = () => {
                 <button
                   onClick={handleCreateNewSheets}
                   disabled={isCreatingSheet}
-                  className="flex-1 py-2 px-3 bg-emerald-50 hover:bg-emerald-150 border border-emerald-200 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-bold text-xs rounded-xl shadow-sm transition active:scale-95 cursor-pointer disabled:opacity-50"
+                  className="flex-1 py-2 px-3 bg-emerald-50 hover:bg-emerald-200 border border-emerald-200 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-bold text-xs rounded-xl shadow-sm transition active:scale-95 cursor-pointer disabled:opacity-50"
                 >
                   {isCreatingSheet ? 'Memproses...' : 'Buat Baru ✨'}
                 </button>
@@ -2216,7 +2216,7 @@ export const ManageView: React.FC = () => {
                   setFilterEndDate('');
                   showToast('Berhasil membersihkan semua kriteria filter', 'info');
                 }}
-                className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-100 hover:bg-slate-250 dark:bg-slate-800 dark:hover:bg-slate-705 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold transition active:scale-95 cursor-pointer border border-slate-200/30"
+                className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-705 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold transition active:scale-95 cursor-pointer border border-slate-200/30"
                 title="Bersihkan Semua Filter"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
@@ -2255,7 +2255,7 @@ export const ManageView: React.FC = () => {
               transition={{ duration: 0.3, ease: 'easeInOut' }}
               className="overflow-hidden"
             >
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 p-5 bg-slate-50/50 dark:bg-slate-950/30 rounded-2xl border border-slate-150/80 dark:border-slate-800/60">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 p-5 bg-slate-50/50 dark:bg-slate-950/30 rounded-2xl border border-slate-200/80 dark:border-slate-800/60">
                 {/* 1. Category Selector */}
                 <div className="space-y-1">
                   <label className="block text-[10px] md:text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Kategori</label>
@@ -2265,7 +2265,7 @@ export const ManageView: React.FC = () => {
                       setFilterCategory(e.target.value);
                       showToast(`Filter kategori diset ke: ${e.target.value}`, 'success');
                     }}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-550/20 transition cursor-pointer [color-scheme:light] dark:[color-scheme:dark]"
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition cursor-pointer [color-scheme:light] dark:[color-scheme:dark]"
                   >
                     <option value="Semua">Semua Topik</option>
                     {categories.map((cat) => (
@@ -2283,7 +2283,7 @@ export const ManageView: React.FC = () => {
                       setFilterSentiment(e.target.value);
                       showToast(`Filter sentimen diset ke: ${e.target.value}`, 'success');
                     }}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-550/20 transition cursor-pointer [color-scheme:light] dark:[color-scheme:dark]"
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition cursor-pointer [color-scheme:light] dark:[color-scheme:dark]"
                   >
                     <option value="Semua">Semua Sentimen</option>
                     <option value="Positif">Positif 🟢</option>
@@ -2301,7 +2301,7 @@ export const ManageView: React.FC = () => {
                       setFilterLocation(e.target.value);
                       showToast(`Filter wilayah diset ke: ${e.target.value}`, 'success');
                     }}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-550/20 transition cursor-pointer [color-scheme:light] dark:[color-scheme:dark]"
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition cursor-pointer [color-scheme:light] dark:[color-scheme:dark]"
                   >
                     <option value="Semua">Semua Wilayah</option>
                     <option value="Nasional">Nasional</option>
@@ -2320,7 +2320,7 @@ export const ManageView: React.FC = () => {
                       setFilterMedia(e.target.value);
                       showToast(`Filter media diset ke: ${e.target.value}`, 'success');
                     }}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-550/20 transition cursor-pointer [color-scheme:light] dark:[color-scheme:dark]"
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition cursor-pointer [color-scheme:light] dark:[color-scheme:dark]"
                   >
                     <option value="Semua">Semua Media</option>
                     {uniqueMedias.map((med, idx) => (
@@ -2338,7 +2338,7 @@ export const ManageView: React.FC = () => {
                       setFilterStatus(e.target.value);
                       showToast(`Filter status diset ke: ${e.target.value}`, 'success');
                     }}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-550/20 transition cursor-pointer [color-scheme:light] dark:[color-scheme:dark]"
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition cursor-pointer [color-scheme:light] dark:[color-scheme:dark]"
                   >
                     <option value="Semua">Semua Status</option>
                     <option value="Published">Published 🌐</option>
@@ -2356,7 +2356,7 @@ export const ManageView: React.FC = () => {
                       setFilterStartDate(e.target.value);
                       showToast(`Filter rentang tanggal diset`, 'success');
                     }}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-550/20 transition [color-scheme:light] dark:[color-scheme:dark]"
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition [color-scheme:light] dark:[color-scheme:dark]"
                   />
                 </div>
 
@@ -2370,7 +2370,7 @@ export const ManageView: React.FC = () => {
                       setFilterEndDate(e.target.value);
                       showToast(`Filter rentang tanggal diset`, 'success');
                     }}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-550/20 transition [color-scheme:light] dark:[color-scheme:dark]"
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition [color-scheme:light] dark:[color-scheme:dark]"
                   />
                 </div>
               </div>
@@ -2567,7 +2567,7 @@ export const ManageView: React.FC = () => {
                       <div className="text-[10px] text-slate-400/80 dark:text-slate-500 font-medium flex items-wrap items-center gap-1.5 font-mono">
                         <span>📅 {formatDateDDMMYYYY(item.publishDate)} {item.publishTime || '12:00'}</span>
                         <span>•</span>
-                        <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-950 px-1.5 py-0.5 rounded border border-slate-100 dark:border-slate-850">
+                        <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-950 px-1.5 py-0.5 rounded border border-slate-100 dark:border-slate-800">
                           <span className="text-slate-400">📍</span>
                           <select
                             value={item.location || 'Nasional'}
@@ -2582,7 +2582,7 @@ export const ManageView: React.FC = () => {
                                 showToast(`Wilayah berhasil diubah menjadi "${nextLoc}"`, 'success');
                               }
                             }}
-                            className="bg-transparent text-indigo-650 dark:text-indigo-400 font-bold focus:outline-none cursor-pointer hover:underline text-[10px]"
+                            className="bg-transparent text-indigo-600 dark:text-indigo-400 font-bold focus:outline-none cursor-pointer hover:underline text-[10px]"
                             title="Klik untuk mengubah Wilayah"
                           >
                             <option value="Nasional" className="text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">Nasional</option>
@@ -2600,7 +2600,7 @@ export const ManageView: React.FC = () => {
                             setTab('dashboard');
                             showToast(`Membuka lokasi ${item.location || 'Nasional'} pada Peta Analitik`, 'info');
                           }}
-                          className="text-slate-500 hover:text-indigo-650 dark:hover:text-indigo-400 font-bold hover:underline inline-flex items-center gap-0.5 cursor-pointer"
+                          className="text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 font-bold hover:underline inline-flex items-center gap-0.5 cursor-pointer"
                           title="Klik untuk melihat sebaran isu di Peta Analitik"
                         >
                           Peta 🗺️
@@ -2629,7 +2629,7 @@ export const ManageView: React.FC = () => {
                               }
                             }
                           }}
-                          className="appearance-none bg-slate-100/80 dark:bg-slate-800/80 text-slate-800 dark:text-slate-200 font-bold text-[10px] pl-2 py-1 pr-6 rounded-md border border-slate-200 dark:border-slate-700/60 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 hover:bg-slate-200/90 hover:dark:bg-slate-750 transition-all cursor-pointer min-w-[125px] select-none"
+                          className="appearance-none bg-slate-100/80 dark:bg-slate-800/80 text-slate-800 dark:text-slate-200 font-bold text-[10px] pl-2 py-1 pr-6 rounded-md border border-slate-200 dark:border-slate-700/60 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 hover:bg-slate-200/90 hover:dark:bg-slate-700 transition-all cursor-pointer min-w-[125px] select-none"
                           title="Klik untuk mengubah Kategori"
                         >
                           {categories.map((cat) => (
@@ -2742,7 +2742,7 @@ export const ManageView: React.FC = () => {
                   setItemsPerPage(Number(e.target.value));
                   setCurrentPage(1);
                 }}
-                className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 rounded px-1.5 py-1 text-slate-700 dark:text-slate-300 font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500 hover:bg-slate-250 transition-all cursor-pointer min-w-[65px]"
+                className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 rounded px-1.5 py-1 text-slate-700 dark:text-slate-300 font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500 hover:bg-slate-200 transition-all cursor-pointer min-w-[65px]"
               >
                 <option value={10}>10</option>
                 <option value={25}>25</option>
@@ -2830,19 +2830,19 @@ export const ManageView: React.FC = () => {
                 <div className="flex items-center gap-4 mt-1">
                   <div className="text-center">
                     <span className="block text-xs font-bold text-emerald-500">Positif</span>
-                    <span className="text-lg font-black text-slate-800 dark:text-slate-250 font-display">
+                    <span className="text-lg font-black text-slate-800 dark:text-slate-200 font-display">
                       {highlights?.filter(h => (h.sentiment || '').toLowerCase().includes('pos')).length || 0}
                     </span>
                   </div>
                   <div className="text-center border-x border-slate-100 dark:border-slate-800 px-4">
                     <span className="block text-xs font-bold text-slate-400">Netral</span>
-                    <span className="text-lg font-black text-slate-800 dark:text-slate-250 font-display">
+                    <span className="text-lg font-black text-slate-800 dark:text-slate-200 font-display">
                       {highlights?.filter(h => (h.sentiment || '').toLowerCase().includes('net') || !(h.sentiment)).length || 0}
                     </span>
                   </div>
                   <div className="text-center">
                     <span className="block text-xs font-bold text-rose-500">Negatif</span>
-                    <span className="text-lg font-black text-slate-800 dark:text-slate-250 font-display">
+                    <span className="text-lg font-black text-slate-800 dark:text-slate-200 font-display">
                       {highlights?.filter(h => (h.sentiment || '').toLowerCase().includes('neg')).length || 0}
                     </span>
                   </div>
@@ -2900,7 +2900,7 @@ export const ManageView: React.FC = () => {
                     return (
                       <div 
                         key={hl.id} 
-                        className="flex flex-col md:flex-row items-start md:items-center gap-4 p-4 bg-slate-50/45 dark:bg-slate-900/40 border border-slate-150/70 dark:border-slate-800 rounded-xl hover:border-slate-200 dark:hover:border-slate-700/80 transition-all group"
+                        className="flex flex-col md:flex-row items-start md:items-center gap-4 p-4 bg-slate-50/45 dark:bg-slate-900/40 border border-slate-200/70 dark:border-slate-800 rounded-xl hover:border-slate-200 dark:hover:border-slate-700/80 transition-all group"
                       >
                         {/* 1. ORDER CONTROLS */}
                         <div className="flex flex-row md:flex-col items-center gap-1.5 self-center shrink-0">
@@ -2927,7 +2927,7 @@ export const ManageView: React.FC = () => {
 
                         {/* 2. IMAGE (IF ANY) */}
                         {hl.imageUrl ? (
-                          <div className="w-14 h-14 rounded-xl border border-slate-150 dark:border-slate-800 overflow-hidden shrink-0 hidden sm:block relative bg-slate-100">
+                          <div className="w-14 h-14 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shrink-0 hidden sm:block relative bg-slate-100">
                             <img 
                               src={hl.imageUrl} 
                               alt="Highlight" 
@@ -2939,7 +2939,7 @@ export const ManageView: React.FC = () => {
                             />
                           </div>
                         ) : (
-                          <div className="w-14 h-14 rounded-xl border border-slate-150 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 flex items-center justify-center shrink-0 hidden sm:flex text-slate-300 dark:text-slate-700">
+                          <div className="w-14 h-14 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 flex items-center justify-center shrink-0 hidden sm:flex text-slate-300 dark:text-slate-700">
                             <Star className="w-5 h-5 fill-current" />
                           </div>
                         )}
@@ -3344,7 +3344,7 @@ export const ManageView: React.FC = () => {
                   </p>
                 </div>
               ) : (
-                <div className="divide-y divide-slate-150 dark:divide-slate-800">
+                <div className="divide-y divide-slate-200 dark:divide-slate-800">
                   {filteredCrawlerLogs.map((log: any, idx: number) => {
                     const isExpanded = expandedLogId === log.id;
                     
@@ -3366,7 +3366,7 @@ export const ManageView: React.FC = () => {
                         pulse: 'bg-rose-500'
                       }
                     }[log.status as 'success' | 'warning' | 'error'] || {
-                      bg: 'bg-slate-50 dark:bg-slate-900 border-slate-150 text-slate-600',
+                      bg: 'bg-slate-50 dark:bg-slate-900 border-slate-200 text-slate-600',
                       badge: 'UNKNOWN',
                       pulse: 'bg-slate-500'
                     };
@@ -3465,7 +3465,7 @@ export const ManageView: React.FC = () => {
                               </div>
 
                               {log.decodedUrl && log.decodedUrl !== log.originalUrl && (
-                                <div className="pt-1.5 border-t border-slate-50 dark:border-slate-850">
+                                <div className="pt-1.5 border-t border-slate-50 dark:border-slate-800">
                                   <span className="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">URL Hasil Dekode (Fast-path)</span>
                                   <div className="font-mono text-[10.5px] break-all font-medium text-emerald-600 dark:text-emerald-500">
                                     {log.decodedUrl}
@@ -3474,7 +3474,7 @@ export const ManageView: React.FC = () => {
                               )}
 
                               {log.resolvedUrl && log.resolvedUrl !== log.originalUrl && (
-                                <div className="pt-1.5 border-t border-slate-50 dark:border-slate-850">
+                                <div className="pt-1.5 border-t border-slate-50 dark:border-slate-800">
                                   <span className="block text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">URL Akhir yang Diselesaikan</span>
                                   <a 
                                     href={log.resolvedUrl} 
@@ -3493,7 +3493,7 @@ export const ManageView: React.FC = () => {
                             <div className="space-y-1.5">
                               <span className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider">Rantai Pengalihan (Redirect Chain)</span>
                               {log.redirectChain && log.redirectChain.length > 0 ? (
-                                <ol className="list-decimal list-inside font-mono text-[10px] bg-slate-100 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200/40 dark:border-slate-850 space-y-1 divide-y divide-slate-150/40 dark:divide-slate-850/30">
+                                <ol className="list-decimal list-inside font-mono text-[10px] bg-slate-100 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200/40 dark:border-slate-800 space-y-1 divide-y divide-slate-200/40 dark:divide-slate-800/30">
                                   {log.redirectChain.map((url: string, index: number) => (
                                     <li key={index} className="pt-1 first:pt-0 text-slate-500 dark:text-slate-400 truncate" title={url}>
                                       <span className="text-[9px] bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-1 py-0.2 rounded mr-1 font-sans">Hop {index + 1}</span>
@@ -3643,7 +3643,7 @@ export const ManageView: React.FC = () => {
                   if (draftItems.length === 0) return null;
 
                   return (
-                    <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-150 dark:border-slate-800 rounded-2xl p-4 space-y-3 transition-all shadow-sm">
+                    <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 space-y-3 transition-all shadow-sm">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <div className="p-1.5 bg-indigo-50 dark:bg-indigo-950/65 text-indigo-600 dark:text-indigo-400 rounded-lg">
@@ -3652,7 +3652,7 @@ export const ManageView: React.FC = () => {
                           <div>
                             <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
                               Draf Isu Menunggu Verifikasi ({draftItems.length})
-                              <span className="px-1.5 py-0.5 text-[8.5px] bg-slate-100 dark:bg-slate-850 text-slate-700 dark:text-slate-300 font-extrabold rounded-md uppercase tracking-wider font-mono">
+                              <span className="px-1.5 py-0.5 text-[8.5px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-extrabold rounded-md uppercase tracking-wider font-mono">
                                 DRAFT REVIEW
                               </span>
                             </h4>
@@ -3664,7 +3664,7 @@ export const ManageView: React.FC = () => {
                       </div>
 
                       <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
-                        <div className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-950 border border-slate-150 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs">
+                        <div className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs">
                           {draftItems.map((item, idx) => {
                             const isSelected = editingId === item.id;
                             return (
@@ -3678,7 +3678,7 @@ export const ManageView: React.FC = () => {
                               >
                                 <div className="space-y-1 flex-1 min-w-0">
                                   <div className="flex flex-wrap items-center gap-1.5">
-                                    <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-650 dark:text-slate-300 text-[9.5px] font-black rounded-md font-mono">
+                                    <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[9.5px] font-black rounded-md font-mono">
                                       {item.mediaName || 'Media'}
                                     </span>
                                     <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
@@ -3694,10 +3694,10 @@ export const ManageView: React.FC = () => {
                                       </span>
                                     )}
                                   </div>
-                                  <h5 className="text-xs font-bold text-slate-850 dark:text-slate-200 line-clamp-1.5 leading-snug">
+                                  <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200 line-clamp-1.5 leading-snug">
                                     {item.title}
                                   </h5>
-                                  <p className="text-[9.5px] text-slate-450 dark:text-slate-500 truncate select-all font-mono">
+                                  <p className="text-[9.5px] text-slate-400 dark:text-slate-500 truncate select-all font-mono">
                                     🔗 {item.link}
                                   </p>
                                 </div>
@@ -3708,7 +3708,7 @@ export const ManageView: React.FC = () => {
                                     handleEditClick(item);
                                     showToast('Draf crawler dimuat! Silakan review detail isu lalu simpan untuk merilisnya. ✨', 'success');
                                   }}
-                                  className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-650 dark:bg-indigo-950/40 dark:text-indigo-400 dark:hover:bg-indigo-900/40 border border-indigo-200/20 text-[11px] font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap self-end sm:self-center"
+                                  className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400 dark:hover:bg-indigo-900/40 border border-indigo-200/20 text-[11px] font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap self-end sm:self-center"
                                 >
                                   <Sparkles className="w-3 h-3 text-amber-500 animate-pulse" />
                                   <span>Review & Terbitkan 📝</span>
@@ -3794,7 +3794,7 @@ export const ManageView: React.FC = () => {
                             type="button"
                             onClick={handleGeminiAnalyze}
                             disabled={isAiLoading}
-                            className="text-[10px] text-indigo-650 hover:text-indigo-850 dark:text-indigo-400 dark:hover:text-indigo-300 font-bold flex items-center gap-0.5 transition cursor-pointer disabled:opacity-55"
+                            className="text-[10px] text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 font-bold flex items-center gap-0.5 transition cursor-pointer disabled:opacity-55"
                           >
                             <Sparkles className="w-2.5 h-2.5 text-amber-500 animate-pulse" />
                             {isAiLoading ? 'Menganalisis...' : 'Lengkapi dengan AI ✨'}
@@ -3810,7 +3810,7 @@ export const ManageView: React.FC = () => {
                       <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                         {linkRows.map((rowVal, rowIdx) => (
                           <div key={rowIdx} className="flex items-center gap-1.5 group">
-                            <span className="text-[10px] font-mono text-slate-400 dark:text-slate-550 w-4">{rowIdx + 1}.</span>
+                            <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 w-4">{rowIdx + 1}.</span>
                             <input
                               type="url"
                               value={rowVal}
@@ -3956,7 +3956,7 @@ export const ManageView: React.FC = () => {
                       )}
 
                       <details className="text-[10px] text-slate-500 bg-slate-100/45 dark:bg-slate-900/40 p-2 rounded-lg border border-slate-200/40 dark:border-slate-800/40">
-                        <summary className="cursor-pointer select-none font-bold text-slate-505 dark:text-slate-400">Atau Tempel Banyak Link Sekaligus (Bulk Paste)</summary>
+                        <summary className="cursor-pointer select-none font-bold text-slate-500 dark:text-slate-400">Atau Tempel Banyak Link Sekaligus (Bulk Paste)</summary>
                         <div className="mt-2 space-y-2">
                           <textarea
                             rows={2}
@@ -3982,7 +3982,7 @@ export const ManageView: React.FC = () => {
                       {multiLinks.length > 0 ? (
                         <div className="space-y-1.5">
                           <span className="block text-[9.5px] font-bold text-slate-400 tracking-wider uppercase font-sans">Daftar Link ({multiLinks.length}):</span>
-                          <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto p-1.5 bg-white dark:bg-slate-950 rounded-lg border border-slate-100 dark:border-slate-850">
+                          <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto p-1.5 bg-white dark:bg-slate-950 rounded-lg border border-slate-100 dark:border-slate-800">
                             {multiLinks.map((item, idx) => {
                               let domain = 'Link';
                               try {
@@ -4010,7 +4010,7 @@ export const ManageView: React.FC = () => {
                                       setMultiLinks(prev => prev.filter((_, i) => i !== idx));
                                       showToast('Tautan dibuang!', 'info');
                                     }}
-                                    className="text-[11px] text-slate-500 hover:text-red-500 bg-slate-100 hover:bg-red-50 dark:bg-slate-850 dark:hover:bg-red-955/20 px-1 rounded transition ml-1 font-mono cursor-pointer"
+                                    className="text-[11px] text-slate-500 hover:text-red-500 bg-slate-100 hover:bg-red-50 dark:bg-slate-800 dark:hover:bg-red-955/20 px-1 rounded transition ml-1 font-mono cursor-pointer"
                                     title="Buang link ini"
                                   >
                                     ×
@@ -4038,7 +4038,7 @@ export const ManageView: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => handleSaveSubmit()}
-                              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-gradient-to-r from-blue-800 via-indigo-600 to-indigo-700 hover:from-blue-900 hover:to-indigo-850 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-500/15 hover:shadow-indigo-500/25 active:scale-[0.98] transition-all duration-200 cursor-pointer border border-indigo-400/20 tracking-wider"
+                              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-gradient-to-r from-blue-800 via-indigo-600 to-indigo-700 hover:from-blue-900 hover:to-indigo-800 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-500/15 hover:shadow-indigo-500/25 active:scale-[0.98] transition-all duration-200 cursor-pointer border border-indigo-400/20 tracking-wider"
                             >
                               <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
                               <span>PROSES SCRAPE KOLEKTIF AI ({multiLinks.filter(l => l.isValid).length} TAUTAN VALID)</span>
@@ -4104,7 +4104,7 @@ export const ManageView: React.FC = () => {
                             className={`px-2 py-1 text-[10px] font-bold rounded-lg font-sans transition cursor-pointer ${
                               mediaId === m.id
                                 ? 'bg-indigo-600 text-white shadow'
-                                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-850 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800'
                             }`}
                           >
                             {m.name} <span className="text-[8px] opacity-70">({m.type})</span>
@@ -4306,7 +4306,7 @@ export const ManageView: React.FC = () => {
                             }
                           }}
                           disabled={isAiLoading}
-                          className="text-[10px] text-indigo-650 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 font-extrabold transition flex items-center gap-0.5 cursor-pointer disabled:opacity-50 hover:underline"
+                          className="text-[10px] text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 font-extrabold transition flex items-center gap-0.5 cursor-pointer disabled:opacity-50 hover:underline"
                         >
                           {isAiLoading ? 'Menarik...' : 'Ambil dari Tautan'}
                         </button>
@@ -4368,7 +4368,7 @@ export const ManageView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsFormOpen(false)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-250 dark:bg-slate-850 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-xs rounded-xl transition"
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-xs rounded-xl transition"
                 >
                   Urungkan
                 </button>
@@ -4376,7 +4376,7 @@ export const ManageView: React.FC = () => {
                   type="submit"
                   className={`flex items-center justify-center gap-2 px-5 py-2 text-white font-bold text-xs rounded-xl shadow-lg transition cursor-pointer ${
                     isMultiLinkMode 
-                      ? 'bg-gradient-to-r from-blue-800 to-indigo-600 hover:from-blue-900 hover:to-indigo-750 shadow-indigo-500/10'
+                      ? 'bg-gradient-to-r from-blue-800 to-indigo-600 hover:from-blue-900 hover:to-indigo-700 shadow-indigo-500/10'
                       : 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/10'
                   }`}
                 >
@@ -4578,7 +4578,7 @@ export const ManageView: React.FC = () => {
                     type="button"
                     onClick={() => setIsFormOpen(false)}
                     disabled={isMultiCrawling}
-                    className="px-4 py-2 bg-slate-100 hover:bg-slate-250 dark:bg-slate-850 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-xs rounded-xl transition disabled:opacity-50 cursor-pointer"
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-xs rounded-xl transition disabled:opacity-50 cursor-pointer"
                   >
                     Tutup
                   </button>
@@ -4852,7 +4852,7 @@ export const ManageView: React.FC = () => {
       {/* POPUP PROGRESS BULK PROCESSING */}
       {isBulkProcessing && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl border border-slate-150 dark:border-slate-800 p-6 shadow-2xl text-center space-y-4">
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-2xl text-center space-y-4">
             <div className="relative inline-flex items-center justify-center">
               <div className="w-16 h-16 rounded-full border-4 border-indigo-100 dark:border-indigo-950 border-t-indigo-600 animate-spin" />
               <Sparkles className="w-6 h-6 text-amber-500 absolute animate-pulse" />
@@ -4863,7 +4863,7 @@ export const ManageView: React.FC = () => {
               <p className="text-xs text-slate-400">Asisten AI sedang mengeruk halaman berita & menganalisis sentimen...</p>
             </div>
 
-            <div className="bg-slate-50 dark:bg-slate-950/40 p-3.5 rounded-xl border border-slate-100 dark:border-slate-850 space-y-2">
+            <div className="bg-slate-50 dark:bg-slate-950/40 p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 space-y-2">
               <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
                 <span>PROGRESS SCRAPE</span>
                 <span>{bulkProgress.current} / {bulkProgress.total} TAUTAN</span>
@@ -4874,7 +4874,7 @@ export const ManageView: React.FC = () => {
                   style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
                 />
               </div>
-              <p className="text-[10px] text-slate-450 truncate max-w-full font-mono mt-1" title={bulkProgress.currentUrl}>
+              <p className="text-[10px] text-slate-400 truncate max-w-full font-mono mt-1" title={bulkProgress.currentUrl}>
                 {bulkProgress.currentUrl || 'Mengekstrak metadata...'}
               </p>
             </div>
@@ -4938,7 +4938,7 @@ export const ManageView: React.FC = () => {
                           value={item.url}
                           onChange={(e) => updateMultiLinkValue(index, e.target.value)}
                           placeholder="Contoh: https://www.tribunnews.com/..."
-                          className="w-full mt-1.5 px-2.5 py-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-[10.5px] font-mono text-slate-850 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+                          className="w-full mt-1.5 px-2.5 py-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-[10.5px] font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
                         />
 
                         {!item.isValid && (
@@ -4969,7 +4969,7 @@ export const ManageView: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-4 border-t border-slate-100 dark:border-slate-850 bg-slate-50 dark:bg-slate-950/20 flex items-center justify-between">
+            <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/20 flex items-center justify-between">
               <button
                 type="button"
                 onClick={() => {
@@ -4997,7 +4997,7 @@ export const ManageView: React.FC = () => {
       {/* POPUP SUNTING & VALIDASI HASIL AI KOLEKTIF */}
       {isReviewModalOpen && scrapedResultsForReview.length > 0 && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-hidden animate-fade-in">
-          <div className="relative w-full max-w-6xl bg-white dark:bg-slate-900 rounded-2xl border border-slate-150 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col md:flex-row h-[90vh] max-h-[850px] animate-scale-up">
+          <div className="relative w-full max-w-6xl bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col md:flex-row h-[90vh] max-h-[850px] animate-scale-up">
             
             {/* SIDEBAR ON THE LEFT */}
             <div className="w-full md:w-80 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800 flex flex-col bg-slate-50 dark:bg-slate-950/30 flex-shrink-0">
@@ -5006,7 +5006,7 @@ export const ManageView: React.FC = () => {
                   <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider font-mono">Hasil Ekstraksi AI</h3>
                   <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Menunggu Verifikasi ({scrapedResultsForReview.length})</p>
                 </div>
-                <span className="px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950 text-[10px] font-bold text-indigo-700 dark:text-indigo-350">
+                <span className="px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950 text-[10px] font-bold text-indigo-700 dark:text-indigo-300">
                   Draf
                 </span>
               </div>
@@ -5040,7 +5040,7 @@ export const ManageView: React.FC = () => {
                       className={`w-full text-left p-3 rounded-xl border transition-all flex items-start gap-2.5 relative group cursor-pointer ${
                         isActive
                           ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/10'
-                          : 'bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-850 border-slate-150 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                          : 'bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
                       }`}
                     >
                       <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
@@ -5085,7 +5085,7 @@ export const ManageView: React.FC = () => {
                   type="button"
                   onClick={handleConfirmAndPublishAllReviews}
                   disabled={isReviewBatchSaving || isSaving || scrapedResultsForReview.length === 0}
-                  className="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-gradient-to-r from-blue-800 via-indigo-600 to-indigo-700 hover:from-blue-900 hover:to-indigo-850 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/10 transition cursor-pointer active:scale-95"
+                  className="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-gradient-to-r from-blue-800 via-indigo-600 to-indigo-700 hover:from-blue-900 hover:to-indigo-800 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/10 transition cursor-pointer active:scale-95"
                 >
                   <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
                   <span>Rilis Semua ({scrapedResultsForReview.length} Isu)</span>
@@ -5099,7 +5099,7 @@ export const ManageView: React.FC = () => {
                       showToast('Draf review dibersihkan.', 'info');
                     }
                   }}
-                  className="w-full text-center py-1.5 text-[10.5px] font-bold text-slate-450 hover:text-red-500 dark:text-slate-400 transition"
+                  className="w-full text-center py-1.5 text-[10.5px] font-bold text-slate-400 hover:text-red-500 dark:text-slate-400 transition"
                 >
                   Batalkan & Buang Semua
                 </button>
@@ -5216,7 +5216,7 @@ export const ManageView: React.FC = () => {
                         <select
                           value={item.sentiment}
                           onChange={(e) => updateReviewItemValue(selectedReviewIdx, 'sentiment', e.target.value as Sentiment)}
-                          className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-850 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 hover:border-slate-300 dark:hover:border-slate-700 transition duration-150 font-medium"
+                          className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 hover:border-slate-300 dark:hover:border-slate-700 transition duration-150 font-medium"
                         >
                           <option value="Positif">Sentinel Positif</option>
                           <option value="Netral">Sentinel Netral</option>
@@ -5232,7 +5232,7 @@ export const ManageView: React.FC = () => {
                         <select
                           value={item.categoryId || ''}
                           onChange={(e) => updateReviewItemValue(selectedReviewIdx, 'categoryId', e.target.value)}
-                          className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-850 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 hover:border-slate-300 dark:hover:border-slate-700 transition duration-150 font-medium"
+                          className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 hover:border-slate-300 dark:hover:border-slate-700 transition duration-150 font-medium"
                         >
                           <option value="">-- PILIH KATEGORI ISU --</option>
                           {categories.map(cat => (
@@ -5251,7 +5251,7 @@ export const ManageView: React.FC = () => {
                         <select
                           value={item.location}
                           onChange={(e) => updateReviewItemValue(selectedReviewIdx, 'location', e.target.value)}
-                          className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-850 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 hover:border-slate-300 dark:hover:border-slate-700 transition duration-150 font-medium"
+                          className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 hover:border-slate-300 dark:hover:border-slate-700 transition duration-150 font-medium"
                         >
                           {PROVINCES.map(prov => (
                             <option key={prov} value={prov}>📍 {prov}</option>
@@ -5342,7 +5342,7 @@ export const ManageView: React.FC = () => {
                   </div>
 
                   {/* Foot bar for editor */}
-                  <div className="p-4 border-t border-slate-200 dark:border-slate-850 bg-slate-50 dark:bg-slate-950/30 flex items-center justify-between">
+                  <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/30 flex items-center justify-between">
                     <button
                       type="button"
                       onClick={() => discardSingleReview(selectedReviewIdx)}

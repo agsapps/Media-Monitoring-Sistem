@@ -291,7 +291,7 @@ export const SettingsView: React.FC = () => {
         return {
           interval: 120,
           reason: 'Mengonsumsi kredit SerpApi bulanan Anda. Disarankan interval 2 jam (120 menit) untuk mengamankan kuota pencarian berbayar.',
-          badgeColor: 'bg-blue-500/10 text-blue-700 dark:text-blue-450 border-blue-500/20',
+          badgeColor: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20',
           label: 'Hemat Kuota'
         };
       case 'openserp':
@@ -391,7 +391,7 @@ export const SettingsView: React.FC = () => {
                         isSelected
                           ? 'bg-indigo-600 border-transparent text-white shadow-sm'
                           : isRecommended
-                            ? 'bg-emerald-500/10 dark:bg-emerald-500/5 text-emerald-750 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800/35 hover:bg-emerald-500/20'
+                            ? 'bg-emerald-500/10 dark:bg-emerald-500/5 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800/35 hover:bg-emerald-500/20'
                             : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-slate-800'
                       }`}
                     >
@@ -408,14 +408,14 @@ export const SettingsView: React.FC = () => {
                 })}
               </div>
               <p className="text-[10px] text-slate-400 dark:text-slate-500">
-                Tentukan seberapa sering Crawler berjalan di latar belakang untuk melakukan pencarian berita di Google News dan merilisnya secara otomatis. Tombol bersimbol <strong className="text-emerald-650 dark:text-emerald-400 font-semibold">★ Cocok</strong> menandakan interval penundaan paling aman guna melindungi performa/kuota crawler terpilih Anda.
+                Tentukan seberapa sering Crawler berjalan di latar belakang untuk melakukan pencarian berita di Google News dan merilisnya secara otomatis. Tombol bersimbol <strong className="text-emerald-600 dark:text-emerald-400 font-semibold">★ Cocok</strong> menandakan interval penundaan paling aman guna melindungi performa/kuota crawler terpilih Anda.
               </p>
             </div>
 
             {/* Default Crawler Engine/Method Option */}
             <div className="p-4 bg-slate-50 dark:bg-slate-950/40 rounded-xl border border-slate-100 dark:border-white/5 space-y-2">
               <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wide flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-indigo-505" />
+                <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
                 Metode Crawler Media Utama (Latar Belakang)
               </label>
               <select
@@ -458,7 +458,7 @@ export const SettingsView: React.FC = () => {
                       <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
                       <span>RULE: Ambil Berita Terbaru Berdasarkan Waktu (PubDate)</span>
                     </div>
-                    <div className="text-[10.5px] text-slate-650 dark:text-slate-300 space-y-1.5 leading-relaxed font-light">
+                    <div className="text-[10.5px] text-slate-600 dark:text-slate-300 space-y-1.5 leading-relaxed font-light">
                       <div>
                         <strong className="text-slate-800 dark:text-slate-200">Tujuan:</strong> Crawler hanya boleh mengambil artikel yang merupakan publikasi paling baru berdasarkan tanggal dan jam (pubDate), bukan berdasarkan ranking Google, relevansi, popularitas, atau authority domain.
                       </div>
@@ -482,7 +482,7 @@ export const SettingsView: React.FC = () => {
                       <Sparkles className="w-3.5 h-3.5 text-blue-700" />
                       <span>RULE: Gemini Search Grounding - Indeksasi Terbaru</span>
                     </div>
-                    <div className="text-[10.5px] text-slate-650 dark:text-slate-300 space-y-1.5 leading-relaxed font-light">
+                    <div className="text-[10.5px] text-slate-600 dark:text-slate-300 space-y-1.5 leading-relaxed font-light">
                       <div>
                         <strong className="text-slate-800 dark:text-slate-200">Tujuan:</strong> Google Grounding menggunakan indeksasi terbaru, bukan terbaik. Crawler hanya mengumpulkan artikel berita nyata terhangat berdasarkan tanggal dan jam rilis aktual.
                       </div>
@@ -527,7 +527,7 @@ export const SettingsView: React.FC = () => {
             {/* Auto Crawl Keywords Option */}
             <div className="p-4 bg-slate-50 dark:bg-slate-950/40 rounded-xl border border-slate-100 dark:border-white/5 space-y-2">
               <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wide flex items-center gap-1.5">
-                <Search className="w-3.5 h-3.5 text-indigo-505" />
+                <Search className="w-3.5 h-3.5 text-indigo-500" />
                 Kata Kunci Auto-Crawl (Dipisahkan Koma)
               </label>
               <textarea
@@ -709,7 +709,7 @@ export const SettingsView: React.FC = () => {
         </div>
 
         {/* PANEL PENGELOLAAN KATA KUNCI AI AGENT */}
-        <div className="bg-white dark:bg-[#121118] border border-slate-150 dark:border-white/5 rounded-2xl p-5 shadow-sm space-y-4">
+        <div className="bg-white dark:bg-[#121118] border border-slate-200 dark:border-white/5 rounded-2xl p-5 shadow-sm space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-white/5 pb-3">
             <div className="space-y-1">
               <h3 className="text-sm font-bold font-display text-slate-900 dark:text-white flex items-center gap-2 uppercase tracking-wider">
@@ -783,7 +783,7 @@ export const SettingsView: React.FC = () => {
                     <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md ${
                       kw.active 
                         ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400' 
-                        : 'bg-slate-100 text-slate-500 dark:bg-slate-950/30 dark:text-slate-450'
+                        : 'bg-slate-100 text-slate-500 dark:bg-slate-950/30 dark:text-slate-400'
                     }`}>
                       {kw.active ? 'Aktif' : 'Off'}
                     </span>
@@ -847,7 +847,7 @@ export const SettingsView: React.FC = () => {
           </div>
 
           {/* Engine Diagnosis & Readiness Status Widget */}
-          <div className="p-5 bg-white dark:bg-[#121118] border border-slate-150 dark:border-white/5 rounded-2xl shadow-xs space-y-3">
+          <div className="p-5 bg-white dark:bg-[#121118] border border-slate-200 dark:border-white/5 rounded-2xl shadow-xs space-y-3">
             <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase">Diagnostik</span>
             <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-none">
               Status Kesiapan Engine Pencari
@@ -923,7 +923,7 @@ export const SettingsView: React.FC = () => {
           </div>
 
           {/* Custom PostgreSQL Connection Monitoring Card */}
-          <div className="p-5 bg-white dark:bg-[#121118] border border-slate-150 dark:border-white/5 rounded-2xl shadow-xs space-y-4">
+          <div className="p-5 bg-white dark:bg-[#121118] border border-slate-200 dark:border-white/5 rounded-2xl shadow-xs space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase">Database Kustom</span>
@@ -995,7 +995,7 @@ export const SettingsView: React.FC = () => {
                 Riwayat & Log Koneksi (Real-time)
               </span>
 
-              <div className="p-3 bg-slate-950 rounded-xl border border-slate-900 font-mono text-[10px] text-slate-350 leading-relaxed max-h-48 overflow-y-auto space-y-2">
+              <div className="p-3 bg-slate-950 rounded-xl border border-slate-900 font-mono text-[10px] text-slate-300 leading-relaxed max-h-48 overflow-y-auto space-y-2">
                 {dbConnectionLogs.length === 0 ? (
                   <div className="text-center py-4 text-slate-600 italic">
                     Belum ada riwayat koneksi database. Klik "Uji Koneksi" di atas untuk mencoba.
@@ -1022,10 +1022,10 @@ export const SettingsView: React.FC = () => {
                           {log.message}
                         </p>
                         
-                        <div className="text-[8px] text-slate-550 dark:text-slate-500 space-y-0.5 font-light">
+                        <div className="text-[8px] text-slate-500 dark:text-slate-500 space-y-0.5 font-light">
                           <div>Host: <span className="text-slate-400">{log.host}</span> | DB: <span className="text-slate-400">{log.database}</span></div>
                           {log.details && (
-                            <div className="mt-1 p-1 bg-slate-900/60 rounded text-[7.5px] text-slate-450 break-all max-h-16 overflow-y-auto">
+                            <div className="mt-1 p-1 bg-slate-900/60 rounded text-[7.5px] text-slate-400 break-all max-h-16 overflow-y-auto">
                               {log.details}
                             </div>
                           )}
@@ -1046,7 +1046,7 @@ export const SettingsView: React.FC = () => {
       <div className="p-5 bg-white dark:bg-[#121118] border border-slate-100 dark:border-white/5 rounded-2xl shadow-sm space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Terminal className="w-4 h-4 text-indigo-505" />
+            <Terminal className="w-4 h-4 text-indigo-500" />
             <h3 className="text-xs font-bold text-slate-905 dark:text-white uppercase tracking-wider font-display">
               Log Aktivitas Crawling Media (Real-time)
             </h3>
@@ -1062,7 +1062,7 @@ export const SettingsView: React.FC = () => {
         </div>
 
         {/* Fake Terminal Workspace */}
-        <div className="p-4 bg-slate-950 rounded-xl border border-slate-900 font-mono text-[10.5px] text-slate-350 leading-relaxed max-h-80 overflow-y-auto space-y-2">
+        <div className="p-4 bg-slate-950 rounded-xl border border-slate-900 font-mono text-[10.5px] text-slate-300 leading-relaxed max-h-80 overflow-y-auto space-y-2">
           {schedulerLogs.length === 0 ? (
             <div className="text-center py-6 text-slate-600 italic">
               Tidak ada log aktivitas background scheduler terbaru. Menunggu interval pencarian berikutnya...

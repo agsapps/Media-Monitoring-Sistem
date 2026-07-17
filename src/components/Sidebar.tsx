@@ -120,7 +120,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
                   className={`w-full flex items-center justify-start gap-3 px-3 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all duration-200 ease-out group relative hover:scale-[1.02] active:scale-[0.98] ${
                     isActive 
                       ? 'bg-blue-800 dark:bg-blue-800 text-white shadow-lg shadow-blue-700/20 dark:shadow-blue-800/30' 
-                      : 'text-slate-600 dark:text-slate-400 hover:text-violet-650 dark:hover:text-blue-300 hover:bg-blue-50/80 dark:hover:bg-blue-950/30'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-violet-600 dark:hover:text-blue-300 hover:bg-blue-50/80 dark:hover:bg-blue-950/30'
                   }`}
                   title={!isOpen ? item.label : undefined}
                 >

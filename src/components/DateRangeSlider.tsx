@@ -121,7 +121,7 @@ export const DateRangeSlider: React.FC<DateRangeSliderProps> = ({
 
   if (dates.length === 0) {
     return (
-      <div className="py-2 text-center text-xs text-slate-450 italic">
+      <div className="py-2 text-center text-xs text-slate-400 italic">
         Belum ada rentang tanggal tersedia pada rentang data saat ini.
       </div>
     );
@@ -133,11 +133,11 @@ export const DateRangeSlider: React.FC<DateRangeSliderProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-3.5">
         <div className="flex items-center gap-1.5">
           <Calendar className="w-3.5 h-3.5 text-blue-700" />
-          <span className="text-[11px] font-extrabold text-slate-550 dark:text-slate-400 uppercase tracking-widest">
+          <span className="text-[11px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
             Rentang Interval Tanggal
           </span>
         </div>
-        <div className="text-[11px] text-slate-600 dark:text-slate-350 font-bold bg-slate-100 dark:bg-slate-900 px-3 py-1 rounded-full border border-slate-200/60 dark:border-white/5 flex items-center gap-1.5 shadow-xs">
+        <div className="text-[11px] text-slate-600 dark:text-slate-300 font-bold bg-slate-100 dark:bg-slate-900 px-3 py-1 rounded-full border border-slate-200/60 dark:border-white/5 flex items-center gap-1.5 shadow-xs">
           <span className="text-blue-800 dark:text-blue-400">{formatDate(dates[leftIndex])}</span>
           <span className="text-slate-400 font-normal">s/d</span>
           <span className="text-blue-800 dark:text-blue-400">{formatDate(dates[rightIndex])}</span>

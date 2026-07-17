@@ -155,7 +155,7 @@ export const HeatmapWidget: React.FC<HeatmapWidgetProps> = ({
   const getCellColorClass = (items: NewsItem[]) => {
     const count = items.length;
     if (count === 0) {
-      return 'bg-slate-50 dark:bg-[#121118]/40 text-slate-350 dark:text-slate-650 hover:border-slate-350 hover:bg-slate-100/80';
+      return 'bg-slate-50 dark:bg-[#121118]/40 text-slate-300 dark:text-slate-600 hover:border-slate-300 hover:bg-slate-100/80';
     }
 
     const hasCriticalNegative = items.some(n => n.sentiment === 'Negatif');
@@ -169,8 +169,8 @@ export const HeatmapWidget: React.FC<HeatmapWidgetProps> = ({
     }
 
     // Classic dynamic violet/blue scheme
-    if (count <= 1) return 'bg-blue-700/10 text-violet-650 border border-blue-100/30 dark:bg-blue-700/5 dark:text-blue-400 hover:bg-blue-700/20';
-    if (count <= 3) return 'bg-blue-700/20 text-violet-750 dark:bg-blue-700/15 dark:text-violet-350 hover:bg-blue-700/30';
+    if (count <= 1) return 'bg-blue-700/10 text-violet-600 border border-blue-100/30 dark:bg-blue-700/5 dark:text-blue-400 hover:bg-blue-700/20';
+    if (count <= 3) return 'bg-blue-700/20 text-violet-700 dark:bg-blue-700/15 dark:text-violet-300 hover:bg-blue-700/30';
     if (count <= 7) return 'bg-blue-700/45 text-blue-950 dark:bg-blue-700/35 dark:text-white hover:bg-blue-700/55';
     return 'bg-blue-800 text-white font-black hover:bg-blue-900';
   };
@@ -255,7 +255,7 @@ export const HeatmapWidget: React.FC<HeatmapWidgetProps> = ({
           <div>
             <h3 className="text-sm sm:text-base font-black uppercase text-slate-950 dark:text-white tracking-wide flex items-center gap-1.5">
               <span>Heatmap Intensitas Kata Kunci</span>
-              <span className="text-[10px] lowercase font-normal text-slate-400 bg-slate-100 dark:bg-white/5 px-2 py-0.5 rounded border border-slate-250/25">real-time</span>
+              <span className="text-[10px] lowercase font-normal text-slate-400 bg-slate-100 dark:bg-white/5 px-2 py-0.5 rounded border border-slate-200/25">real-time</span>
             </h3>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 max-w-xl font-medium mt-0.5 leading-tight">
               Visualisasi dinamika isu nasional melalui pemetaan densitas keyword terorganisir per rentang tanggal rilis atau sebaran wilayah geografis.
@@ -299,7 +299,7 @@ export const HeatmapWidget: React.FC<HeatmapWidgetProps> = ({
         <div className="lg:col-span-3 flex flex-col justify-between space-y-4 border-r border-slate-100 dark:border-white/[0.03] lg:pr-5">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black uppercase text-slate-450 dark:text-slate-500 tracking-wider font-mono">Daftar Kata Kunci ({keywords.length})</span>
+              <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider font-mono">Daftar Kata Kunci ({keywords.length})</span>
               <button
                 type="button"
                 onClick={handleResetKeywords}
@@ -319,7 +319,7 @@ export const HeatmapWidget: React.FC<HeatmapWidgetProps> = ({
                   className={`flex items-center justify-between px-2.5 py-1.5 rounded-xl border transition-all text-xs font-bold leading-none ${
                     searchFilterQuery.toLowerCase() === kw.toLowerCase()
                       ? 'bg-blue-700/10 text-blue-800 border-blue-700/30'
-                      : 'bg-slate-50 hover:bg-slate-100/50 dark:bg-white/[0.02] dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-350 border-slate-200/60 dark:border-white/5'
+                      : 'bg-slate-50 hover:bg-slate-100/50 dark:bg-white/[0.02] dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-300 border-slate-200/60 dark:border-white/5'
                   }`}
                 >
                   <span 
@@ -366,7 +366,7 @@ export const HeatmapWidget: React.FC<HeatmapWidgetProps> = ({
         <div className="lg:col-span-9 space-y-4">
           
           {/* Legend and Legend guide */}
-          <div className="flex flex-wrap items-center justify-between gap-3 text-[10px] text-slate-450 dark:text-slate-500 bg-slate-50/50 dark:bg-black/10 px-3.5 py-2.5 rounded-2xl border border-slate-150/45 dark:border-white/5 font-medium select-none">
+          <div className="flex flex-wrap items-center justify-between gap-3 text-[10px] text-slate-400 dark:text-slate-500 bg-slate-50/50 dark:bg-black/10 px-3.5 py-2.5 rounded-2xl border border-slate-200/45 dark:border-white/5 font-medium select-none">
             <span className="flex items-center gap-1">
               <Info className="w-3.5 h-3.5 text-blue-700" />
               <span>Pilih sel untuk memfilter berita; baris label kata kunci bersifat statis & dapat diklik.</span>
@@ -376,9 +376,9 @@ export const HeatmapWidget: React.FC<HeatmapWidgetProps> = ({
               <span>Intensitas:</span>
               <div className="flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded bg-slate-100 dark:bg-white/5 border border-slate-200/50 block" title="0 Berita" />
-                <span className="w-2.5 h-2.5 rounded bg-violet-550/15 block" title="Lemah (1 Isu)" />
-                <span className="w-2.5 h-2.5 rounded bg-violet-550/35 block" title="Sedang (2-3 Isu)" />
-                <span className="w-2.5 h-2.5 rounded bg-violet-550/65 block" title="Kuat (4-7 Isu)" />
+                <span className="w-2.5 h-2.5 rounded bg-violet-500/15 block" title="Lemah (1 Isu)" />
+                <span className="w-2.5 h-2.5 rounded bg-violet-500/35 block" title="Sedang (2-3 Isu)" />
+                <span className="w-2.5 h-2.5 rounded bg-violet-500/65 block" title="Kuat (4-7 Isu)" />
                 <span className="w-2.5 h-2.5 rounded bg-rose-500/25 block text-center" title="Sentimen Negatif Dominan (Alert)" />
                 <span className="w-2.5 h-2.5 bg-rose-600 rounded block animate-pulse" title="Sangat Kuat Negatif" />
               </div>
@@ -389,7 +389,7 @@ export const HeatmapWidget: React.FC<HeatmapWidgetProps> = ({
           <div className="w-full overflow-x-auto border border-slate-200/40 dark:border-white/5 rounded-2xl bg-slate-50/20 dark:bg-[#1a1824]/20">
             {xCategories.length === 0 ? (
               <div className="py-20 text-center flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 space-y-2">
-                <HelpCircle className="w-8 h-8 text-slate-350" />
+                <HelpCircle className="w-8 h-8 text-slate-300" />
                 <div className="text-xs font-black uppercase">Penyaringan Data Kosong</div>
                 <div className="text-[10px] font-medium max-w-xs text-center leading-normal">
                   Tidak ada berita yang terdokumentasi dalam rentang filter saat ini untuk merakit heatmap.
@@ -407,7 +407,7 @@ export const HeatmapWidget: React.FC<HeatmapWidgetProps> = ({
                     {xCategories.map(xCat => (
                       <th 
                         key={xCat} 
-                        className="px-3.5 py-3 text-[10px] font-black tracking-wider text-slate-650 dark:text-slate-300 border-r border-slate-100 dark:border-white/[0.01]"
+                        className="px-3.5 py-3 text-[10px] font-black tracking-wider text-slate-600 dark:text-slate-300 border-r border-slate-100 dark:border-white/[0.01]"
                       >
                         <div className="text-center min-w-[70px]">
                           {viewMode === 'time' ? formatShortDate(xCat) : xCat}
@@ -426,9 +426,9 @@ export const HeatmapWidget: React.FC<HeatmapWidgetProps> = ({
                         className="py-12 text-center text-slate-400 dark:text-slate-500 text-xs"
                       >
                         <div className="flex flex-col items-center justify-center space-y-2 py-4">
-                          <HelpCircle className="w-6 h-6 text-slate-350 dark:text-slate-600" />
-                          <p className="font-bold uppercase text-[10px] tracking-wider text-slate-450 dark:text-slate-550">Daftar Kata Kunci Kosong</p>
-                          <p className="text-[10px] text-slate-450 dark:text-slate-500 max-w-sm mt-1 leading-normal px-4">
+                          <HelpCircle className="w-6 h-6 text-slate-300 dark:text-slate-600" />
+                          <p className="font-bold uppercase text-[10px] tracking-wider text-slate-400 dark:text-slate-500">Daftar Kata Kunci Kosong</p>
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 max-w-sm mt-1 leading-normal px-4">
                             Silakan tambahkan kata kunci baru pada kolom kiri atau klik tombol <strong className="text-blue-800 dark:text-blue-400 bg-blue-700/10 dark:bg-blue-700/20 px-1.5 py-0.5 rounded cursor-pointer hover:underline" onClick={handleResetKeywords}>"Reset"</strong> untuk memuat daftar bawaan.
                           </p>
                         </div>
@@ -460,7 +460,7 @@ export const HeatmapWidget: React.FC<HeatmapWidgetProps> = ({
                             <td 
                               key={`${kw}-${xCat}`}
                               onClick={() => handleCellClick(kw, xCat, items)}
-                              className="p-1 border-r border-slate-150/40 dark:border-white/[0.02] cursor-pointer"
+                              className="p-1 border-r border-slate-200/40 dark:border-white/[0.02] cursor-pointer"
                             >
                               <div className={`h-8 sm:h-9 text-xs font-black font-mono rounded-xl transition-all flex flex-col items-center justify-center relative ${getCellColorClass(items)}`}>
                                 <span>{count > 0 ? count : '-'}</span>
@@ -511,7 +511,7 @@ export const HeatmapWidget: React.FC<HeatmapWidgetProps> = ({
                     </button>
                     <button 
                       onClick={() => setSelectedCell(null)}
-                      className="text-slate-400 hover:text-slate-650 dark:hover:text-white"
+                      className="text-slate-400 hover:text-slate-600 dark:hover:text-white"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -569,7 +569,7 @@ export const HeatmapWidget: React.FC<HeatmapWidgetProps> = ({
                               news.sentiment === 'Positif'
                                 ? 'bg-emerald-500/10 text-emerald-600'
                                 : news.sentiment === 'Negatif'
-                                ? 'bg-red-500/10 text-red-650'
+                                ? 'bg-red-500/10 text-red-600'
                                 : 'bg-slate-100 text-slate-600 dark:bg-white/5 dark:text-slate-400'
                             }`}>
                               {news.sentiment}
@@ -592,13 +592,13 @@ export const HeatmapWidget: React.FC<HeatmapWidgetProps> = ({
 
             <div className="space-y-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-black uppercase tracking-wider font-mono text-slate-400 dark:text-slate-450 block">KEHUMASAN DECISION SUPPORT SYSTEM (DSS)</span>
+                <span className="text-[10px] font-black uppercase tracking-wider font-mono text-slate-400 dark:text-slate-400 block">KEHUMASAN DECISION SUPPORT SYSTEM (DSS)</span>
                 <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase bg-black/5 dark:bg-white/5 tracking-wider">
                   STATUS: {dynamicInsight.status}
                 </span>
               </div>
               <h4 className="text-xs font-black uppercase tracking-tight">{dynamicInsight.title}</h4>
-              <p className="text-[10.5px] font-semibold leading-relaxed text-slate-600 dark:text-slate-350">
+              <p className="text-[10.5px] font-semibold leading-relaxed text-slate-600 dark:text-slate-300">
                 {dynamicInsight.desc}
               </p>
             </div>

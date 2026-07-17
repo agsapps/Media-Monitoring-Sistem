@@ -417,7 +417,7 @@ export const OSMMap: React.FC<OSMMapProps> = React.memo(({
   const generateSparklineSvg = (trendData: any[]) => {
     if (trendData.length === 0) {
       return `
-        <div class="text-center italic text-[9.5px] py-2 bg-slate-500/5 dark:bg-black/10 rounded-xl my-2 text-slate-450 dark:text-slate-500 border border-slate-200/40 dark:border-white/[0.04]">
+        <div class="text-center italic text-[9.5px] py-2 bg-slate-500/5 dark:bg-black/10 rounded-xl my-2 text-slate-400 dark:text-slate-500 border border-slate-200/40 dark:border-white/[0.04]">
           Belum ada data tren sentimen
         </div>
       `;
@@ -631,7 +631,7 @@ export const OSMMap: React.FC<OSMMapProps> = React.memo(({
       if (!quake.lat || !quake.lng) return;
 
       const mag = parseFloat(quake.magnitude) || 0;
-      let ringColorClass = 'border-amber-550 bg-amber-500/20';
+      let ringColorClass = 'border-amber-500 bg-amber-500/20';
       let centerColorClass = 'bg-amber-500';
       let textBadgeClass = 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300';
       let severityLabel = 'Sedang';
@@ -1029,10 +1029,10 @@ export const OSMMap: React.FC<OSMMapProps> = React.memo(({
                 className="hide-on-print absolute top-4 bottom-4 right-4 z-[1010] w-[320px] sm:w-[380px] backdrop-blur-md bg-white/95 dark:bg-[#0c0b11]/95 text-slate-800 dark:text-slate-100 border border-slate-200/60 dark:border-slate-800/80 shadow-2xl rounded-2xl p-4 flex flex-col gap-3 h-[calc(100%-2rem)]"
               >
                 {/* Panel Header */}
-                <div className="flex items-center justify-between border-b border-slate-150 dark:border-slate-850 pb-2.5">
+                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2.5">
                   <div className="flex items-center gap-2">
                     <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-450 opacity-75"></span>
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
                     </span>
                     <span className="text-[11px] font-black tracking-wider text-slate-600 dark:text-white uppercase font-sans truncate max-w-[180px] sm:max-w-[240px]" title={selectedProvince && selectedProvince !== 'Nasional' ? `KABAR TERKINI - ${selectedProvince}` : 'KABAR TERKINI'}>
@@ -1110,7 +1110,7 @@ export const OSMMap: React.FC<OSMMapProps> = React.memo(({
                           </h4>
 
                           {/* Footer row */}
-                          <div className="text-[8.5px] font-mono text-slate-400 dark:text-slate-500 pt-1 border-t border-dashed border-slate-100 dark:border-slate-850">
+                          <div className="text-[8.5px] font-mono text-slate-400 dark:text-slate-500 pt-1 border-t border-dashed border-slate-100 dark:border-slate-800">
                             📅 {item.publishDate || '-'} {item.publishTime || ''}
                           </div>
                         </div>
@@ -1133,10 +1133,10 @@ export const OSMMap: React.FC<OSMMapProps> = React.memo(({
                 className="hide-on-print absolute bottom-4 right-4 z-[1010] w-[290px] sm:w-[350px] backdrop-blur-md bg-white/95 dark:bg-[#0c0b11]/95 text-slate-800 dark:text-slate-100 border border-slate-200/60 dark:border-slate-800/80 shadow-xl rounded-xl p-3 flex flex-col gap-1.5"
               >
                 {/* Ticker Header */}
-                <div className="flex items-center justify-between border-b border-slate-150 dark:border-slate-850 pb-1.5">
+                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
                   <div className="flex items-center gap-2">
                     <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-450 opacity-75"></span>
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
                     </span>
                     <span className="text-[10px] font-black tracking-wider text-slate-500 dark:text-white uppercase font-sans truncate max-w-[150px] sm:max-w-[200px]" title={selectedProvince && selectedProvince !== 'Nasional' ? `KABAR TERKINI - ${selectedProvince}` : 'KABAR TERKINI'}>
@@ -1375,7 +1375,7 @@ export const OSMMap: React.FC<OSMMapProps> = React.memo(({
                     <span className="text-[9px] text-slate-400 dark:text-slate-500 uppercase tracking-widest font-bold">
                       Status Sinkronisasi
                     </span>
-                    <span className="text-[10px] font-mono text-slate-600 dark:text-slate-350 font-bold mt-0.5">
+                    <span className="text-[10px] font-mono text-slate-600 dark:text-slate-300 font-bold mt-0.5">
                       {lastSynced 
                         ? `Ok • ${lastSynced.toLocaleTimeString('id-ID')}` 
                         : 'Menghubungkan...'
@@ -1444,7 +1444,7 @@ export const OSMMap: React.FC<OSMMapProps> = React.memo(({
           {!isLegendOpen ? (
             <button
                onClick={() => setIsLegendOpen(true)}
-              className="flex items-center gap-2 px-3 py-1.5 bg-white/95 dark:bg-[#0c0b11]/95 backdrop-blur-md rounded-xl border border-slate-250 dark:border-slate-800 shadow-md text-[10px] font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-900 transition-all cursor-pointer"
+              className="flex items-center gap-2 px-3 py-1.5 bg-white/95 dark:bg-[#0c0b11]/95 backdrop-blur-md rounded-xl border border-slate-200 dark:border-slate-800 shadow-md text-[10px] font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-900 transition-all cursor-pointer"
             >
               <div className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 border border-slate-200 dark:border-slate-950 shadow-xs" title="Dominan Positif" />
@@ -1453,7 +1453,7 @@ export const OSMMap: React.FC<OSMMapProps> = React.memo(({
                 {showQuakes && <span className="w-2.5 h-2.5 rounded-full bg-rose-600 border border-slate-200 dark:border-slate-950 shadow-xs" title="Gempa Terkini" />}
               </div>
               <span className="ml-1 text-slate-500 dark:text-slate-400">Legenda Peta</span>
-              <ChevronUp className="w-3.5 h-3.5 text-slate-450" />
+              <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
             </button>
           ) : (
             <div className="bg-white/95 dark:bg-[#0c0b11]/95 backdrop-blur-md p-3 rounded-xl border border-slate-200/50 dark:border-slate-800 shadow-lg flex flex-col gap-2 max-w-[280px]">
@@ -1506,7 +1506,7 @@ export const OSMMap: React.FC<OSMMapProps> = React.memo(({
                 </div>
               )}
               
-              <div className="text-[9px] text-slate-450 dark:text-slate-500 border-t border-slate-100 dark:border-slate-800 pt-1.5 font-semibold leading-relaxed font-mono">
+              <div className="text-[9px] text-slate-400 dark:text-slate-500 border-t border-slate-100 dark:border-slate-800 pt-1.5 font-semibold leading-relaxed font-mono">
                 Pin: <span className="text-emerald-500 font-bold">Positif</span> / <span className="text-red-500 font-bold">Negatif</span> / <span className="text-blue-500 font-bold">Netral</span>
               </div>
             </div>

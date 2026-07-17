@@ -257,7 +257,7 @@ export const HighlightCarousel: React.FC = () => {
                   <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white tracking-tight leading-snug line-clamp-2 pr-2 select-text group-hover:text-blue-800 dark:group-hover:text-blue-400 transition-colors">
                     {hl.title}
                   </h4>
-                  <p className="text-[10.5px] sm:text-xs text-slate-500 dark:text-slate-450 line-clamp-3 leading-relaxed font-normal select-text">
+                  <p className="text-[10.5px] sm:text-xs text-slate-500 dark:text-slate-400 line-clamp-3 leading-relaxed font-normal select-text">
                     {hl.summary}
                   </p>
                 </div>
@@ -302,10 +302,10 @@ export const HighlightCarousel: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm overflow-y-auto">
           <div className="relative w-full max-w-[500px] bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-2xl overflow-hidden my-4 animate-in fade-in zoom-in-95 duration-150">
             {/* Upper colored band */}
-            <div className={`h-1.5 bg-gradient-to-r ${activeHighlight.isPinned ? 'from-amber-500 to-amber-600' : 'from-blue-800 to-indigo-650'}`} />
+            <div className={`h-1.5 bg-gradient-to-r ${activeHighlight.isPinned ? 'from-amber-500 to-amber-600' : 'from-blue-800 to-indigo-600'}`} />
             
             {/* Header row */}
-            <div className="p-4 md:p-5 pb-3 border-b border-slate-50 dark:border-slate-850 flex items-start justify-between gap-2">
+            <div className="p-4 md:p-5 pb-3 border-b border-slate-50 dark:border-slate-800 flex items-start justify-between gap-2">
               <div className="space-y-1 max-w-[88%]">
                 <div className="flex flex-wrap gap-1.5 items-center text-[9px] font-bold text-slate-400 font-mono uppercase">
                   {activeHighlight.isPinned && (
@@ -343,7 +343,7 @@ export const HighlightCarousel: React.FC = () => {
 
               <button 
                 onClick={() => setActiveHighlight(null)}
-                className="p-1 px-2 hover:bg-slate-150 dark:hover:bg-slate-800/80 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white text-[11px] font-bold tracking-tight transition"
+                className="p-1 px-2 hover:bg-slate-200 dark:hover:bg-slate-800/80 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white text-[11px] font-bold tracking-tight transition"
               >
                 Tutup
               </button>
@@ -370,7 +370,7 @@ export const HighlightCarousel: React.FC = () => {
             </div>
 
             {/* Modal Footer Share Tools */}
-            <div className="p-4 md:p-5 bg-slate-50/50 dark:bg-slate-950/40 border-t border-slate-50 dark:border-slate-850 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="p-4 md:p-5 bg-slate-50/50 dark:bg-slate-950/40 border-t border-slate-50 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               
               <div className="flex flex-wrap gap-2 text-[11px] font-medium text-slate-600 dark:text-slate-400 items-center">
                 <span>Bagikan:</span>

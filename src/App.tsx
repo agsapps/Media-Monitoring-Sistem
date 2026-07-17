@@ -24,11 +24,11 @@ import {
 
 const getBrowserInfo = (ua: string) => {
   if (!ua) return { name: 'Peramban Web', color: 'text-slate-500 bg-slate-500/10 border-slate-500/20 dark:text-slate-400 dark:bg-slate-500/5', icon: 'generic' };
-  if (ua.includes('Edg/')) return { name: 'Microsoft Edge', color: 'text-sky-600 bg-sky-500/10 border-sky-500/20 dark:text-sky-450 dark:bg-sky-500/5', icon: 'edge' };
-  if (ua.includes('OPR/') || ua.includes('Opera')) return { name: 'Opera', color: 'text-red-600 bg-red-500/10 border-red-500/20 dark:text-red-450 dark:bg-red-500/5', icon: 'opera' };
-  if (ua.includes('Chrome') && !ua.includes('Edg/')) return { name: 'Google Chrome', color: 'text-emerald-600 bg-emerald-500/10 border-emerald-500/20 dark:text-emerald-450 dark:bg-emerald-500/5', icon: 'chrome' };
-  if (ua.includes('Firefox')) return { name: 'Mozilla Firefox', color: 'text-orange-600 bg-orange-500/10 border-orange-500/20 dark:text-orange-450 dark:bg-orange-500/5', icon: 'firefox' };
-  if (ua.includes('Safari') && !ua.includes('Chrome')) return { name: 'Apple Safari', color: 'text-blue-600 bg-blue-500/10 border-blue-500/20 dark:text-blue-450 dark:bg-blue-500/5', icon: 'safari' };
+  if (ua.includes('Edg/')) return { name: 'Microsoft Edge', color: 'text-sky-600 bg-sky-500/10 border-sky-500/20 dark:text-sky-400 dark:bg-sky-500/5', icon: 'edge' };
+  if (ua.includes('OPR/') || ua.includes('Opera')) return { name: 'Opera', color: 'text-red-600 bg-red-500/10 border-red-500/20 dark:text-red-400 dark:bg-red-500/5', icon: 'opera' };
+  if (ua.includes('Chrome') && !ua.includes('Edg/')) return { name: 'Google Chrome', color: 'text-emerald-600 bg-emerald-500/10 border-emerald-500/20 dark:text-emerald-400 dark:bg-emerald-500/5', icon: 'chrome' };
+  if (ua.includes('Firefox')) return { name: 'Mozilla Firefox', color: 'text-orange-600 bg-orange-500/10 border-orange-500/20 dark:text-orange-400 dark:bg-orange-500/5', icon: 'firefox' };
+  if (ua.includes('Safari') && !ua.includes('Chrome')) return { name: 'Apple Safari', color: 'text-blue-600 bg-blue-500/10 border-blue-500/20 dark:text-blue-400 dark:bg-blue-500/5', icon: 'safari' };
   return { name: 'Peramban Web', color: 'text-slate-500 bg-slate-500/10 border-slate-500/20 dark:text-slate-400 dark:bg-slate-500/5', icon: 'generic' };
 };
 
@@ -458,9 +458,9 @@ const DashboardLayout: React.FC = () => {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: -10 }}
                         transition={{ duration: 0.2, ease: 'easeOut' }}
-                        className="absolute left-0 mt-2.5 w-80 bg-white dark:bg-[#0c0b11] border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl p-4 z-50 text-slate-850 dark:text-white"
+                        className="absolute left-0 mt-2.5 w-80 bg-white dark:bg-[#0c0b11] border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl p-4 z-50 text-slate-800 dark:text-white"
                       >
-                        <div className="flex items-center justify-between pb-2.5 border-b border-slate-150 dark:border-white/5 mb-3">
+                        <div className="flex items-center justify-between pb-2.5 border-b border-slate-200 dark:border-white/5 mb-3">
                           <div className="flex items-center gap-2">
                             <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-gray-400">Arus Sesi Aktif ({activeSessions.length})</h4>
@@ -495,7 +495,7 @@ const DashboardLayout: React.FC = () => {
                                return (
                                  <div 
                                    key={session.id} 
-                                   className="p-2.5 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-150/50 dark:border-white/5 flex flex-col gap-2 hover:bg-slate-100 hover:dark:bg-white/10 transition"
+                                   className="p-2.5 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 flex flex-col gap-2 hover:bg-slate-100 hover:dark:bg-white/10 transition"
                                  >
                                    {/* Browser & Device Indicator Header */}
                                    <div className="flex items-center justify-between pb-1.5 border-b border-slate-200/50 dark:border-white/5">
@@ -607,13 +607,13 @@ const DashboardLayout: React.FC = () => {
             )}
 
             {/* Dark, Light & System Theme selector pills */}
-            <div className="flex items-center gap-0.5 bg-slate-100 dark:bg-[#121118]/80 border border-slate-205 dark:border-white/5 rounded-full p-1 select-none">
+            <div className="flex items-center gap-0.5 bg-slate-100 dark:bg-[#121118]/80 border border-slate-200 dark:border-white/5 rounded-full p-1 select-none">
               <button
                 onClick={() => setThemeMode('light')}
                 className={`p-1.5 rounded-full transition-all duration-200 cursor-pointer ${
                   themeMode === 'light'
                     ? 'bg-white dark:bg-slate-800 text-amber-500 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-650 dark:text-slate-500 dark:hover:text-slate-300'
+                    : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300'
                 }`}
                 title="Pilih Tema Terang"
               >
@@ -624,7 +624,7 @@ const DashboardLayout: React.FC = () => {
                 className={`p-1.5 rounded-full transition-all duration-200 cursor-pointer ${
                   themeMode === 'dark'
                     ? 'bg-white dark:bg-slate-800 text-blue-700 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-650 dark:text-slate-500 dark:hover:text-slate-300'
+                    : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300'
                 }`}
                 title="Pilih Tema Gelap"
               >
@@ -635,7 +635,7 @@ const DashboardLayout: React.FC = () => {
                 className={`p-1.5 rounded-full transition-all duration-200 cursor-pointer ${
                   themeMode === 'system'
                     ? 'bg-white dark:bg-slate-800 text-blue-500 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-650 dark:text-slate-500 dark:hover:text-slate-300'
+                    : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300'
                 }`}
                 title="Ikuti Tema Sistem OS"
               >
@@ -646,7 +646,7 @@ const DashboardLayout: React.FC = () => {
             {/* Full Screen Mode Toggle Button */}
             <button
               onClick={toggleFullscreen}
-              className="p-2 bg-slate-100 dark:bg-[#121118]/80 border border-slate-200 dark:border-white/5 rounded-full text-slate-500 hover:text-slate-850 dark:text-slate-400 dark:hover:text-white transition-all duration-200 cursor-pointer flex items-center justify-center hover:scale-105 active:scale-95"
+              className="p-2 bg-slate-100 dark:bg-[#121118]/80 border border-slate-200 dark:border-white/5 rounded-full text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-all duration-200 cursor-pointer flex items-center justify-center hover:scale-105 active:scale-95"
               title={isFullscreen ? "Keluar dari Layar Penuh" : "Masuk ke Layar Penuh"}
             >
               {isFullscreen ? (
@@ -665,7 +665,7 @@ const DashboardLayout: React.FC = () => {
                 >
                   <div className="hidden sm:block text-right pr-0.5 py-1">
                     <span className="block text-xs font-bold text-slate-800 dark:text-white leading-normal mb-0.5">{user.name}</span>
-                    <span className="text-[9px] uppercase tracking-wider text-slate-450 dark:text-blue-400 font-mono font-extrabold">{user.role} Room</span>
+                    <span className="text-[9px] uppercase tracking-wider text-slate-400 dark:text-blue-400 font-mono font-extrabold">{user.role} Room</span>
                   </div>
                   
                   {user.avatarUrl ? (
@@ -673,7 +673,7 @@ const DashboardLayout: React.FC = () => {
                       src={user.avatarUrl} 
                       alt={user.name} 
                       referrerPolicy="no-referrer"
-                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border border-slate-200 dark:border-slate-850 shadow-sm"
+                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border border-slate-200 dark:border-slate-800 shadow-sm"
                       onError={(e) => {
                         // fallback if error loading image
                         (e.target as any).style.display = 'none';
@@ -750,7 +750,7 @@ const DashboardLayout: React.FC = () => {
             ) : (
               <button
                 onClick={() => setIsLoginModalOpen(true)}
-                className="py-1 px-3 sm:py-1.5 sm:px-4 flex items-center gap-1 sm:gap-1.5 bg-slate-900 hover:bg-slate-850 dark:bg-blue-800 dark:hover:bg-blue-900 text-white font-bold text-[10px] sm:text-[11px] tracking-wide rounded-full shadow-md hover:scale-[1.02] active:scale-95 transition cursor-pointer"
+                className="py-1 px-3 sm:py-1.5 sm:px-4 flex items-center gap-1 sm:gap-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-blue-800 dark:hover:bg-blue-900 text-white font-bold text-[10px] sm:text-[11px] tracking-wide rounded-full shadow-md hover:scale-[1.02] active:scale-95 transition cursor-pointer"
               >
                 <User className="w-3 h-3 sm:w-3.5 sm:h-3.5" id="top-login-icon"/>
                 <span>Login</span>
@@ -791,7 +791,7 @@ const DashboardLayout: React.FC = () => {
         </main>
 
         {/* Global Footer element */}
-        <footer className="py-5 bg-white dark:bg-slate-900 text-center border-t border-slate-150 dark:border-slate-800 text-[10px] text-slate-400 font-medium tracking-wide">
+        <footer className="py-5 bg-white dark:bg-slate-900 text-center border-t border-slate-200 dark:border-slate-800 text-[10px] text-slate-400 font-medium tracking-wide">
           {settings.footerText}
         </footer>
 
@@ -826,7 +826,7 @@ const DashboardLayout: React.FC = () => {
                   </div>
                   <button 
                     onClick={() => setIsProfileModalOpen(false)}
-                    className="p-1.5 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full text-slate-400 hover:text-slate-650 dark:hover:text-white transition cursor-pointer"
+                    className="p-1.5 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-white transition cursor-pointer"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -916,7 +916,7 @@ const DashboardLayout: React.FC = () => {
                   className="space-y-4"
                 >
                   <div>
-                    <label className="block text-[10px] uppercase font-bold tracking-wider text-slate-450 dark:text-slate-400 mb-1.5">Nama Lengkap</label>
+                    <label className="block text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-400 mb-1.5">Nama Lengkap</label>
                     <input 
                       type="text" 
                       value={profileName}
@@ -928,7 +928,7 @@ const DashboardLayout: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] uppercase font-bold tracking-wider text-slate-450 dark:text-slate-400 mb-1.5">Alamat Email</label>
+                    <label className="block text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-400 mb-1.5">Alamat Email</label>
                     <input 
                       type="email" 
                       value={profileEmail}
@@ -943,7 +943,7 @@ const DashboardLayout: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setIsProfileModalOpen(false)}
-                      className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-[#181622] dark:hover:bg-slate-800/80 rounded-xl text-xs font-bold text-slate-650 dark:text-slate-350 transition cursor-pointer"
+                      className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-[#181622] dark:hover:bg-slate-800/80 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 transition cursor-pointer"
                     >
                       Batal
                     </button>
@@ -999,7 +999,7 @@ const DashboardLayout: React.FC = () => {
                   </div>
                   <button 
                     onClick={() => setIsDiagModalOpen(false)}
-                    className="p-1.5 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full text-slate-400 hover:text-slate-650 dark:hover:text-white transition cursor-pointer"
+                    className="p-1.5 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-white transition cursor-pointer"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -1053,10 +1053,10 @@ const DashboardLayout: React.FC = () => {
                     ) : diagError ? (
                       <div className="p-4.5 rounded-2xl bg-rose-50 dark:bg-rose-950/10 border border-rose-100 dark:border-rose-950/30 space-y-2">
                         <div className="flex items-center gap-2 text-rose-800 dark:text-rose-400">
-                          <ShieldAlert className="w-5 h-5 shrink-0" />
+                           <ShieldAlert className="w-5 h-5 shrink-0" />
                           <span className="text-xs font-black">Koneksi Database Gagal!</span>
                         </div>
-                        <p className="text-xs text-slate-600 dark:text-slate-350 bg-white/50 dark:bg-black/20 p-2.5 rounded-lg border border-rose-200/20 dark:border-white/5 font-mono text-xs overflow-x-auto max-h-36">
+                        <p className="text-xs text-slate-600 dark:text-slate-400 bg-white/50 dark:bg-black/20 p-2.5 rounded-lg border border-rose-200/20 dark:border-white/5 font-mono text-xs overflow-x-auto max-h-36">
                           {diagError}
                         </p>
                         <p className="text-[10px] text-slate-400">
@@ -1100,11 +1100,11 @@ const DashboardLayout: React.FC = () => {
                             </div>
                           </div>
 
-                          {/* Discovered Tables List */}
+                           {/* Discovered Tables List */}
                           <div className="space-y-2">
                             <div className="flex items-center justify-between">
                               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-sans">Daftar Tabel Terdeteksi ({diagResult.tables?.length || 0})</span>
-                              <span className="text-[10px] font-bold text-slate-450 uppercase font-mono">Public Schema</span>
+                              <span className="text-[10px] font-bold text-slate-400 uppercase font-mono">Public Schema</span>
                             </div>
                             
                             {(!diagResult.tables || diagResult.tables.length === 0) ? (
@@ -1116,13 +1116,13 @@ const DashboardLayout: React.FC = () => {
                                 {diagResult.tables.map((t: any) => (
                                   <div 
                                     key={t.name}
-                                    className="p-2.5 bg-slate-50 dark:bg-white/[0.03] hover:bg-slate-100 hover:dark:bg-white/[0.06] border border-slate-150 dark:border-white/5 rounded-xl flex items-center justify-between transition-all"
+                                    className="p-2.5 bg-slate-50 dark:bg-white/[0.03] hover:bg-slate-100 hover:dark:bg-white/[0.06] border border-slate-200 dark:border-white/5 rounded-xl flex items-center justify-between transition-all"
                                   >
                                     <div className="flex items-center gap-1.5 truncate">
                                       <FileText className="w-3.5 h-3.5 text-indigo-500/80 shrink-0" />
                                       <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate font-mono">{t.name}</span>
                                     </div>
-                                    <span className="px-1.5 py-0.5 bg-slate-150 dark:bg-white/10 rounded-md text-[9.5px] font-mono font-bold text-slate-500 dark:text-slate-400">
+                                    <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-white/10 rounded-md text-[9.5px] font-mono font-bold text-slate-500 dark:text-slate-400">
                                       {t.columnCount} col
                                     </span>
                                   </div>
@@ -1169,7 +1169,7 @@ const DashboardLayout: React.FC = () => {
                                       <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8.5px] tracking-wider uppercase font-black ${
                                         entry.status === 'SUCCESS' 
                                           ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' 
-                                          : 'bg-rose-500/10 text-rose-600 dark:text-rose-450'
+                                          : 'bg-rose-500/10 text-rose-600 dark:text-rose-500'
                                       }`}>
                                         <span className={`w-1.5 h-1.5 rounded-full ${entry.status === 'SUCCESS' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
                                         {entry.status}
@@ -1178,7 +1178,7 @@ const DashboardLayout: React.FC = () => {
                                         {new Date(entry.timestamp).toLocaleTimeString()}
                                       </span>
                                     </div>
-                                    <span className="font-mono text-slate-500 dark:text-slate-400 font-extrabold bg-slate-150 dark:bg-white/10 px-1.5 py-0.5 rounded text-[9px]">
+                                    <span className="font-mono text-slate-500 dark:text-slate-400 font-extrabold bg-slate-100 dark:bg-white/10 px-1.5 py-0.5 rounded text-[9px]">
                                       {entry.duration} ms
                                     </span>
                                   </div>
@@ -1194,7 +1194,7 @@ const DashboardLayout: React.FC = () => {
                                   {entry.params && entry.params.length > 0 && (
                                     <div className="font-sans text-[9px] text-slate-400 dark:text-slate-500 flex items-center gap-1.5 bg-slate-100/50 dark:bg-white/[0.01] p-1.5 rounded-lg border border-slate-200/20 dark:border-white/5 truncate">
                                       <span className="font-black uppercase tracking-wider text-[8px] text-indigo-500">Parameters:</span>
-                                      <code className="font-mono font-bold text-slate-650 dark:text-slate-350 truncate">{JSON.stringify(entry.params)}</code>
+                                      <code className="font-mono font-bold text-slate-600 dark:text-slate-400 truncate">{JSON.stringify(entry.params)}</code>
                                     </div>
                                   )}
 
@@ -1225,7 +1225,7 @@ const DashboardLayout: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsDiagModalOpen(false)}
-                    className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-[#181622] dark:hover:bg-slate-800/80 rounded-xl text-xs font-bold text-slate-650 dark:text-slate-350 transition cursor-pointer"
+                    className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-[#181622] dark:hover:bg-slate-800/80 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 transition cursor-pointer"
                   >
                     Tutup
                   </button>
