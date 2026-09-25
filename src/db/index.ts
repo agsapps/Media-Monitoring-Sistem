@@ -80,18 +80,16 @@ export const createPool = (forceNoSsl = false) => {
   const portStr = process.env.CUSTOM_SQL_PORT;
   let port = portStr ? parseInt(portStr, 10) : 5432;
 
-  // Matikan fallback ke Cloud SQL bawaan: jika tidak ada konfigurasi kustom, buat dummy pool
+  // PostgreSQL lokal sebagai fallback awal saat .env belum ter-load.
+  // Konfigurasi CUSTOM_SQL_* akan digunakan kembali setelah environment tersedia.
   if (!connectionString && !host) {
-    console.log('[Database] PostgreSQL kustom tidak dikonfigurasi. Koneksi ke Cloud SQL bawaan dinonaktifkan.');
+    console.log('[Database] CUSTOM_SQL belum tersedia saat inisialisasi awal. Menggunakan PostgreSQL lokal 127.0.0.1:5432.');
     return new Pool({
-      host: 'localhost',
-      port: 9999,
-      user: 'disabled',
-      password: 'disabled',
-      database: 'disabled',
-      max: 1,
-      idleTimeoutMillis: 1000,
-      connectionTimeoutMillis: 1000
+      host: '127.0.0.1',
+      port: 5432,
+      max: 5,
+      idleTimeoutMillis: 10000,
+      connectionTimeoutMillis: 3000
     });
   }
 

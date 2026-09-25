@@ -21,7 +21,7 @@ import crypto from 'crypto';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type } from '@google/genai';
 import { initializeApp } from 'firebase/app';
-import { initializeFirestore, collection, doc, getDocs, setDoc, deleteDoc, setLogLevel, query, orderBy, limit, startAfter } from 'firebase/firestore';
+
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import https from 'https';
 import http from 'http';
@@ -42,8 +42,6 @@ import {
   aiTokenUsage as sqlAiTokenUsage
 } from './src/db/schema.ts';
 
-// Bypass SSL/TLS Certificate Verification Errors globally for scraping websites with self-signed or invalid certs
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 // =========================================================================
 // CONFIGURATION (CONFIG) - ANTI-BLOCKING, DELAYS, AND SCRAPING BEHAVIORS
@@ -302,114 +300,16 @@ let migrationStatus = {
 };
 
 app.get('/api/migrate-social-news-firestore', authenticateToken, requireRole(['Admin']), (req, res) => {
-  if (migrationStatus.status === 'running') {
-    return res.json({ message: 'Migration already running', status: migrationStatus });
-  }
-
-  migrationStatus = {
-    status: 'running',
-    processed: 0,
-    inserted: 0,
-    error: null,
-  };
-
-  // Run in background
-  (async () => {
-    try {
-      console.log('[Migration] Starting background migration of socialNews from Firestore...');
-      if (!db) {
-        throw new Error('Firestore DB client is not initialized on the server.');
-      }
-      
-      const limitVal = 500;
-      let lastVisibleDoc: any = null;
-      let hasMore = true;
-      let batchCount = 1;
-
-      while (hasMore) {
-        console.log(`[Migration] Fetching batch ${batchCount} (limit ${limitVal}) from Firestore...`);
-        let q;
-        if (lastVisibleDoc) {
-          q = query(
-            collection(db, 'socialNews'),
-            orderBy('__name__'),
-            startAfter(lastVisibleDoc),
-            limit(limitVal)
-          );
-        } else {
-          q = query(
-            collection(db, 'socialNews'),
-            orderBy('__name__'),
-            limit(limitVal)
-          );
-        }
-
-        const snapshot = await getDocs(q);
-        if (snapshot.empty) {
-          console.log('[Migration] No more documents found in Firestore.');
-          break;
-        }
-
-        const items = snapshot.docs.map(doc => {
-          const data = doc.data() as any;
-          return {
-            id: doc.id,
-            lokasi: data.lokasi || null,
-            tanggalInput: data.tanggalInput || null,
-            caption: data.caption || '',
-            username: data.username || '',
-            ringkasan: data.ringkasan || null,
-            urgensi: data.urgensi || null,
-            analisis: typeof data.analisis === 'object' ? JSON.stringify(data.analisis) : (data.analisis || null),
-            sentimen: data.sentimen || null,
-            kategori: data.kategori || null,
-            waktuPosting: data.waktuPosting || null,
-            createdAt: data.createdAt || null,
-            updatedAt: data.updatedAt || null,
-            link: data.link || null,
-            jenisSosmed: data.jenisSosmed || null,
-          };
-        });
-
-        console.log(`[Migration] Batch ${batchCount}: Upserting ${items.length} items to PostgreSQL...`);
-        
-        // Upsert items into Cloud SQL (PostgreSQL)
-        await sqlDb.insert(sqlSocialNews)
-          .values(items)
-          .onConflictDoNothing();
-
-        migrationStatus.processed += items.length;
-        migrationStatus.inserted += items.length;
-        console.log(`[Migration] Batch ${batchCount} complete. Total processed: ${migrationStatus.processed}`);
-
-        lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1];
-
-        if (snapshot.docs.length < limitVal) {
-          hasMore = false;
-          console.log('[Migration] Reached end of collection.');
-        } else {
-          batchCount++;
-        }
-      }
-
-      migrationStatus.status = 'completed';
-      console.log(`[Migration] Background migration successfully finished. Total: ${migrationStatus.processed}`);
-      
-      // Reload database after migration so the running server immediately loads everything in memory!
-      await loadDatabase();
-    } catch (err: any) {
-      console.error('[Migration ERROR]:', err);
-      migrationStatus.status = 'failed';
-      migrationStatus.error = err.message || String(err);
-    }
-  })();
-
-  res.json({ message: 'Migration started in background', status: migrationStatus });
+  return res.status(410).json({
+    success: false,
+    message: 'Firestore migration endpoint is disabled. PostgreSQL is now the primary database.'
+  });
 });
 
 app.get('/api/migrate-social-news-status', authenticateToken, requireRole(['Admin']), (req, res) => {
   res.json(migrationStatus);
 });
+
 
 // AI Token Usage Tracker Logger Helper
 async function logAiTokenUsage(endpoint: string, model: string, response: any) {
@@ -891,7 +791,6 @@ app.get('/api/admin/vps-companion-script', authenticateToken, requireRole(['Admi
  * 2. npm install express playwright
  * 3. npx playwright install chromium
  * 4. Jalankan: node vps-crawler-service.js (atau: pm2 start vps-crawler-service.js --name playwright-vps)
- */
 const express = require('express');
 const { chromium } = require('playwright');
 
@@ -3193,11 +3092,8 @@ try {
   if (fs.existsSync(configPath)) {
     const firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
     firebaseApp = initializeApp(firebaseConfig);
-    setLogLevel('error');
-    db = initializeFirestore(firebaseApp, {
-      experimentalForceLongPolling: true,
-    }, firebaseConfig.firestoreDatabaseId);
-    console.log('[Firebase] Initialized with DB ID:', firebaseConfig.firestoreDatabaseId);
+    // Firestore disabled.
+    // PostgreSQL VPS is now the primary application database.
 
     // Authenticate Server for Secure Firestore access
     const auth = getAuth(firebaseApp);
@@ -3657,14 +3553,7 @@ const saveToFirestoreCol = async (collectionName: string, id: string, data: any)
     }
   }
 
-  // 2. Also write to Firestore as fallback
-  if (!db) return;
-  try {
-    await setDoc(doc(db, collectionName, id), data);
-    console.log(`[Firestore Sync] Saved to ${collectionName}/${id}`);
-  } catch (err) {
-    console.error(`[Firestore Sync ERROR] Save to ${collectionName}/${id} failed:`, err);
-  }
+  // Firestore disabled: PostgreSQL is the primary database.
 };
 
 const deleteFromFirestoreCol = async (collectionName: string, id: string) => {
@@ -3695,14 +3584,7 @@ const deleteFromFirestoreCol = async (collectionName: string, id: string) => {
     }
   }
 
-  // 2. Also delete from Firestore
-  if (!db) return;
-  try {
-    await deleteDoc(doc(db, collectionName, id));
-    console.log(`[Firestore Sync] Deleted ${collectionName}/${id}`);
-  } catch (err) {
-    console.error(`[Firestore Sync ERROR] Delete ${collectionName}/${id} failed:`, err);
-  }
+  // Firestore delete disabled: PostgreSQL is the primary database.
 };
 
 let isExternalSyncing = false;
@@ -4416,182 +4298,6 @@ const loadDatabase = async () => {
     }
   }
 
-  // 3. Next, load & sync standard collections from Firestore in parallel if DB is ready
-  if (db) {
-    try {
-      console.log('[Database Fallback] Loading collections from Firestore in parallel...');
-      
-      const [
-        settingsSnap,
-        usersSnap,
-        catSnap,
-        mediaSnap,
-        newsSnap,
-        logsSnap,
-        highlightsSnap,
-        keywordsSnap,
-        socialNewsSnap
-      ] = await Promise.all([
-        getDocs(collection(db, 'settings')).catch(e => { console.warn('[Database] Settings fetch issue:', e.message); return null; }),
-        getDocs(collection(db, 'users')).catch(e => { console.warn('[Database] Users fetch issue:', e.message); return null; }),
-        getDocs(collection(db, 'categories')).catch(e => { console.warn('[Database] Categories fetch issue:', e.message); return null; }),
-        getDocs(collection(db, 'medias')).catch(e => { console.warn('[Database] Medias fetch issue:', e.message); return null; }),
-        getDocs(collection(db, 'news')).catch(e => { console.warn('[Database] News fetch issue:', e.message); return null; }),
-        getDocs(collection(db, 'logs')).catch(e => { console.warn('[Database] Logs fetch issue:', e.message); return null; }),
-        getDocs(collection(db, 'highlights')).catch(e => { console.warn('[Database] Highlights fetch issue:', e.message); return null; }),
-        getDocs(collection(db, 'keywords')).catch(e => { console.warn('[Database] Keywords fetch issue:', e.message); return null; }),
-        getDocs(collection(db, 'socialNews')).catch(e => { console.warn('[Database] SocialNews fetch issue:', e.message); return null; })
-      ]);
-
-      // Sync Settings
-      if (settingsSnap && !settingsSnap.empty) {
-        const firstDoc = settingsSnap.docs[0];
-        database.settings = firstDoc.data() as any;
-        console.log('[Database Fallback] Loaded CustomSettings from cloud.');
-        
-        let needsSync = false;
-
-        // Ensure VPS defaults are initialized if missing
-        if (!database.settings.openWaVpsUrl) {
-          database.settings.openWaVpsUrl = 'http://101.32.141.172:3005';
-          needsSync = true;
-        }
-        if (!database.settings.playwrightVpsUrl) {
-          database.settings.playwrightVpsUrl = 'http://101.32.141.172:3005';
-          needsSync = true;
-        }
-
-        // Auto-upgrade old logoUrl if it matches the legacy hardcoded image url, jpeg favicon, or webp logo
-        if (database.settings.logoUrl && (
-          database.settings.logoUrl.includes('1780156246537') ||
-          database.settings.logoUrl === 'https://www.image2url.com/r2/default/images/1780156246537-cd69ae8e-001c-4401-bc28-6450bd31ace9.png' ||
-          database.settings.logoUrl.includes('app_favicon_1784465107291') ||
-          database.settings.logoUrl.includes('image-to-webp-1780156248225')
-        )) {
-          console.log('[Database Fallback] Auto-upgrading legacy settings logoUrl to new transparent PNG badge...');
-          database.settings.logoUrl = '/src/assets/images/head_office_badge.png';
-          needsSync = true;
-        }
-
-        if (needsSync) {
-          saveToFirestoreCol('settings', 'default', database.settings).catch(e => console.warn('[Database] Sync updated settings issue:', e.message));
-        }
-      } else if (settingsSnap && settingsSnap.empty) {
-        console.log('[Database Fallback] Cloud settings collection is empty. Populating with default settings...');
-        saveToFirestoreCol('settings', 'default', database.settings).catch(e => console.warn('[Database] Sync default settings issue:', e.message));
-      }
-
-      // Sync Users
-      if (usersSnap && !usersSnap.empty) {
-        database.users = usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any;
-        console.log(`[Database Fallback] Loaded ${database.users.length} users from cloud.`);
-        const hasAdmin = database.users.some((u: any) => u.username === 'admin');
-        if (!hasAdmin) {
-          database.users.push(...defaultUsers);
-        }
-      } else if (usersSnap && usersSnap.empty) {
-        console.log('[Database Fallback] Cloud users collection is empty. Populating with default users...');
-        for (const u of database.users) {
-          saveToFirestoreCol('users', u.id, u).catch(e => console.warn('[Database] Sync default user issue:', e.message));
-        }
-      }
-
-      // Sync Categories
-      if (catSnap && !catSnap.empty) {
-        database.categories = catSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any;
-        console.log(`[Database Fallback] Loaded ${database.categories.length} categories from cloud.`);
-      } else if (catSnap && catSnap.empty) {
-        console.log('[Database Fallback] Cloud categories collection is empty. Populating with default categories...');
-        for (const cat of database.categories) {
-          saveToFirestoreCol('categories', cat.id, cat).catch(e => console.warn('[Database] Sync default category issue:', e.message));
-        }
-      }
-
-      // Sync Medias
-      if (mediaSnap && !mediaSnap.empty) {
-        database.medias = mediaSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any;
-        console.log(`[Database Fallback] Loaded ${database.medias.length} medias from cloud.`);
-      } else if (mediaSnap && mediaSnap.empty) {
-        console.log('[Database Fallback] Cloud medias collection is empty. Populating with default medias...');
-        for (const m of database.medias) {
-          saveToFirestoreCol('medias', m.id, m).catch(e => console.warn('[Database] Sync default media issue:', e.message));
-        }
-      }
-
-      // Sync News Items
-      if (newsSnap) {
-        const rawNewsFromCloud = newsSnap.empty ? [] : newsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
-        const mergedMap = new Map<string, any>();
-        for (const item of database.news || []) {
-          mergedMap.set(item.id, item);
-        }
-        for (const item of rawNewsFromCloud) {
-          const localItem = mergedMap.get(item.id);
-          if (localItem) {
-            const cloudTime = item.updatedAt ? new Date(item.updatedAt).getTime() : 0;
-            const localTime = localItem.updatedAt ? new Date(localItem.updatedAt).getTime() : 0;
-            if (cloudTime >= localTime) {
-              mergedMap.set(item.id, item);
-            }
-          } else {
-            mergedMap.set(item.id, item);
-          }
-        }
-        database.news = deduplicateNewsList(Array.from(mergedMap.values()));
-      }
-
-      // Sync Activity Logs
-      if (logsSnap && !logsSnap.empty) {
-        database.logs = logsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any;
-        database.logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-        console.log(`[Database Fallback] Loaded ${database.logs.length} activity logs from cloud.`);
-      }
-
-      // Sync Highlights
-      if (highlightsSnap && !highlightsSnap.empty) {
-        database.highlights = highlightsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any;
-        database.highlights.sort((a, b) => {
-          if (a.isPinned && !b.isPinned) return -1;
-          if (!a.isPinned && b.isPinned) return 1;
-          if (a.orderIndex !== b.orderIndex) return a.orderIndex - b.orderIndex;
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        });
-        console.log(`[Database Fallback] Loaded ${database.highlights.length} highlights from cloud.`);
-      }
-
-      // Sync Keywords
-      if (keywordsSnap && !keywordsSnap.empty) {
-        database.keywords = keywordsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any;
-        console.log(`[Database Fallback] Loaded ${database.keywords.length} keywords from cloud.`);
-      } else if (keywordsSnap && keywordsSnap.empty) {
-        console.log('[Database Fallback] Cloud keywords collection is empty. Populating with default keywords...');
-        for (const kw of database.keywords) {
-          saveToFirestoreCol('keywords', kw.id, kw).catch(e => console.warn('[Database] Sync default keyword issue:', e.message));
-        }
-      }
-
-      // Sync Social News
-      if (socialNewsSnap && !socialNewsSnap.empty) {
-        let loadedSocialNews = socialNewsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any;
-        loadedSocialNews.sort((a: any, b: any) => {
-          const timeA = new Date(a.waktuPosting || a.tanggalInput || 0).getTime();
-          const timeB = new Date(b.waktuPosting || b.tanggalInput || 0).getTime();
-          return timeB - timeA;
-        });
-        database.socialNews = loadedSocialNews;
-        console.log(`[Database Fallback] Loaded ${database.socialNews.length} socialNews from cloud.`);
-      }
-
-      saveDatabase();
-      console.log('[Database Fallback] Firestore cloud database fallback finished successfully.');
-    } catch (e: any) {
-      console.error('[Database Fallback] Failed to sync Firestore fallback collections:', e.message);
-    }
-  } else {
-    database.categories = defaultCategories;
-    saveDatabase();
-    console.log('[Database Fallback] Local fallback database initialized.');
-  }
   
   precalculateTimestamps();
 };
