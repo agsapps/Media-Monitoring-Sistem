@@ -140,6 +140,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
             })}
 
           </nav>
+
+          {/* Version Info Footer */}
+          <div className="px-4 py-3 border-t border-slate-100 dark:border-white/5 flex items-center justify-center bg-slate-50/20 dark:bg-white/[0.01]">
+            <span className={`text-[10px] font-mono font-bold tracking-widest text-slate-400 dark:text-slate-500 transition-all duration-300 ${
+              isOpen ? 'opacity-100' : 'scale-90'
+            }`}>
+              {isOpen ? 'VER 1.0.0' : 'V1.0.0'}
+            </span>
+          </div>
    
         </div>
  

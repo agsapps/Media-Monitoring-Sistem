@@ -97,6 +97,12 @@ export interface CustomSettings {
   whatsappProvider?: 'fonnte' | 'openwa';
   openWaVpsUrl?: string;
   openWaToken?: string;
+  playwrightVpsUrl?: string;
+  whatsappScheduleMode?: 'realtime' | 'scheduled' | 'both';
+  whatsappStartTime?: string;
+  whatsappEndTime?: string;
+  whatsappDigestIntervalHours?: number;
+  whatsappQuietHoursEnabled?: boolean;
 }
 
 export interface CrawlKeyword {

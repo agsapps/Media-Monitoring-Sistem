@@ -67,6 +67,13 @@ export const enforceSslConnectionString = (connString: string, forceNoSsl = fals
   }
 };
 
+export let lastConnectionSuccess = false;
+export let lastConnectionAttemptTime = 0;
+
+export const isDbConnected = (): boolean => {
+  return lastConnectionSuccess;
+};
+
 export const createPool = (forceNoSsl = false) => {
   let connectionString = process.env.CUSTOM_SQL_URL;
   let host = process.env.CUSTOM_SQL_HOST;
@@ -88,8 +95,8 @@ export const createPool = (forceNoSsl = false) => {
     });
   }
 
-  // 1. Initial parse of connection string to find host/port
-  if (connectionString) {
+  // 1. Initial parse of connection string to find host/port (only if host is not already specified explicitly)
+  if (connectionString && !process.env.CUSTOM_SQL_HOST) {
     try {
       const isPostgresql = connectionString.startsWith('postgresql://');
       const isPostgres = connectionString.startsWith('postgres://');
@@ -145,11 +152,20 @@ export const createPool = (forceNoSsl = false) => {
   }
 
   const poolConfig: any = {
-    connectionTimeoutMillis: 15000,
+    connectionTimeoutMillis: 3000,
+    statement_timeout: 90000,
+    options: '-c statement_timeout=90000',
     ssl,
+    keepAlive: true,
   };
 
-  if (connectionString) {
+  if (host && process.env.CUSTOM_SQL_USER && process.env.CUSTOM_SQL_PASSWORD && process.env.CUSTOM_SQL_DB_NAME) {
+    poolConfig.host = host;
+    poolConfig.port = port;
+    poolConfig.user = process.env.CUSTOM_SQL_USER;
+    poolConfig.password = process.env.CUSTOM_SQL_PASSWORD;
+    poolConfig.database = process.env.CUSTOM_SQL_DB_NAME;
+  } else if (connectionString) {
     poolConfig.connectionString = connectionString;
   } else {
     poolConfig.host = host;
@@ -163,6 +179,21 @@ export const createPool = (forceNoSsl = false) => {
 
   // Intercept newPool.query to record query history
   const originalQuery = newPool.query;
+
+  const handleQueryError = (err: any) => {
+    const msg = (err.message || '').toLowerCase();
+    if (
+      msg.includes('connection') || 
+      msg.includes('timeout') || 
+      msg.includes('terminate') || 
+      msg.includes('connect') ||
+      msg.includes('unreachable')
+    ) {
+      lastConnectionSuccess = false;
+      lastConnectionAttemptTime = Date.now();
+    }
+  };
+
   newPool.query = function (this: any, ...args: any[]) {
     const start = Date.now();
     let queryText = '';
@@ -185,8 +216,10 @@ export const createPool = (forceNoSsl = false) => {
       args[args.length - 1] = function(this: any, err: any, _result: any) {
         const duration = Date.now() - start;
         if (err) {
+          handleQueryError(err);
           addQueryLog(queryText, queryValues, duration, 'FAILED', err.message);
         } else {
+          lastConnectionSuccess = true;
           addQueryLog(queryText, queryValues, duration, 'SUCCESS');
         }
         return callback.apply(this, arguments as any);
@@ -200,11 +233,13 @@ export const createPool = (forceNoSsl = false) => {
       return promise.then(
         (result: any) => {
           const duration = Date.now() - start;
+          lastConnectionSuccess = true;
           addQueryLog(queryText, queryValues, duration, 'SUCCESS');
           return result;
         },
         (err: any) => {
           const duration = Date.now() - start;
+          handleQueryError(err);
           addQueryLog(queryText, queryValues, duration, 'FAILED', err.message);
           throw err;
         }
@@ -232,18 +267,28 @@ export let dbInstance = drizzle(pool, { schema });
 
 let sslTested = false;
 
-// Proactively test and verify the connection, falling back to non-SSL if the server rejects SSL
+// Proactively test and verify the connection, falling back to non-SSL if the server rejects SSL or times out
 export const ensureConnection = async (): Promise<boolean> => {
-  if (sslTested) return !globalForceNoSsl;
+  const now = Date.now();
+  if (sslTested && lastConnectionSuccess) return true;
+  
+  // If we recently failed, don't block the main thread with connection attempts; fallback to cache/local
+  if (!lastConnectionSuccess && now - lastConnectionAttemptTime < 15000) {
+    return false;
+  }
+  
+  lastConnectionAttemptTime = now;
   try {
     const client = await pool.connect();
     client.release();
     sslTested = true;
+    lastConnectionSuccess = true;
     console.log(`[Database] Protocol initialized (SSL: ${!globalForceNoSsl})`);
     return true;
   } catch (err: any) {
-    if (err.message && err.message.includes('does not support SSL connections') && !globalForceNoSsl) {
-      console.log('[Database] Protocol adjustment: Server requested standard mode. Rebuilding database pool...');
+    lastConnectionSuccess = false;
+    if (!globalForceNoSsl) {
+      console.log(`[Database] Connection attempt with SSL failed (${err.message}). Trying fallback to standard non-SSL mode...`);
       globalForceNoSsl = true;
       refreshDatabaseConnection();
       sslTested = true;
@@ -251,10 +296,12 @@ export const ensureConnection = async (): Promise<boolean> => {
       try {
         const client2 = await pool.connect();
         client2.release();
-        console.log('[Database] Protocol successfully configured for standard mode.');
+        lastConnectionSuccess = true;
+        console.log('[Database] Protocol successfully configured for standard mode after fallback.');
         return true;
       } catch (err2: any) {
-        console.error('[Database] Connection alert: check standard configuration:', err2.message);
+        lastConnectionSuccess = false;
+        console.error('[Database] Connection alert after non-SSL fallback:', err2.message);
         throw err2;
       }
     } else {

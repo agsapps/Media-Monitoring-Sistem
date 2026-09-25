@@ -2,6 +2,8 @@ import React, { useRef } from 'react';
 import { useAppState } from '../AppContext';
 import { Upload } from 'lucide-react';
 
+const defaultAppLogo = '/src/assets/images/head_office_badge.png';
+
 interface LogoProps {
   className?: string;
   id?: string;
@@ -11,7 +13,7 @@ export const Logo: React.FC<LogoProps> = ({ className = "w-12 h-12", id }) => {
   const { user, settings, saveSettings } = useAppState();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const activeLogoUrl = settings?.logoUrl || "https://www.image2url.com/r2/default/images/1780156246537-cd69ae8e-001c-4401-bc28-6450bd31ace9.png";
+  const activeLogoUrl = settings?.logoUrl || defaultAppLogo;
   const isAdmin = user?.role === 'Admin';
 
   const handleLogoClick = (e: React.MouseEvent) => {
@@ -48,12 +50,12 @@ export const Logo: React.FC<LogoProps> = ({ className = "w-12 h-12", id }) => {
   const isCustomLogo = !!settings?.logoUrl;
 
   return (
-    <div className={`relative group ${className} overflow-hidden flex items-center justify-center rounded-xl bg-transparent`}>
+    <div className={`relative group ${className} overflow-hidden flex items-center justify-center rounded-xl bg-transparent p-0.5`}>
       <img 
         id={id}
         src={activeLogoUrl} 
         alt="Logo" 
-        className={`w-full h-full object-contain origin-center transition duration-300 transform-gpu ${isCustomLogo ? 'scale-[1.05]' : 'scale-[3.10]'}`}
+        className="w-full h-full object-contain origin-center transition duration-300 transform-gpu scale-100"
         referrerPolicy="no-referrer"
       />
       

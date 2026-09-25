@@ -20,6 +20,15 @@ import {
 // Global timezone-independent date parser cache to eliminate millions of redundant Date instantiations
 const parsedUTCDateCache: Record<string, Date> = {};
 
+// Helper to get local date string timezone-safely
+const getLocalDateString = (): string => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export const DashboardView: React.FC = () => {
   const { user, authFetch, loadStats, showToast, news: rawNews, loadNews, selectedProvince, setSelectedProvince, settings, highlights, isCrawlSyncing, triggerAutoSync, setTab, socialNews, loadSocialNews, setPortalLocationFilter, setSocialLocationFilter } = useAppState();
 
@@ -103,7 +112,7 @@ export const DashboardView: React.FC = () => {
 
 
   const [activeTabDuration, setActiveTabDuration] = useState<'All' | 'Days' | 'Weeks' | 'Months' | 'Years'>('Days');
-  const [selectedCalendarDate, setSelectedCalendarDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState<string>(getLocalDateString);
   const [isMultiSelectMode, setIsMultiSelectMode] = useState<boolean>(false);
   const [selectedCalendarDates, setSelectedCalendarDates] = useState<string[]>([]);
   const [comparisonMode, setComparisonMode] = useState<'none' | 'mom' | 'yoy'>('none');
@@ -195,7 +204,7 @@ export const DashboardView: React.FC = () => {
   const [selectedSentimentFilter, setSelectedSentimentFilter] = useState<string>('Semua');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('Semua');
   const [selectedRegionFilter, setSelectedRegionFilter] = useState<string>('Semua');
-  const [selectedDateFilter, setSelectedDateFilter] = useState<string>(() => new Date().toISOString().split('T')[0]);
+  const [selectedDateFilter, setSelectedDateFilter] = useState<string>(getLocalDateString);
   const [startDateFilter, setStartDateFilter] = useState<string>('');
   const [endDateFilter, setEndDateFilter] = useState<string>('');
   const [hasSetDefaultDate, setHasSetDefaultDate] = useState<boolean>(false);
@@ -533,14 +542,14 @@ export const DashboardView: React.FC = () => {
   }, [news]);
 
   React.useEffect(() => {
-    if (!hasSetDefaultDate) {
-      const todayStr = new Date().toISOString().split('T')[0];
-      setSelectedDateFilter(todayStr);
-      setSelectedCalendarDate(todayStr);
-      setSelectedCalendarDates([todayStr]);
+    if (!hasSetDefaultDate && news.length > 0) {
+      const latestDate = sortedTimelineDates[sortedTimelineDates.length - 1] || getLocalDateString();
+      setSelectedDateFilter(latestDate);
+      setSelectedCalendarDate(latestDate);
+      setSelectedCalendarDates([latestDate]);
       setHasSetDefaultDate(true);
     }
-  }, [hasSetDefaultDate]);
+  }, [hasSetDefaultDate, news, sortedTimelineDates]);
 
   const formatIndonesianDate = (dateStr: string) => {
     if (!dateStr) return '';
@@ -734,7 +743,7 @@ export const DashboardView: React.FC = () => {
 
   // Dynamic calendar date list generated based on today's date
   const dynamicCalendarDays = React.useMemo(() => {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalDateString();
     const maxDate = parseUTCDate(todayStr);
     
     // Generate 31 days back to accommodate full monthly range selection

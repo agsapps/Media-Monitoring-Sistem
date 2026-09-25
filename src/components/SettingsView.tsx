@@ -3,7 +3,8 @@ import { useAppState } from '../AppContext';
 import { 
   Settings, Save, ShieldCheck, Sparkles, Search, 
   Play, RefreshCw, Clock, Terminal, Check, Plus, Trash2,
-  Database, Activity
+  Database, Activity, MessageSquare, Send, ExternalLink, Smartphone,
+  Bell, Calendar
 } from 'lucide-react';
 import { ActivityLog } from '../types';
 
@@ -19,21 +20,6 @@ export const SettingsView: React.FC = () => {
     removeKeyword,
     authFetch
   } = useAppState();
-
-  // Redirect/Block non-Admin users
-  if (user?.role !== 'Admin') {
-    return (
-      <div className="flex flex-col items-center justify-center p-12 bg-white dark:bg-[#121118] border border-slate-100 dark:border-white/5 rounded-3xl shadow-sm text-center space-y-4 max-w-lg mx-auto mt-8">
-        <div className="w-14 h-14 bg-rose-50 dark:bg-rose-950/20 rounded-full flex items-center justify-center text-rose-500">
-          <Settings className="w-7 h-7" />
-        </div>
-        <h3 className="text-sm font-bold text-slate-900 dark:text-white font-display uppercase tracking-wider">Akses Terbatas</h3>
-        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-          Maaf, halaman konfigurasi Crawler AI Sistem hanya dapat diakses oleh administrator dengan role **ADMIN**.
-        </p>
-      </div>
-    );
-  }
 
   // CRAWLER & SCHEDULER STATES
   const [schedulerIntervalMinutes, setSchedulerIntervalMinutes] = useState<number>(settings.schedulerIntervalMinutes || 30);
@@ -51,13 +37,96 @@ export const SettingsView: React.FC = () => {
   const [newsApiKey, setNewsApiKey] = useState<string>((settings as any).newsApiKey || '');
   const [fonnteTarget, setFonnteTarget] = useState<string>((settings as any).fonnteTarget || '6281902052373');
   const [fonnteTargets, setFonnteTargets] = useState<string[]>((settings as any).fonnteTargets || ['6281902052373']);
+  const [newPhoneInput, setNewPhoneInput] = useState<string>('');
   const [fonnteCategories, setFonnteCategories] = useState<string[]>((settings as any).fonnteCategories || ['Negatif']);
-  const [openWaVpsUrl, setOpenWaVpsUrl] = useState<string>((settings as any).openWaVpsUrl || '');
+  const [openWaVpsUrl, setOpenWaVpsUrl] = useState<string>((settings as any).openWaVpsUrl || 'http://101.32.141.172:3006');
   const [openWaToken, setOpenWaToken] = useState<string>((settings as any).openWaToken || '');
+  const [whatsappScheduleMode, setWhatsappScheduleMode] = useState<'realtime' | 'scheduled' | 'both'>((settings as any).whatsappScheduleMode || 'realtime');
+  const [whatsappStartTime, setWhatsappStartTime] = useState<string>((settings as any).whatsappStartTime || '07:00');
+  const [whatsappEndTime, setWhatsappEndTime] = useState<string>((settings as any).whatsappEndTime || '22:00');
+  const [whatsappDigestIntervalHours, setWhatsappDigestIntervalHours] = useState<number>((settings as any).whatsappDigestIntervalHours || 3);
+  const [whatsappQuietHoursEnabled, setWhatsappQuietHoursEnabled] = useState<boolean>((settings as any).whatsappQuietHoursEnabled !== undefined ? (settings as any).whatsappQuietHoursEnabled : true);
+  const [testingWa, setTestingWa] = useState(false);
+  const [waStatusMessage, setWaStatusMessage] = useState<string | null>(null);
   const [savingSettings, setSavingSettings] = useState(false);
   const [triggeringCrawl, setTriggeringCrawl] = useState(false);
   const [schedulerLogs, setSchedulerLogs] = useState<ActivityLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
+
+  const handleAddPhone = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!newPhoneInput.trim()) return;
+    let clean = newPhoneInput.trim().replace(/[^0-9]/g, '');
+    if (clean.startsWith('08')) {
+      clean = '62' + clean.slice(1);
+    }
+    if (clean.length < 9) {
+      showToast('Format nomor tidak valid (minimal 9 digit angka)', 'error');
+      return;
+    }
+    if (fonnteTargets.includes(clean)) {
+      showToast('Nomor tersebut sudah ada di daftar penerima', 'info');
+      return;
+    }
+    const updated = [...fonnteTargets, clean];
+    setFonnteTargets(updated);
+    setFonnteTarget(updated[0]);
+    setNewPhoneInput('');
+    showToast(`Nomor ${clean} berhasil ditambahkan!`, 'success');
+  };
+
+  const handleRemovePhone = (phoneToRemove: string) => {
+    const updated = fonnteTargets.filter(num => num !== phoneToRemove);
+    setFonnteTargets(updated);
+    setFonnteTarget(updated[0] || '');
+    showToast(`Nomor ${phoneToRemove} dihapus dari daftar penerima`, 'info');
+  };
+
+  const handleTestWhatsApp = async () => {
+    setTestingWa(true);
+    setWaStatusMessage(null);
+    try {
+      const targetsToSend = fonnteTargets.length > 0 ? fonnteTargets : [fonnteTarget || '6281902052373'];
+      const res = await authFetch('/api/whatsapp/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targets: targetsToSend,
+          message: `🔔 *UJI NOTIFIKASI MEDIA MONITORING*\n\nWhatsApp Gateway berhasil terhubung dan siap mendistribusikan notifikasi berita!\n\nJadwal Aktif: ${whatsappQuietHoursEnabled ? `${whatsappStartTime} - ${whatsappEndTime} WIB` : '24 Jam Non-stop'}\nMode: ${whatsappScheduleMode === 'both' ? 'Real-time Krisis & Ringkasan Berkala' : (whatsappScheduleMode === 'realtime' ? 'Real-time Krisis' : 'Ringkasan Berkala')}\nWaktu: ${new Date().toLocaleString('id-ID')}`
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message || 'Pesan WhatsApp berhasil dikirim ke seluruh nomor!', 'success');
+        setWaStatusMessage(`✅ ${data.message || 'Berhasil terkirim'} (${data.sent || targetsToSend.length} nomor)`);
+      } else {
+        showToast(data.message || 'Gagal mengirim pesan WhatsApp. Pastikan sudah scan QR di VPS.', 'error');
+        setWaStatusMessage('❌ ' + (data.message || 'Gagal mengirim'));
+      }
+    } catch (err: any) {
+      showToast('Gagal menghubungi WhatsApp Gateway: ' + err.message, 'error');
+      setWaStatusMessage('❌ Koneksi terputus: ' + err.message);
+    } finally {
+      setTestingWa(false);
+    }
+  };
+
+  const handleCheckWaStatus = async () => {
+    try {
+      setWaStatusMessage('Mengecek koneksi VPS WhatsApp Gateway...');
+      const res = await authFetch('/api/whatsapp/status');
+      const data = await res.json();
+      if (data.online) {
+        setWaStatusMessage(`✅ Online! Terhubung: ${data.details?.user || 'Aktif'} (Port 3006)`);
+        showToast('WhatsApp Gateway aktif di port 3006!', 'success');
+      } else {
+        setWaStatusMessage('⚠️ Gateway belum online atau belum di-scan QR.');
+        showToast('Gateway belum aktif. Silakan buka http://101.32.141.172:3006 untuk scan QR.', 'info');
+      }
+    } catch (err: any) {
+      setWaStatusMessage('❌ Tidak dapat menghubungi gateway: ' + err.message);
+    }
+  };
 
   // --- POSTGRES CUSTOM CONNECTION TEST & LOG STATES ---
   const [dbTestStatus, setDbTestStatus] = useState<'idle' | 'testing' | 'success' | 'failed'>('idle');
@@ -66,17 +135,18 @@ export const SettingsView: React.FC = () => {
   const [loadingDbLogs, setLoadingDbLogs] = useState<boolean>(false);
 
   const fetchDbConnectionLogs = async () => {
+    if (user?.role !== 'Admin') return;
     setLoadingDbLogs(true);
     try {
       const res = await authFetch('/api/admin/postgres-connection-logs');
-      if (res.ok) {
+      if (res && res.ok) {
         const data = await res.json();
-        if (data.success) {
+        if (data?.success) {
           setDbConnectionLogs(data.logs || []);
         }
       }
     } catch (err) {
-      console.error('Failed to fetch DB connection logs:', err);
+      console.warn('DB connection logs currently unavailable:', err);
     } finally {
       setLoadingDbLogs(false);
     }
@@ -111,10 +181,15 @@ export const SettingsView: React.FC = () => {
   };
 
   useEffect(() => {
+    if (user?.role !== 'Admin') return;
     fetchDbConnectionLogs();
-    const interval = setInterval(fetchDbConnectionLogs, 5000); // poll every 5 seconds
+    const interval = setInterval(() => {
+      if (!document.hidden) {
+        fetchDbConnectionLogs();
+      }
+    }, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [user?.role]);
 
   // --- KEYWORD MANAGEMENT STATES ---
   const [newKeywordInput, setNewKeywordInput] = useState('');
@@ -154,29 +229,32 @@ export const SettingsView: React.FC = () => {
 
   // Load scheduler logs
   const fetchSchedulerLogs = async () => {
+    if (user?.role !== 'Admin') return;
     setLoadingLogs(true);
     try {
       const res = await authFetch('/api/logs');
-      if (res.ok) {
+      if (res && res.ok) {
         const data = await res.json();
-        // Filter logs to only show scheduler or crawling events
-        const filtered = data.filter((log: ActivityLog) => {
-          if (!log) return false;
-          const u = log.username || '';
-          const a = (log.action || '').toLowerCase();
-          const t = (log.target || '').toLowerCase();
-          return (
-            u === 'system-scheduler' ||
-            a.includes('scheduler') ||
-            a.includes('crawl') ||
-            t.includes('scheduler') ||
-            t.includes('crawl')
-          );
-        });
-        setSchedulerLogs(filtered.slice(0, 15));
+        if (Array.isArray(data)) {
+          // Filter logs to only show scheduler or crawling events
+          const filtered = data.filter((log: ActivityLog) => {
+            if (!log) return false;
+            const u = log.username || '';
+            const a = (log.action || '').toLowerCase();
+            const t = (log.target || '').toLowerCase();
+            return (
+              u === 'system-scheduler' ||
+              a.includes('scheduler') ||
+              a.includes('crawl') ||
+              t.includes('scheduler') ||
+              t.includes('crawl')
+            );
+          });
+          setSchedulerLogs(filtered.slice(0, 15));
+        }
       }
     } catch (err) {
-      console.error('Failed to load scheduler logs:', err);
+      console.warn('Scheduler logs currently unavailable:', err);
     } finally {
       setLoadingLogs(false);
     }
@@ -198,17 +276,27 @@ export const SettingsView: React.FC = () => {
       setFonnteTarget((settings as any).fonnteTarget || '6281902052373');
       setFonnteTargets((settings as any).fonnteTargets || ['6281902052373']);
       setFonnteCategories((settings as any).fonnteCategories || ['Negatif']);
-      setOpenWaVpsUrl((settings as any).openWaVpsUrl || '');
+      setOpenWaVpsUrl((settings as any).openWaVpsUrl || 'http://101.32.141.172:3006');
       setOpenWaToken((settings as any).openWaToken || '');
+      setWhatsappScheduleMode((settings as any).whatsappScheduleMode || 'realtime');
+      setWhatsappStartTime((settings as any).whatsappStartTime || '07:00');
+      setWhatsappEndTime((settings as any).whatsappEndTime || '22:00');
+      setWhatsappDigestIntervalHours((settings as any).whatsappDigestIntervalHours || 3);
+      setWhatsappQuietHoursEnabled((settings as any).whatsappQuietHoursEnabled !== undefined ? (settings as any).whatsappQuietHoursEnabled : true);
     }
   }, [settings]);
 
   useEffect(() => {
+    if (user?.role !== 'Admin') return;
     fetchSchedulerLogs();
     // Auto-refresh logs every 15 seconds
-    const interval = setInterval(fetchSchedulerLogs, 15000);
+    const interval = setInterval(() => {
+      if (!document.hidden) {
+        fetchSchedulerLogs();
+      }
+    }, 15000);
     return () => clearInterval(interval);
-  }, []);
+  }, [user?.role]);
 
   // Handle configuration save submit
   const handleSaveConfig = async (e: React.FormEvent) => {
@@ -227,12 +315,17 @@ export const SettingsView: React.FC = () => {
       twitterApiIoKey,
       newsApiKey,
       fonnteToken: '',
-      fonnteTarget,
+      fonnteTarget: fonnteTargets[0] || fonnteTarget,
       fonnteTargets,
       fonnteCategories,
       whatsappProvider: 'openwa',
-      openWaVpsUrl,
-      openWaToken
+      openWaVpsUrl: openWaVpsUrl || 'http://101.32.141.172:3006',
+      openWaToken,
+      whatsappScheduleMode,
+      whatsappStartTime,
+      whatsappEndTime,
+      whatsappDigestIntervalHours,
+      whatsappQuietHoursEnabled
     });
     setSavingSettings(false);
     if (success) {
@@ -334,6 +427,21 @@ export const SettingsView: React.FC = () => {
   };
 
   const rec = getRecommendedInfo(autoCrawlMethod);
+
+  // Render restricted access screen if user is not admin
+  if (user?.role !== 'Admin') {
+    return (
+      <div className="flex flex-col items-center justify-center p-12 bg-white dark:bg-[#121118] border border-slate-100 dark:border-white/5 rounded-3xl shadow-sm text-center space-y-4 max-w-lg mx-auto mt-8">
+        <div className="w-14 h-14 bg-rose-50 dark:bg-rose-950/20 rounded-full flex items-center justify-center text-rose-500">
+          <Settings className="w-7 h-7" />
+        </div>
+        <h3 className="text-sm font-bold text-slate-900 dark:text-white font-display uppercase tracking-wider">Akses Terbatas</h3>
+        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+          Maaf, halaman konfigurasi Crawler AI Sistem hanya dapat diakses oleh administrator dengan role **ADMIN**.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -690,7 +798,334 @@ export const SettingsView: React.FC = () => {
                   </p>
                 </div>
 
+                {/* WHATSAPP GATEWAY (VPS 24 JAM) CONFIGURATION CARD */}
+                <div className="col-span-1 md:col-span-2 p-4 rounded-xl bg-gradient-to-br from-emerald-500/5 via-slate-50 to-slate-100 dark:from-emerald-950/20 dark:via-slate-900/60 dark:to-slate-900 border border-emerald-500/20 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-500/10 pb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-500/15 flex items-center justify-center text-emerald-500">
+                        <MessageSquare className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                          Bot WhatsApp Gateway (Notifikasi Krisis 24 Jam)
+                          <span className="px-1.5 py-0.5 text-[9px] bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-md font-semibold">VPS Dedicated</span>
+                        </h4>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                          Kirim notifikasi otomatis ke nomor WhatsApp saat sistem AI mendeteksi isu krisis / berita negatif.
+                        </p>
+                      </div>
+                    </div>
 
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleCheckWaStatus}
+                        className="px-2.5 py-1 text-[10px] bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg flex items-center gap-1 font-medium transition cursor-pointer"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        Cek Status Gateway
+                      </button>
+                      <a
+                        href={openWaVpsUrl || 'http://101.32.141.172:3006'}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-2.5 py-1 text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center gap-1 font-semibold transition"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        Buka Scan QR (Web)
+                      </a>
+                    </div>
+                  </div>
+
+                  {waStatusMessage && (
+                    <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[11px] font-mono text-emerald-600 dark:text-emerald-400">
+                      {waStatusMessage}
+                    </div>
+                  )}
+
+                  {/* 1. MANAJEMEN NOMOR TELEPON PENERIMA */}
+                  <div className="p-3.5 bg-white/70 dark:bg-slate-900/80 rounded-xl border border-emerald-500/15 space-y-2.5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                      <label className="text-[11px] font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                        <Smartphone className="w-3.5 h-3.5 text-emerald-500" />
+                        1. Daftar Nomor WhatsApp Penerima Alert ({fonnteTargets.length} Nomor Terdaftar)
+                      </label>
+                      <span className="text-[9.5px] text-slate-400 font-light">
+                        Notifikasi krisis akan didistribusikan ke seluruh nomor di bawah ini
+                      </span>
+                    </div>
+
+                    {/* Input Tambah Nomor */}
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newPhoneInput}
+                        onChange={e => setNewPhoneInput(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddPhone();
+                          }
+                        }}
+                        placeholder="Ketik nomor HP baru... (contoh: 081902052373 atau 6281234567890)"
+                        className="flex-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-lg text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddPhone}
+                        className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition active:scale-95 flex items-center gap-1 cursor-pointer shrink-0 shadow-xs"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Tambah Nomor</span>
+                      </button>
+                    </div>
+
+                    {/* Chip / Tag List Nomor Telepon */}
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {fonnteTargets.length > 0 ? (
+                        fonnteTargets.map(phone => (
+                          <div
+                            key={phone}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 hover:bg-emerald-500/15 border border-emerald-500/30 rounded-lg text-emerald-700 dark:text-emerald-300 font-mono text-xs transition"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            <span>{phone}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemovePhone(phone)}
+                              className="ml-1 p-0.5 text-slate-400 hover:text-red-500 rounded transition cursor-pointer"
+                              title="Hapus nomor ini"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-[10px] text-amber-500 flex items-center gap-1 py-1">
+                          <Clock className="w-3 h-3" />
+                          <span>Belum ada nomor WhatsApp. Silakan ketik nomor di atas lalu klik Tambah.</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 2. JADWAL & RENTANG WAKTU PENGIRIMAN WHATSAPP */}
+                  <div className="p-3.5 bg-white/70 dark:bg-slate-900/80 rounded-xl border border-emerald-500/15 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-slate-100 dark:border-white/5 pb-2">
+                      <label className="text-[11px] font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-emerald-500" />
+                        2. Jadwal & Rentang Waktu Pengiriman Berita (Delivery Window)
+                      </label>
+                      <span className="text-[9.5px] text-emerald-600 dark:text-emerald-400 font-medium">
+                        {whatsappQuietHoursEnabled ? `Aktif (${whatsappStartTime} - ${whatsappEndTime} WIB)` : '24 Jam Non-stop Aktif'}
+                      </span>
+                    </div>
+
+                    {/* Mode Pengiriman Berita */}
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300">Mode Pengiriman WhatsApp:</span>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setWhatsappScheduleMode('realtime')}
+                          className={`p-2.5 rounded-xl border text-left transition cursor-pointer ${
+                            whatsappScheduleMode === 'realtime'
+                              ? 'bg-emerald-500/15 border-emerald-500 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-500'
+                              : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-white/5 text-slate-600 dark:text-slate-400'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className="text-xs font-bold flex items-center gap-1">
+                              <Bell className="w-3 h-3" />
+                              Real-time Instan
+                            </span>
+                            {whatsappScheduleMode === 'realtime' && <Check className="w-3 h-3 text-emerald-500" />}
+                          </div>
+                          <p className="text-[9.5px] opacity-80 leading-snug">
+                            Kirim langsung detik itu juga saat crawler AI menemukan berita krisis / negatif.
+                          </p>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setWhatsappScheduleMode('scheduled')}
+                          className={`p-2.5 rounded-xl border text-left transition cursor-pointer ${
+                            whatsappScheduleMode === 'scheduled'
+                              ? 'bg-emerald-500/15 border-emerald-500 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-500'
+                              : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-white/5 text-slate-600 dark:text-slate-400'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className="text-xs font-bold flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              Ringkasan Berkala
+                            </span>
+                            {whatsappScheduleMode === 'scheduled' && <Check className="w-3 h-3 text-emerald-500" />}
+                          </div>
+                          <p className="text-[9.5px] opacity-80 leading-snug">
+                            Kirim rangkuman berita per interval jam tertentu ke nomor penerima.
+                          </p>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setWhatsappScheduleMode('both')}
+                          className={`p-2.5 rounded-xl border text-left transition cursor-pointer ${
+                            whatsappScheduleMode === 'both'
+                              ? 'bg-emerald-500/15 border-emerald-500 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-500'
+                              : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-white/5 text-slate-600 dark:text-slate-400'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className="text-xs font-bold flex items-center gap-1">
+                              <Sparkles className="w-3 h-3" />
+                              Kombinasi (Rekomendasi)
+                            </span>
+                            {whatsappScheduleMode === 'both' && <Check className="w-3 h-3 text-emerald-500" />}
+                          </div>
+                          <p className="text-[9.5px] opacity-80 leading-snug">
+                            Real-time saat isu krisis darurat + rekap ringkasan berkala.
+                          </p>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Rentang Jam Operasional (Quiet Hours) */}
+                    <div className="pt-2 border-t border-slate-100 dark:border-white/5 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={whatsappQuietHoursEnabled}
+                            onChange={e => setWhatsappQuietHoursEnabled(e.target.checked)}
+                            className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
+                          />
+                          <span className="text-[10.5px] font-bold text-slate-800 dark:text-slate-200">
+                            Aktifkan Pembatasan Rentang Jam Operasional (Quiet Hours)
+                          </span>
+                        </label>
+                        <span className="text-[9px] text-slate-400">Zona Waktu: WIB (UTC+7)</span>
+                      </div>
+
+                      {whatsappQuietHoursEnabled ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-2.5 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-white/5">
+                          <div className="space-y-1">
+                            <label className="text-[9.5px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                              Mulai Kirim (Jam Pagi/Siang)
+                            </label>
+                            <input
+                              type="time"
+                              value={whatsappStartTime}
+                              onChange={e => setWhatsappStartTime(e.target.value)}
+                              className="w-full px-3 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-lg text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                            />
+                            <p className="text-[8.5px] text-slate-400 font-light">
+                              Bot mulai aktif mendistribusikan notifikasi berita.
+                            </p>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[9.5px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                              Selesai Kirim (Jam Malam)
+                            </label>
+                            <input
+                              type="time"
+                              value={whatsappEndTime}
+                              onChange={e => setWhatsappEndTime(e.target.value)}
+                              className="w-full px-3 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-lg text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                            />
+                            <p className="text-[8.5px] text-slate-400 font-light">
+                              Di atas jam ini, pesan non-kritis ditahan agar tidak mengganggu istirahat.
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-2 bg-amber-500/10 border border-amber-500/20 rounded-lg text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                          ⚡ Mode 24 Jam Non-stop Aktif: Bot WhatsApp akan mengirimkan alert kapan saja (siang maupun tengah malam).
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Interval Ringkasan / Rekap Berkala */}
+                    {(whatsappScheduleMode === 'scheduled' || whatsappScheduleMode === 'both') && (
+                      <div className="pt-2 border-t border-slate-100 dark:border-white/5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-[9.5px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                            Interval Ringkasan Berkala
+                          </label>
+                          <select
+                            value={whatsappDigestIntervalHours}
+                            onChange={e => setWhatsappDigestIntervalHours(parseInt(e.target.value, 10))}
+                            className="w-full px-3 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                          >
+                            <option value={1}>Setiap 1 Jam Sekali</option>
+                            <option value={2}>Setiap 2 Jam Sekali</option>
+                            <option value={3}>Setiap 3 Jam Sekali (Rekomendasi)</option>
+                            <option value={6}>Setiap 6 Jam Sekali</option>
+                            <option value={12}>Setiap 12 Jam Sekali (Pagi &amp; Sore)</option>
+                            <option value={24}>Setiap 24 Jam Sekali (1x Sehari)</option>
+                          </select>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[9.5px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                            URL WhatsApp Gateway VPS
+                          </label>
+                          <input
+                            type="text"
+                            value={openWaVpsUrl || 'http://101.32.141.172:3006'}
+                            onChange={e => setOpenWaVpsUrl(e.target.value)}
+                            placeholder="http://101.32.141.172:3006"
+                            className="w-full px-3 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-lg text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 3. FILTER KATEGORI & UJI KIRIM PESAN */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-200/40 dark:border-white/5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Filter Kategori Alert:</span>
+                      <div className="flex items-center gap-1.5">
+                        {['Negatif', 'Krisis', 'Semua Berita'].map(cat => {
+                          const isSelected = fonnteCategories.includes(cat);
+                          return (
+                            <button
+                              key={cat}
+                              type="button"
+                              onClick={() => {
+                                if (isSelected) {
+                                  if (fonnteCategories.length > 1) {
+                                    setFonnteCategories(fonnteCategories.filter(c => c !== cat));
+                                  }
+                                } else {
+                                  setFonnteCategories([...fonnteCategories, cat]);
+                                }
+                              }}
+                              className={`px-2 py-0.5 text-[10px] font-medium rounded-md border transition cursor-pointer ${
+                                isSelected
+                                  ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 font-bold'
+                                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-white/5 text-slate-600 dark:text-slate-400'
+                              }`}
+                            >
+                              {cat}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={testingWa}
+                      onClick={handleTestWhatsApp}
+                      className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-sm transition active:scale-95 disabled:opacity-50 flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      <span>{testingWa ? 'Mengirim Uji Coba...' : `Uji Kirim ke ${fonnteTargets.length} Nomor`}</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -839,7 +1274,7 @@ export const SettingsView: React.FC = () => {
             <div className="flex-1 space-y-1">
               <span className="block text-[9.5px] font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider">AI Model Pendamping:</span>
               <p className="text-[10px] text-slate-600 dark:text-slate-400 leading-relaxed font-mono">
-                Model: <span className="font-bold text-slate-800 dark:text-white">Gemini 2.5 Flash-Lite</span>
+                Model: <span className="font-bold text-slate-800 dark:text-white">Gemini 2.1 Flash-Lite</span>
                 <br />
                 Status: <span className="font-bold text-emerald-600 dark:text-emerald-400">Siap & Terhubung</span>
               </p>

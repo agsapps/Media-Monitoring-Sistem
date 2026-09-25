@@ -1,7 +1,66 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useAppState } from '../AppContext';
-import { Maximize2, Minimize2, ChevronDown, ChevronUp, RefreshCw, Newspaper, X, ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
+import { Maximize2, Minimize2, ChevronDown, ChevronUp, RefreshCw, Newspaper, X, ChevronLeft, ChevronRight, MapPin, Layers, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+
+export type TileProviderType = 'esri' | 'osm' | 'carto';
+
+// High-reliability Tile Layer Configurations (Tanpa API & Auto-Fallback)
+export const getTileLayerConfig = (provider: TileProviderType, currentTheme: string) => {
+  if (provider === 'osm') {
+    return {
+      name: 'OpenStreetMap (Resmi OSM)',
+      subtitle: '100% Bebas & Terbuka Tanpa API',
+      url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      options: {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',
+        subdomains: 'abc',
+        maxZoom: 19,
+        crossOrigin: true,
+        updateWhenIdle: true,
+        updateWhenZooming: false,
+        keepBuffer: 4
+      }
+    };
+  }
+
+  if (provider === 'carto') {
+    return {
+      name: 'CARTO CDN',
+      subtitle: 'Voyager & Dark Matter',
+      url: currentTheme === 'dark'
+        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+        : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+      options: {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 20,
+        crossOrigin: true,
+        updateWhenIdle: true,
+        updateWhenZooming: false,
+        keepBuffer: 4
+      }
+    };
+  }
+
+  // Default: 'esri' (ESRI ArcGIS World Canvas - 100% Tanpa API, no rate-limits, crisp high-res tiles for dashboards)
+  return {
+    name: 'ESRI Canvas',
+    subtitle: 'Minimalis & Cepat (Tanpa API)',
+    url: currentTheme === 'dark'
+      ? 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
+      : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+    options: {
+      attribution: 'Tiles &copy; <a href="https://www.esri.com" target="_blank" rel="noopener">Esri</a> &mdash; DeLorme, NAVTEQ',
+      subdomains: '',
+      maxZoom: 16,
+      crossOrigin: true,
+      updateWhenIdle: true,
+      updateWhenZooming: false,
+      keepBuffer: 4
+    }
+  };
+};
 
 interface ProvinceCoords {
   [key: string]: [number, number];
@@ -182,6 +241,23 @@ export const OSMMap: React.FC<OSMMapProps> = React.memo(({
   const mapRef = useRef<any>(null);
   const markersRef = useRef<{ [key: string]: any }>({});
   const tileLayerRef = useRef<any>(null);
+
+  // Map Tile Provider State (Default: ESRI Canvas - 100% Tanpa API, no rate limit)
+  const [tileProvider, setTileProvider] = useState<TileProviderType>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('app_map_tile_provider') as TileProviderType;
+      if (saved && ['esri', 'osm', 'carto'].includes(saved)) return saved;
+    }
+    return 'esri';
+  });
+  const [isLayerMenuOpen, setIsLayerMenuOpen] = useState(false);
+
+  const handleSetTileProvider = (provider: TileProviderType) => {
+    setTileProvider(provider);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('app_map_tile_provider', provider);
+    }
+  };
 
   // Auto scroll references and state for expanded "Kabar Terkini"
   const newsListRef = useRef<HTMLDivElement>(null);
@@ -530,20 +606,17 @@ export const OSMMap: React.FC<OSMMapProps> = React.memo(({
 
     mapRef.current = mapInstance;
 
-    // Add Tile Layer depending on initial theme
-    const tileUrl = theme === 'dark'
-      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-      : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+    // Add Tile Layer depending on initial provider & theme
+    const tileConfig = getTileLayerConfig(tileProvider, theme);
+    const tileLayerInstance = L.tileLayer(tileConfig.url, tileConfig.options).addTo(mapInstance);
 
-    const tileLayerInstance = L.tileLayer(tileUrl, {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: 'abcd',
-      maxZoom: 20,
-      crossOrigin: true,
-      updateWhenIdle: true, // Only load tiles when panning has ended to save network bandwidth and avoid browser rendering lag
-      updateWhenZooming: false, // Turn off continuous tile loading during zooming animations to maintain buttery-smooth rendering
-      keepBuffer: 4 // Cache 4 lines of offscreen tiles in memory to instantly render them when panning back slightly
-    }).addTo(mapInstance);
+    // Auto-fallback if the current tile provider errors out (e.g., Carto CDN block)
+    tileLayerInstance.on('tileerror', () => {
+      console.warn('[Map Layer] Tile error encountered; falling back to OpenStreetMap (Tanpa API).');
+      if (tileProvider === 'carto') {
+        handleSetTileProvider('osm');
+      }
+    });
 
     tileLayerRef.current = tileLayerInstance;
 
@@ -566,17 +639,29 @@ export const OSMMap: React.FC<OSMMapProps> = React.memo(({
     };
   }, [isLeafletReady]);
 
-  // Update Tile Layer if dark/light theme changes
+  // Update Tile Layer if dark/light theme or tileProvider changes
   useEffect(() => {
     const L = (window as any).L;
-    if (!L || !mapRef.current || !tileLayerRef.current) return;
+    if (!L || !mapRef.current) return;
 
-    const tileUrl = theme === 'dark'
-      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-      : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+    const tileConfig = getTileLayerConfig(tileProvider, theme);
 
-    tileLayerRef.current.setUrl(tileUrl);
-  }, [theme]);
+    if (tileLayerRef.current) {
+      try {
+        mapRef.current.removeLayer(tileLayerRef.current);
+      } catch (_) {}
+    }
+
+    const newLayer = L.tileLayer(tileConfig.url, tileConfig.options).addTo(mapRef.current);
+    newLayer.on('tileerror', () => {
+      console.warn('[Map Layer] Tile error encountered; falling back to OpenStreetMap (Tanpa API).');
+      if (tileProvider === 'carto') {
+        handleSetTileProvider('osm');
+      }
+    });
+
+    tileLayerRef.current = newLayer;
+  }, [theme, tileProvider]);
 
   // Rebuild markers when stats or filteredNews change
   useEffect(() => {
@@ -991,7 +1076,11 @@ export const OSMMap: React.FC<OSMMapProps> = React.memo(({
       <div id="osm-map-container" className={`transition-all duration-300 ${isFullscreen ? 'fixed inset-0 w-screen h-screen z-[9999] bg-white dark:bg-slate-900 flex flex-col overflow-hidden pb-4' : 'relative w-full h-full min-h-[340px] rounded-2xl overflow-hidden border border-slate-200/40 dark:border-slate-800/40 shadow-inner'}`}>
         <div 
           ref={mapContainerRef} 
-          className="absolute inset-0 w-full h-full"
+          className={`absolute inset-0 w-full h-full bg-slate-100 dark:bg-[#0c0f17] rounded-2xl overflow-hidden shadow-inner transition-colors duration-300 ${
+            tileProvider === 'osm'
+              ? 'dark:[&_.leaflet-tile-pane]:invert-[0.92] dark:[&_.leaflet-tile-pane]:hue-rotate-180 dark:[&_.leaflet-tile-pane]:brightness-[0.88] dark:[&_.leaflet-tile-pane]:contrast-[0.95]'
+              : ''
+          }`}
           style={{ zIndex: 1 }}
         />
 
@@ -1015,6 +1104,94 @@ export const OSMMap: React.FC<OSMMapProps> = React.memo(({
           <Newspaper className={`w-3.5 h-3.5 ${showLatestTicker ? 'animate-bounce text-white' : 'text-indigo-500 dark:text-indigo-400'}`} />
           <span>{showLatestTicker ? 'Sembunyikan' : 'Show Latest'}</span>
         </button>
+
+        {/* Base Map Provider Switcher */}
+        <div className="hide-on-print absolute top-4 left-34 sm:left-40 z-[1010]">
+          <div className="relative">
+            <button
+              type="button"
+              id="btn-map-layer-provider"
+              onClick={() => setIsLayerMenuOpen(!isLayerMenuOpen)}
+              className="px-3 py-1.5 sm:px-3.5 sm:py-2.5 rounded-xl border border-slate-200/50 dark:border-slate-800/50 bg-white/95 dark:bg-slate-900/95 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-md backdrop-blur-md font-bold text-[10.5px] uppercase tracking-wider flex items-center gap-2 cursor-pointer transition active:scale-95"
+              title="Pilih Sumber Peta"
+            >
+              <Layers className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
+              <span className="text-indigo-600 dark:text-indigo-400 font-extrabold">
+                {tileProvider === 'esri' ? 'ESRI Canvas' : tileProvider === 'osm' ? 'OpenStreetMap' : 'CARTO'}
+              </span>
+              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isLayerMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Dropdown Options - Hanya Pilihan Tanpa Penjelasan */}
+            <AnimatePresence>
+              {isLayerMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setIsLayerMenuOpen(false)} />
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: -6 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: -6 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute left-0 mt-2 w-44 bg-white dark:bg-[#0c0b11] border border-slate-200 dark:border-white/10 rounded-xl shadow-xl p-1.5 z-50 text-slate-800 dark:text-white backdrop-blur-xl"
+                  >
+                    <div className="space-y-0.5">
+                      {/* Option 1: ESRI Canvas */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleSetTileProvider('esri');
+                          setIsLayerMenuOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold flex items-center justify-between transition cursor-pointer ${
+                          tileProvider === 'esri'
+                            ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400'
+                            : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        <span>ESRI Canvas</span>
+                        {tileProvider === 'esri' && <Check className="w-3.5 h-3.5 text-indigo-500 shrink-0" />}
+                      </button>
+
+                      {/* Option 2: OpenStreetMap */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleSetTileProvider('osm');
+                          setIsLayerMenuOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold flex items-center justify-between transition cursor-pointer ${
+                          tileProvider === 'osm'
+                            ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400'
+                            : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        <span>OpenStreetMap</span>
+                        {tileProvider === 'osm' && <Check className="w-3.5 h-3.5 text-indigo-500 shrink-0" />}
+                      </button>
+
+                      {/* Option 3: CARTO */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleSetTileProvider('carto');
+                          setIsLayerMenuOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold flex items-center justify-between transition cursor-pointer ${
+                          tileProvider === 'carto'
+                            ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400'
+                            : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        <span>CARTO</span>
+                        {tileProvider === 'carto' && <Check className="w-3.5 h-3.5 text-indigo-500 shrink-0" />}
+                      </button>
+                    </div>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
 
         {/* Ticker Popup of Latest News */}
         <AnimatePresence>

@@ -7,6 +7,4 @@ coverage/
 .env*
 !.env.example
 data/
-*.html
-*.png
 test-*.ts

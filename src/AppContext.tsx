@@ -15,6 +15,8 @@ import { setGlobalSettingsLogos } from './utils/pdfReportGenerator';
 import { getCachedAccessToken } from './googleAuth';
 import { appendSocialToSheet, appendIssueToSheet } from './sheetsService';
 
+const defaultAppLogo = '/src/assets/images/head_office_badge.png';
+
 
 export interface ToastItem {
   id: string;
@@ -114,7 +116,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const defaultSettingsInit: CustomSettings = {
   companyName: 'Security Head Office',
-  logoUrl: 'https://www.image2url.com/r2/default/images/1780156246537-cd69ae8e-001c-4401-bc28-6450bd31ace9.png',
+  logoUrl: defaultAppLogo,
   primaryColor: '#0f172a',
   headerText: 'Media Monitoring Report & Issue Tracking',
   footerText: 'Powered by Security Head Office © 2026',
@@ -137,7 +139,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...init,
       headers
     });
-    if ((res.status === 401 || res.status === 403) && (user || token)) {
+    if (res.status === 401 && (user || token)) {
       const urlStr = typeof input === 'string' ? input : 'url' in input ? input.url : '';
       if (!urlStr.includes('/api/auth/login')) {
         console.warn('[Session Expired] Logging out user due to invalid token:', res.status);
@@ -446,9 +448,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           loadKeywords(),
           loadSocialNews()
         ]);
-
-        // Automatically kickstart a background auto-sync on app boot to guarantee latest news updates
-        triggerAutoSync();
       } catch (err) {
         console.error('Error bootstrapping client state:', err);
       } finally {

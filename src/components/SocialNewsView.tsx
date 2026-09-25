@@ -28,6 +28,15 @@ const getSosmedColor = (platform: string) => {
   }
 };
 
+// Helper to get local date string timezone-safely
+const getLocalDateString = (): string => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export const SocialNewsView: React.FC = () => {
   const { 
     socialNews, 
@@ -81,8 +90,8 @@ export const SocialNewsView: React.FC = () => {
   const filterLocation = socialLocationFilter;
   const setFilterLocation = setSocialLocationFilter;
   const [sortBy, setSortBy] = useState<'terbaru' | 'terlama'>('terbaru');
-  const [filterStartDate, setFilterStartDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
-  const [filterEndDate, setFilterEndDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
+  const [filterStartDate, setFilterStartDate] = useState<string>('');
+  const [filterEndDate, setFilterEndDate] = useState<string>('');
   const [filterStartHour, setFilterStartHour] = useState<string>('Semua');
   const [filterEndHour, setFilterEndHour] = useState<string>('Semua');
   const [isFilterExpanded, setIsFilterExpanded] = useState<boolean>(true);

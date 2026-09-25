@@ -4,7 +4,7 @@ import { useAppState } from '../AppContext';
 import { 
   Search, Filter, ExternalLink, Calendar, 
   ChevronRight, Copy, Check, AlertCircle, FileText, Globe, RefreshCcw, X,
-  LayoutGrid, List
+  LayoutGrid, List, Archive, Sparkles, Clock
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { Sentiment, NewsItem, formatDateDDMMYYYY, formatSummaryText } from '../types';
@@ -23,6 +23,15 @@ const PROVINCES = [
   'Sulawesi Utara', 'Sulawesi Tengah', 'Sulawesi Selatan', 'Sulawesi Tenggara', 'Gorontalo', 'Sulawesi Barat',
   'Maluku', 'Maluku Utara', 'Papua', 'Papua Barat', 'Papua Selatan', 'Papua Tengah', 'Papua Pegunungan', 'Papua Barat Daya'
 ];
+
+// Helper to get local date string timezone-safely
+const getLocalDateString = (): string => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 interface MultiSelectProps {
   label: string;
@@ -209,8 +218,8 @@ export const PortalView: React.FC = () => {
   const [selectedSent, setSelectedSent] = useState('all');
   const [selectedMed, setSelectedMed] = useState('all');
   const [selectedDate, setSelectedDate] = useState('');
-  const [startDate, setStartDate] = useState(() => new Date().toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [startHour, setStartHour] = useState<number>(0);
