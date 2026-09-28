@@ -294,6 +294,10 @@ let clientInfo = null;
 
 const client = new Client({
   authStrategy: new LocalAuth({ dataPath: './.wwebjs_auth' }),
+  webVersionCache: {
+    type: 'remote',
+    remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-js/main/dist/wppconnect-wa.js'
+  },
   puppeteer: {
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process']
@@ -328,17 +332,42 @@ app.get('/health', (req, res) => res.json({ status: isReady ? 'connected' : 'wai
 
 app.post('/send-message', async (req, res) => {
   if (!isReady) return res.status(503).json({ error: 'WhatsApp client belum login / belum scan QR' });
-  const rawNum = req.body.target || req.body.number;
+  const rawNum = req.body.target || req.body.number || req.body.phone;
   const message = req.body.message;
   if (!rawNum || !message) return res.status(400).json({ error: 'target dan message harus diisi' });
   let cleanNum = rawNum.toString().replace(/[^0-9]/g, '');
   if (cleanNum.startsWith('08')) cleanNum = '62' + cleanNum.slice(1);
-  const chatId = cleanNum.includes('@c.us') ? cleanNum : cleanNum + '@c.us';
+
   try {
-    const result = await client.sendMessage(chatId, message);
-    res.json({ success: true, id: result.id?._serialized, to: cleanNum });
+    let targetChatId = cleanNum.includes('@c.us') ? cleanNum : \`\${cleanNum}@c.us\`;
+
+    // 1. Cek jika mengirim ke nomor bot itu sendiri (self-chat)
+    const myWid = client.info?.wid;
+    const myUser = myWid?.user || client.info?.me?.user;
+    if (myUser && cleanNum === myUser && myWid?._serialized) {
+      targetChatId = myWid._serialized;
+    } else {
+      // 2. Coba getNumberId jika kontak belum terdaftar di chat list lokal
+      try {
+        const numId = await client.getNumberId(cleanNum);
+        if (numId && numId._serialized) {
+          targetChatId = numId._serialized;
+        }
+      } catch (_) {}
+    }
+
+    const result = await client.sendMessage(targetChatId, message);
+    return res.json({ success: true, id: result?.id?._serialized || 'ok', to: cleanNum });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Send Error]:', err.message);
+    try {
+      // Fallback kirim langsung ke string @c.us
+      const fallbackId = \`\${cleanNum}@c.us\`;
+      const fallbackRes = await client.sendMessage(fallbackId, message);
+      return res.json({ success: true, id: fallbackRes?.id?._serialized || 'ok', to: cleanNum, fallback: true });
+    } catch (err2) {
+      return res.status(500).json({ error: err.message || 'Gagal mengirim pesan WhatsApp' });
+    }
   }
 });
 
@@ -346,7 +375,7 @@ client.initialize();
 app.listen(PORT, '0.0.0.0', () => console.log('🚀 WA Gateway aktif di port ' + PORT));
 EOF
 
-npm init -y && npm install express whatsapp-web.js qrcode-terminal qrcode && pm2 start server.js --name wa-gateway && pm2 save`;
+npm init -y && npm install express whatsapp-web.js qrcode-terminal qrcode && pm2 restart wa-gateway || pm2 start server.js --name wa-gateway && pm2 save`;
     navigator.clipboard.writeText(waStr.trim());
     setCopiedWaScript(true);
     showToast('Perintah setup Bot WhatsApp Gateway (Port 3006) disalin!', 'success');
@@ -937,12 +966,13 @@ npm init -y && npm install express whatsapp-web.js qrcode-terminal qrcode && pm2
               <div className="flex items-center justify-between mt-1 text-[10px]">
                 <span className="text-slate-400">Scan QR Code di Web:</span>
                 <a
-                  href="http://101.32.141.172:3006"
+                  href="/api/whatsapp/gateway-view"
                   target="_blank"
                   rel="noreferrer"
                   className="text-emerald-400 hover:underline flex items-center gap-0.5 font-bold"
+                  title="Buka Scan QR WhatsApp Gateway"
                 >
-                  Buka http://101.32.141.172:3006 <ExternalLink className="w-2.5 h-2.5" />
+                  Buka Scan QR (Web) <ExternalLink className="w-2.5 h-2.5" />
                 </a>
               </div>
             </div>

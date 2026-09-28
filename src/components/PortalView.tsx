@@ -222,6 +222,7 @@ export const PortalView: React.FC = () => {
   const [endDate, setEndDate] = useState('');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [feedScope, setFeedScope] = useState<'today' | 'all'>('today');
   const [startHour, setStartHour] = useState<number>(0);
   const [endHour, setEndHour] = useState<number>(23);
 
@@ -379,6 +380,39 @@ export const PortalView: React.FC = () => {
         return d1 - d2;
       });
   }, [news, startHour, endHour, sortBy]);
+
+  // Tanggal hari ini dalam zona waktu Indonesia (WIB)
+  const todayDateStr = useMemo(() => {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date());
+  }, []);
+
+  const isTodayNews = (publishDate?: string) => {
+    if (!publishDate) return false;
+    const clean = String(publishDate).trim();
+    if (clean.startsWith(todayDateStr)) return true;
+    try {
+      const parsed = new Date(clean);
+      if (!isNaN(parsed.getTime())) {
+        const itemFmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(parsed);
+        return itemFmt === todayDateStr;
+      }
+    } catch (_) {}
+    return false;
+  };
+
+  const todayNewsList = useMemo(() => {
+    return sortedNews.filter(item => isTodayNews(item.publishDate));
+  }, [sortedNews, todayDateStr]);
+
+  // Berita yang ditampilkan di kartu:
+  // Jika pengguna secara spesifik memilih filter tanggal manual, ikuti filter tersebut.
+  // Jika tidak, secara default hanya tampilkan berita HARI INI sesuai preferensi pengguna, atau semua arsip jika feedScope === 'all'.
+  const displayedCardNews = useMemo(() => {
+    if (selectedDate || startDate || endDate) {
+      return sortedNews;
+    }
+    return feedScope === 'today' ? todayNewsList : sortedNews;
+  }, [selectedDate, startDate, endDate, feedScope, todayNewsList, sortedNews]);
 
   const provinceStatsForMap = useMemo(() => {
     const map: Record<string, { newsCount: number; mediaCount: number; positif: number; negatif: number; netral: number; criticalIssues: string[] }> = {};
@@ -1610,9 +1644,45 @@ export const PortalView: React.FC = () => {
       {/* News Grid Column layout */}
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800/60 pb-3">
-          <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 tracking-wider uppercase">
-            ARSIP PEMBERITAAN ({sortedNews.length})
-          </h3>
+          <div className="flex flex-wrap items-center gap-3">
+            <h3 className="text-xs font-bold text-slate-700 dark:text-slate-300 tracking-wider uppercase flex items-center gap-2">
+              <span>ARSIP PEMBERITAAN</span>
+              <span className="px-2 py-0.5 text-[10px] font-extrabold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-full border border-slate-200/60 dark:border-white/10">
+                Total Arsip: {sortedNews.length}
+              </span>
+            </h3>
+
+            {/* Scope Switcher: Berita Hari Ini vs Semua Arsip */}
+            {(!selectedDate && !startDate && !endDate) && (
+              <div className="flex items-center bg-slate-100 dark:bg-slate-950 p-0.5 rounded-xl border border-slate-200/60 dark:border-slate-800 text-xs shadow-xs">
+                <button
+                  type="button"
+                  onClick={() => setFeedScope('today')}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-bold transition cursor-pointer select-none ${
+                    feedScope === 'today'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                  title="Tampilkan hanya berita yang dirilis hari ini"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span>Hari Ini ({todayNewsList.length})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFeedScope('all')}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-bold transition cursor-pointer select-none ${
+                    feedScope === 'all'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                  title="Tampilkan seluruh berita arsip"
+                >
+                  <span>Semua Arsip ({sortedNews.length})</span>
+                </button>
+              </div>
+            )}
+          </div>
           
           <div className="flex items-center bg-slate-50 dark:bg-slate-950 p-1 border border-slate-200/50 dark:border-slate-800 rounded-xl self-start sm:self-auto shadow-xs">
             <button
@@ -1640,10 +1710,10 @@ export const PortalView: React.FC = () => {
           </div>
         </div>
 
-        {sortedNews.length > 0 ? (
+        {displayedCardNews.length > 0 ? (
           viewMode === 'grid' ? (
             <div className="grid grid-cols-1 landscape:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-              {sortedNews.slice(0, visibleCount).map((item) => (
+              {displayedCardNews.slice(0, visibleCount).map((item) => (
                 <article 
                   key={item.id}
                   className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-lg hover:border-slate-200 dark:hover:border-slate-700 transition-all duration-300 flex flex-col overflow-hidden relative group"
@@ -1819,7 +1889,7 @@ export const PortalView: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {sortedNews.slice(0, visibleCount).map((item) => (
+              {displayedCardNews.slice(0, visibleCount).map((item) => (
                 <article 
                   key={item.id}
                   className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-lg hover:border-slate-200 dark:hover:border-slate-700 transition-all duration-300 flex flex-row overflow-hidden relative group"
@@ -1993,15 +2063,43 @@ export const PortalView: React.FC = () => {
             </div>
           )
         ) : (
-          <div className="p-12 text-center rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
-            <AlertCircle className="w-10 h-10 text-slate-400 mx-auto mb-3" id="no-clips-alert"/>
-            <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">Tidak ada berita ditemukan</h4>
-            <p className="text-xs text-slate-400 mt-1">Coba sesuaikan filter/kategori, atau masukkan kata kunci pencarian yang berbeda.</p>
+          <div className="p-10 text-center rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
+            {feedScope === 'today' && !selectedDate && !startDate && !endDate ? (
+              <div className="space-y-3">
+                <div className="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto mb-2">
+                  <Clock className="w-6 h-6" />
+                </div>
+                <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                  Belum Ada Berita Baru untuk Hari Ini
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+                  Tidak ada pemberitaan baru yang diterbitkan pada hari ini. Terdapat total <b>{sortedNews.length} berita</b> yang tersimpan dalam arsip sistem.
+                </p>
+                {sortedNews.length > 0 && (
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setFeedScope('all')}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition shadow-xs cursor-pointer inline-flex items-center gap-1.5"
+                    >
+                      <Archive className="w-4 h-4" />
+                      <span>Buka Semua Arsip Pemberitaan ({sortedNews.length})</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div>
+                <AlertCircle className="w-10 h-10 text-slate-400 mx-auto mb-3" id="no-clips-alert"/>
+                <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">Tidak ada berita ditemukan</h4>
+                <p className="text-xs text-slate-400 mt-1">Coba sesuaikan filter/kategori, atau masukkan kata kunci pencarian yang berbeda.</p>
+              </div>
+            )}
           </div>
         )}
 
         {/* Load more container */}
-        {sortedNews.length > visibleCount && (
+        {displayedCardNews.length > visibleCount && (
           <div className="flex justify-center pt-4">
             <button
               onClick={() => setVisibleCount(p => p + 6)}

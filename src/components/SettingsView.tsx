@@ -4,7 +4,7 @@ import {
   Settings, Save, ShieldCheck, Sparkles, Search, 
   Play, RefreshCw, Clock, Terminal, Check, Plus, Trash2,
   Database, Activity, MessageSquare, Send, ExternalLink, Smartphone,
-  Bell, Calendar
+  Bell, Calendar, Code, AlertTriangle, CheckCheck, Copy, X
 } from 'lucide-react';
 import { ActivityLog } from '../types';
 
@@ -35,11 +35,11 @@ export const SettingsView: React.FC = () => {
   const [openSerpApiKey, setOpenSerpApiKey] = useState<string>(settings.openSerpApiKey || '');
   const [twitterApiIoKey, setTwitterApiIoKey] = useState<string>((settings as any).twitterApiIoKey || '');
   const [newsApiKey, setNewsApiKey] = useState<string>((settings as any).newsApiKey || '');
-  const [fonnteTarget, setFonnteTarget] = useState<string>((settings as any).fonnteTarget || '6281902052373');
-  const [fonnteTargets, setFonnteTargets] = useState<string[]>((settings as any).fonnteTargets || ['6281902052373']);
+  const [fonnteTarget, setFonnteTarget] = useState<string>((settings as any).fonnteTarget || '6285695747964');
+  const [fonnteTargets, setFonnteTargets] = useState<string[]>((settings as any).fonnteTargets || ['6285695747964']);
   const [newPhoneInput, setNewPhoneInput] = useState<string>('');
   const [fonnteCategories, setFonnteCategories] = useState<string[]>((settings as any).fonnteCategories || ['Negatif']);
-  const [openWaVpsUrl, setOpenWaVpsUrl] = useState<string>((settings as any).openWaVpsUrl || 'http://101.32.141.172:3006');
+  const [openWaVpsUrl, setOpenWaVpsUrl] = useState<string>((((settings as any).openWaVpsUrl || 'http://101.32.141.172:3006')).replace(':3005', ':3006'));
   const [openWaToken, setOpenWaToken] = useState<string>((settings as any).openWaToken || '');
   const [whatsappScheduleMode, setWhatsappScheduleMode] = useState<'realtime' | 'scheduled' | 'both'>((settings as any).whatsappScheduleMode || 'realtime');
   const [whatsappStartTime, setWhatsappStartTime] = useState<string>((settings as any).whatsappStartTime || '07:00');
@@ -48,6 +48,8 @@ export const SettingsView: React.FC = () => {
   const [whatsappQuietHoursEnabled, setWhatsappQuietHoursEnabled] = useState<boolean>((settings as any).whatsappQuietHoursEnabled !== undefined ? (settings as any).whatsappQuietHoursEnabled : true);
   const [testingWa, setTestingWa] = useState(false);
   const [waStatusMessage, setWaStatusMessage] = useState<string | null>(null);
+  const [showWaScriptModal, setShowWaScriptModal] = useState<boolean>(false);
+  const [copiedWaScript, setCopiedWaScript] = useState<boolean>(false);
   const [savingSettings, setSavingSettings] = useState(false);
   const [triggeringCrawl, setTriggeringCrawl] = useState(false);
   const [schedulerLogs, setSchedulerLogs] = useState<ActivityLog[]>([]);
@@ -83,10 +85,18 @@ export const SettingsView: React.FC = () => {
   };
 
   const handleTestWhatsApp = async () => {
+    // Cek jika nomor yang akan dikirim hanyalah nomor bot itu sendiri
+    const validTargets = fonnteTargets.filter(t => t !== '6281902052373');
+    if (validTargets.length === 0 && fonnteTargets.includes('6281902052373')) {
+      showToast('Nomor 6281902052373 adalah bot WA pengirim di VPS. Tambahkan nomor WhatsApp Anda lainnya sebagai penerima notifikasi.', 'error');
+      setWaStatusMessage('⚠️ Nomor 6281902052373 adalah nomor bot WA di VPS (bukan penerima). Silakan daftarkan nomor HP tujuan Anda/tim lainnya.');
+      return;
+    }
+
     setTestingWa(true);
     setWaStatusMessage(null);
     try {
-      const targetsToSend = fonnteTargets.length > 0 ? fonnteTargets : [fonnteTarget || '6281902052373'];
+      const targetsToSend = validTargets.length > 0 ? validTargets : (fonnteTargets.length > 0 ? fonnteTargets : ['6285695747964']);
       const res = await authFetch('/api/whatsapp/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -97,10 +107,10 @@ export const SettingsView: React.FC = () => {
       });
       const data = await res.json();
       if (data.success) {
-        showToast(data.message || 'Pesan WhatsApp berhasil dikirim ke seluruh nomor!', 'success');
+        showToast(data.message || 'Pesan WhatsApp berhasil dikirim!', 'success');
         setWaStatusMessage(`✅ ${data.message || 'Berhasil terkirim'} (${data.sent || targetsToSend.length} nomor)`);
       } else {
-        showToast(data.message || 'Gagal mengirim pesan WhatsApp. Pastikan sudah scan QR di VPS.', 'error');
+        showToast(data.message || 'Gagal mengirim pesan WhatsApp. Pastikan nomor penerima valid dan skrip di VPS sudah diperbarui.', 'error');
         setWaStatusMessage('❌ ' + (data.message || 'Gagal mengirim'));
       }
     } catch (err: any) {
@@ -126,6 +136,112 @@ export const SettingsView: React.FC = () => {
     } catch (err: any) {
       setWaStatusMessage('❌ Tidak dapat menghubungi gateway: ' + err.message);
     }
+  };
+
+  const fullWaScript = `mkdir -p ~/wa-gateway && cd ~/wa-gateway
+cat << 'EOF' > server.js
+const express = require('express');
+const { Client, LocalAuth } = require('whatsapp-web.js');
+const qrcode = require('qrcode-terminal');
+const QRCode = require('qrcode');
+const app = express();
+app.use(express.json());
+const PORT = 3006;
+let qrCodeData = null;
+let isReady = false;
+let clientInfo = null;
+
+const client = new Client({
+  authStrategy: new LocalAuth({ dataPath: './.wwebjs_auth' }),
+  puppeteer: {
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process']
+  }
+});
+
+client.on('qr', (qr) => {
+  qrCodeData = qr;
+  isReady = false;
+  console.log('\\nScan QR WhatsApp (atau buka http://101.32.141.172:3006):\\n');
+  qrcode.generate(qr, { small: true });
+});
+
+client.on('ready', () => {
+  isReady = true;
+  qrCodeData = null;
+  clientInfo = client.info;
+  console.log('✅ WHATSAPP GATEWAY BERHASIL LOGIN:', client.info?.wid?.user);
+});
+
+client.on('authenticated', () => console.log('🔑 Sesi WhatsApp terotentikasi.'));
+client.on('disconnected', () => { isReady = false; client.initialize(); });
+
+app.get('/', async (req, res) => {
+  if (isReady) return res.send('<h2 style="color:green;text-align:center;margin-top:50px">✅ WhatsApp Gateway Aktif! (' + (clientInfo?.wid?.user || 'WA') + ')</h2>');
+  if (!qrCodeData) return res.send('<h3 style="text-align:center;margin-top:50px">Memuat QR Code WhatsApp... Refresh beberapa detik lagi.</h3>');
+  const qrImage = await QRCode.toDataURL(qrCodeData);
+  res.send('<div style="text-align:center;margin-top:40px;font-family:sans-serif"><h2>Scan QR Code WhatsApp</h2><p>Buka WhatsApp HP &rarr; Perangkat Tertaut &rarr; Tautkan Perangkat</p><img src="' + qrImage + '" width="280"/><script>setTimeout(() => location.reload(), 15000);</script></div>');
+});
+
+app.get('/health', (req, res) => res.json({ 
+  status: isReady ? 'connected' : 'waiting_qr', 
+  ready: isReady, 
+  user: clientInfo?.wid?.user || null, 
+  port: PORT 
+}));
+
+app.post('/send-message', async (req, res) => {
+  if (!isReady) return res.status(503).json({ error: 'WhatsApp client belum login / belum scan QR' });
+  const rawNum = req.body.target || req.body.number || req.body.phone;
+  const message = req.body.message;
+  if (!rawNum || !message) return res.status(400).json({ error: 'target nomor HP dan message harus diisi' });
+  
+  let cleanNum = rawNum.toString().replace(/[^0-9]/g, '');
+  if (cleanNum.startsWith('08')) cleanNum = '62' + cleanNum.slice(1);
+
+  // Cegah pengiriman ke nomor bot itu sendiri
+  const botUser = clientInfo?.wid?.user || client.info?.wid?.user;
+  if (botUser && cleanNum === botUser) {
+    return res.status(400).json({
+      error: 'Nomor ' + cleanNum + ' adalah nomor bot itu sendiri. Bot tidak dapat mengirim chat ke dirinya sendiri.'
+    });
+  }
+
+  try {
+    const chatId = cleanNum + '@c.us';
+    const result = await client.sendMessage(chatId, message);
+    return res.json({ success: true, id: result?.id?._serialized || 'ok', to: cleanNum });
+  } catch (err) {
+    console.error('[Send Error]:', err.message);
+    try {
+      let resolvedChatId = cleanNum + '@c.us';
+      if (typeof client.getNumberId === 'function') {
+        const numId = await client.getNumberId(cleanNum).catch(() => null);
+        if (numId && numId._serialized) {
+          resolvedChatId = numId._serialized;
+        }
+      }
+      const fallbackRes = await client.sendMessage(resolvedChatId, message);
+      return res.json({ success: true, id: fallbackRes?.id?._serialized || 'ok', to: cleanNum, fallback: true });
+    } catch (err2) {
+      return res.status(500).json({ 
+        error: 'Gagal mengirim ke ' + cleanNum + ': ' + (err2.message || err.message)
+      });
+    }
+  }
+});
+
+client.initialize();
+app.listen(PORT, '0.0.0.0', () => console.log('🚀 WA Gateway aktif di port ' + PORT));
+EOF
+
+npm init -y && npm install express whatsapp-web.js@latest qrcode-terminal qrcode && pm2 restart wa-gateway || pm2 start server.js --name wa-gateway && pm2 save`;
+
+  const copyWaFixScript = () => {
+    navigator.clipboard.writeText(fullWaScript.trim());
+    setCopiedWaScript(true);
+    setTimeout(() => setCopiedWaScript(false), 3000);
+    showToast('Perintah perbaikan skrip Bot WA VPS disalin! Silakan jalankan di terminal SSH VPS Anda.', 'success');
   };
 
   // --- POSTGRES CUSTOM CONNECTION TEST & LOG STATES ---
@@ -273,10 +389,10 @@ export const SettingsView: React.FC = () => {
       setOpenSerpApiKey(settings.openSerpApiKey || '');
       setTwitterApiIoKey((settings as any).twitterApiIoKey || '');
       setNewsApiKey((settings as any).newsApiKey || '');
-      setFonnteTarget((settings as any).fonnteTarget || '6281902052373');
-      setFonnteTargets((settings as any).fonnteTargets || ['6281902052373']);
+      setFonnteTarget((settings as any).fonnteTarget || '6285695747964');
+      setFonnteTargets((settings as any).fonnteTargets || ['6285695747964']);
       setFonnteCategories((settings as any).fonnteCategories || ['Negatif']);
-      setOpenWaVpsUrl((settings as any).openWaVpsUrl || 'http://101.32.141.172:3006');
+      setOpenWaVpsUrl(((settings as any).openWaVpsUrl || 'http://101.32.141.172:3006').replace(':3005', ':3006'));
       setOpenWaToken((settings as any).openWaToken || '');
       setWhatsappScheduleMode((settings as any).whatsappScheduleMode || 'realtime');
       setWhatsappStartTime((settings as any).whatsappStartTime || '07:00');
@@ -319,7 +435,7 @@ export const SettingsView: React.FC = () => {
       fonnteTargets,
       fonnteCategories,
       whatsappProvider: 'openwa',
-      openWaVpsUrl: openWaVpsUrl || 'http://101.32.141.172:3006',
+      openWaVpsUrl: (openWaVpsUrl || 'http://101.32.141.172:3006').replace(':3005', ':3006'),
       openWaToken,
       whatsappScheduleMode,
       whatsappStartTime,
@@ -816,7 +932,7 @@ export const SettingsView: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <button
                         type="button"
                         onClick={handleCheckWaStatus}
@@ -825,11 +941,21 @@ export const SettingsView: React.FC = () => {
                         <RefreshCw className="w-3 h-3" />
                         Cek Status Gateway
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowWaScriptModal(true)}
+                        className="px-2.5 py-1 text-[10px] bg-sky-600 hover:bg-sky-700 text-white rounded-lg flex items-center gap-1 font-semibold transition cursor-pointer shadow-xs"
+                        title="Buka panduan dan skrip perbaikan gateway WhatsApp untuk VPS"
+                      >
+                        <Code className="w-3 h-3" />
+                        Panduan & Skrip Perbaikan VPS
+                      </button>
                       <a
-                        href={openWaVpsUrl || 'http://101.32.141.172:3006'}
+                        href="/api/whatsapp/gateway-view"
                         target="_blank"
                         rel="noreferrer"
-                        className="px-2.5 py-1 text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center gap-1 font-semibold transition"
+                        className="px-2.5 py-1 text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center gap-1 font-semibold transition shadow-xs"
+                        title="Buka Scan QR / Tampilan Web WhatsApp Gateway"
                       >
                         <ExternalLink className="w-3 h-3" />
                         Buka Scan QR (Web)
@@ -855,6 +981,28 @@ export const SettingsView: React.FC = () => {
                       </span>
                     </div>
 
+                    {/* Banner Peringatan jika nomor bot sendiri ada di daftar penerima */}
+                    {fonnteTargets.includes('6281902052373') && (
+                      <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-[11px] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="flex items-start gap-2">
+                          <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                          <div>
+                            <p className="font-bold">Nomor 6281902052373 terdaftar di penerima (Ini adalah Nomor Bot Pengirim VPS!)</p>
+                            <p className="text-[10px] text-amber-600/90 dark:text-amber-400/90">
+                              WhatsApp tidak mengizinkan bot mengirim chat ke nomornya sendiri (memicu error <em>&quot;gagal meresolusi kontak&quot;</em>). Harap hapus nomor ini dan gunakan nomor WhatsApp pribadi atau tim Anda.
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemovePhone('6281902052373')}
+                          className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold text-[10px] rounded-lg transition shrink-0 cursor-pointer shadow-xs"
+                        >
+                          Hapus Nomor Bot
+                        </button>
+                      </div>
+                    )}
+
                     {/* Input Tambah Nomor */}
                     <div className="flex gap-2">
                       <input
@@ -867,7 +1015,7 @@ export const SettingsView: React.FC = () => {
                             handleAddPhone();
                           }
                         }}
-                        placeholder="Ketik nomor HP baru... (contoh: 081902052373 atau 6281234567890)"
+                        placeholder="Ketik nomor HP baru... (contoh: 085695747964 atau 6281234567890)"
                         className="flex-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-lg text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-1 focus:ring-emerald-500"
                       />
                       <button
@@ -886,10 +1034,19 @@ export const SettingsView: React.FC = () => {
                         fonnteTargets.map(phone => (
                           <div
                             key={phone}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 hover:bg-emerald-500/15 border border-emerald-500/30 rounded-lg text-emerald-700 dark:text-emerald-300 font-mono text-xs transition"
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 border rounded-lg font-mono text-xs transition ${
+                              phone === '6281902052373'
+                                ? 'bg-amber-500/15 border-amber-500/40 text-amber-700 dark:text-amber-300'
+                                : 'bg-emerald-500/10 hover:bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
+                            }`}
                           >
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            <span className={`w-1.5 h-1.5 rounded-full ${phone === '6281902052373' ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
                             <span>{phone}</span>
+                            {phone === '6281902052373' && (
+                              <span className="px-1 py-0.2 rounded text-[8px] font-bold bg-amber-500/20 text-amber-600 dark:text-amber-400">
+                                Bot Pengirim
+                              </span>
+                            )}
                             <button
                               type="button"
                               onClick={() => handleRemovePhone(phone)}
@@ -1519,6 +1676,80 @@ export const SettingsView: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* WHATSAPP VPS COMPANION SCRIPT & RESOLUTION MODAL */}
+      {showWaScriptModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-[#12161f] border border-slate-800 text-slate-200 rounded-2xl max-w-3xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Code className="w-5 h-5 text-emerald-400" />
+                <h3 className="font-bold text-base text-white">
+                  Panduan Perbaikan Resolusi WhatsApp Gateway (Port 3006)
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowWaScriptModal(false)}
+                className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="text-xs text-slate-400 space-y-3 leading-relaxed overflow-y-auto">
+              {/* Box Info Penyebab Error */}
+              <div className="bg-amber-500/10 border border-amber-500/20 p-3.5 rounded-xl text-amber-200 space-y-2">
+                <div className="flex items-center gap-2 font-bold text-amber-300">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>Solusi Masalah Error &quot;Gagal Meresolusi Kontak&quot;:</span>
+                </div>
+                <ul className="list-disc list-inside space-y-1.5 text-[11.5px] text-amber-100/90 pl-1">
+                  <li>
+                    <strong>Jangan kirim ke nomor bot sendiri:</strong> Nomor <code>6281902052373</code> adalah nomor bot WhatsApp pengirim di VPS Anda. WhatsApp tidak mengizinkan bot mengirim chat ke akun bot itu sendiri. Pastikan nomor penerima adalah nomor WhatsApp pribadi atau tim Anda lainnya.
+                  </li>
+                  <li>
+                    <strong>Perbarui skrip di VPS:</strong> WhatsApp Web secara berkala memperbarui internal API-nya. Skrip di bawah menggunakan format direct JID <code>@c.us</code> dan penanganan try-catch tanpa error <code>reading &apos;id&apos;</code>.
+                  </li>
+                </ul>
+              </div>
+
+              <div className="bg-black/50 p-3 rounded-xl border border-slate-800 font-mono text-[11px] text-emerald-400 space-y-1 select-all">
+                <p># 1. Masuk ke VPS Anda via SSH (Host: 101.32.141.172):</p>
+                <p className="text-slate-300 font-bold">ssh root@101.32.141.172</p>
+                <p className="pt-1 text-slate-400"># 2. Salin dan jalankan perintah di bawah (otomatis memperbarui server.js & restart PM2):</p>
+              </div>
+
+              {/* Code Container */}
+              <div className="relative overflow-hidden rounded-xl border border-slate-800 bg-[#090d13]">
+                <div className="absolute right-3 top-3 z-10">
+                  <button
+                    onClick={copyWaFixScript}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg transition cursor-pointer"
+                  >
+                    {copiedWaScript ? <CheckCheck className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedWaScript ? 'Tersalin!' : 'Salin Perintah Lengkap'}</span>
+                  </button>
+                </div>
+                <pre className="p-4 text-xs font-mono text-slate-300 overflow-y-auto max-h-[280px] select-all">
+                  {fullWaScript}
+                </pre>
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center pt-2 border-t border-slate-800">
+              <span className="text-[11px] text-slate-500">
+                *Setelah menjalankan perintah di atas di terminal VPS, periksa koneksi melalui tombol &quot;Cek Status Gateway&quot;.
+              </span>
+              <button
+                onClick={() => setShowWaScriptModal(false)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs rounded-xl transition cursor-pointer"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

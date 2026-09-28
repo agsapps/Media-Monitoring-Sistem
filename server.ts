@@ -622,7 +622,9 @@ app.post('/api/admin/vps-test', authenticateToken, requireRole(['Admin']), async
 
   if (saveUrl && targetVpsUrl && database && database.settings) {
     database.settings.playwrightVpsUrl = targetVpsUrl;
-    database.settings.openWaVpsUrl = targetVpsUrl;
+    if (!database.settings.openWaVpsUrl || database.settings.openWaVpsUrl.includes(':3005')) {
+      database.settings.openWaVpsUrl = targetVpsUrl.replace(':3005', ':3006');
+    }
     saveDatabase();
     saveToFirestoreCol('settings', 'default', database.settings);
   }
@@ -2857,8 +2859,8 @@ const defaultSettings = {
   twitterApiIoKey: '',
   newsApiKey: '',
   fonnteToken: 'esFzhYvkCUCJ1bpndE43EBFTYVAEJfAHX5UX7YPr',
-  fonnteTarget: '6281902052373',
-  fonnteTargets: ['6281902052373'],
+  fonnteTarget: '6285695747964',
+  fonnteTargets: ['6285695747964'],
   fonnteCategories: ['Negatif'],
   whatsappProvider: 'openwa' as 'fonnte' | 'openwa',
   openWaVpsUrl: 'http://101.32.141.172:3006',
@@ -9942,7 +9944,7 @@ app.post('/api/settings', authenticateToken, requireRole(['Admin']), (req, res) 
     ...(fonnteTargets !== undefined && { fonnteTargets }),
     ...(fonnteCategories !== undefined && { fonnteCategories }),
     ...(whatsappProvider !== undefined && { whatsappProvider }),
-    ...(openWaVpsUrl !== undefined && { openWaVpsUrl }),
+    ...(openWaVpsUrl !== undefined && { openWaVpsUrl: (openWaVpsUrl || 'http://101.32.141.172:3006').replace(':3005', ':3006') }),
     ...(playwrightVpsUrl !== undefined && { playwrightVpsUrl }),
     ...(updatedOpenWaToken !== undefined && { openWaToken: updatedOpenWaToken }),
     ...(updatedGeminiApiKey !== undefined && { geminiApiKey: updatedGeminiApiKey }),
@@ -10010,6 +10012,15 @@ async function sendWhatsAppAlert(targetPhone: string, message: string): Promise<
     cleanNumber = '62' + cleanNumber.slice(1);
   }
 
+  // Deteksi jika nomor tujuan adalah nomor bot WhatsApp pengirim di VPS
+  if (cleanNumber === '6281902052373') {
+    return {
+      success: false,
+      message: `Nomor ${cleanNumber} adalah nomor bot WhatsApp pengirim di VPS. Bot tidak dapat mengirim chat ke dirinya sendiri. Silakan hapus nomor ini dari daftar penerima dan gunakan nomor WhatsApp pribadi atau tim Anda.`
+    };
+  }
+
+  // 1. Coba kirim via VPS WhatsApp Gateway
   try {
     const res = await fetch(`${vpsWaUrl}/send-message`, {
       method: 'POST',
@@ -10020,6 +10031,8 @@ async function sendWhatsAppAlert(targetPhone: string, message: string): Promise<
       body: JSON.stringify({
         target: cleanNumber,
         number: cleanNumber,
+        phone: cleanNumber,
+        chatId: cleanNumber.includes('@c.us') ? cleanNumber : `${cleanNumber}@c.us`,
         message: message
       }),
       signal: AbortSignal.timeout(12000)
@@ -10029,9 +10042,47 @@ async function sendWhatsAppAlert(targetPhone: string, message: string): Promise<
     if (res.ok && (data as any).success) {
       return { success: true, message: `Pesan WhatsApp berhasil terkirim ke ${cleanNumber}` };
     } else {
-      return { success: false, message: (data as any).error || 'Gagal mengirim pesan via WhatsApp Gateway' };
+      let rawError = (data as any).error || (data as any).message || 'Gagal mengirim pesan via WhatsApp Gateway';
+      if (typeof rawError === 'string' && (rawError.includes("reading 'id'") || rawError.includes('Cannot read properties of undefined') || rawError.includes('gagal meresolusi'))) {
+        rawError = `WhatsApp Gateway VPS gagal meresolusi kontak ${cleanNumber}. Ini terjadi karena skrip WA di VPS perlu diperbarui. Buka menu Pengaturan > "Panduan & Skrip Perbaikan VPS" lalu jalankan perintah perbaikan di terminal SSH VPS Anda.`;
+      }
+      
+      // Fallback ke Fonnte jika token tersedia
+      const fonnteToken = database.settings?.fonnteToken;
+      if (fonnteToken && fonnteToken !== '••••••••' && fonnteToken.length > 15) {
+        try {
+          const fRes = await fetch('https://api.fonnte.com/send', {
+            method: 'POST',
+            headers: { 'Authorization': fonnteToken },
+            body: new URLSearchParams({ target: cleanNumber, message }),
+            signal: AbortSignal.timeout(8000)
+          });
+          const fData = await fRes.json().catch(() => ({}));
+          if (fData && fData.status) {
+            return { success: true, message: `Pesan berhasil dikirim via Fonnte Gateway ke ${cleanNumber}` };
+          }
+        } catch (_) {}
+      }
+
+      return { success: false, message: rawError };
     }
   } catch (err: any) {
+    // Fallback ke Fonnte jika VPS offline/timeout
+    const fonnteToken = database.settings?.fonnteToken;
+    if (fonnteToken && fonnteToken !== '••••••••' && fonnteToken.length > 15) {
+      try {
+        const fRes = await fetch('https://api.fonnte.com/send', {
+          method: 'POST',
+          headers: { 'Authorization': fonnteToken },
+          body: new URLSearchParams({ target: cleanNumber, message }),
+          signal: AbortSignal.timeout(8000)
+        });
+        const fData = await fRes.json().catch(() => ({}));
+        if (fData && fData.status) {
+          return { success: true, message: `Pesan berhasil dikirim via Fonnte Gateway ke ${cleanNumber}` };
+        }
+      } catch (_) {}
+    }
     return { success: false, message: 'Tidak dapat terhubung ke WhatsApp Gateway di ' + vpsWaUrl + ': ' + err.message };
   }
 }
@@ -10076,7 +10127,7 @@ async function sendWhatsAppBroadcast(message: string, isUrgent = false): Promise
 // REST route to test sending WhatsApp notification
 app.post('/api/whatsapp/test', authenticateToken, requireRole(['Admin', 'Analis']), async (req, res) => {
   const { target, targets, message } = req.body;
-  const rawTargets = targets || (target ? [target] : (database.settings?.fonnteTargets?.length ? database.settings.fonnteTargets : [database.settings?.fonnteTarget || '6281902052373']));
+  const rawTargets = targets || (target ? [target] : (database.settings?.fonnteTargets?.length ? database.settings.fonnteTargets : [database.settings?.fonnteTarget || '6285695747964']));
   const text = message || `🔔 *UJI NOTIFIKASI MEDIA MONITORING (VPS 24 JAM)*\n\nWhatsApp Gateway di VPS 101.32.141.172 berhasil terhubung dan siap mendistribusikan notifikasi krisis berita ke seluruh nomor terdaftar!\n\nJadwal Aktif: ${database.settings?.whatsappQuietHoursEnabled ? `${database.settings?.whatsappStartTime || '07:00'} - ${database.settings?.whatsappEndTime || '22:00'} WIB` : '24 Jam Non-stop'}\nWaktu: ${new Date().toLocaleString('id-ID')}`;
 
   const results = [];
@@ -10092,7 +10143,7 @@ app.post('/api/whatsapp/test', authenticateToken, requireRole(['Admin', 'Analis'
     total: rawTargets.length,
     sent: sentCount,
     details: results,
-    message: sentCount > 0 ? `Berhasil mengirim ke ${sentCount} nomor WhatsApp!` : (results[0]?.message || 'Gagal mengirim')
+    message: sentCount > 0 ? `Berhasil mengirim ke ${sentCount} dari ${rawTargets.length} nomor WhatsApp!` : (results[0]?.message || 'Gagal mengirim')
   });
 });
 
@@ -10107,6 +10158,175 @@ app.get('/api/whatsapp/status', authenticateToken, async (req, res) => {
     }
   } catch (_) {}
   res.json({ success: true, online: false, url: vpsWaUrl, message: 'Gateway WhatsApp VPS belum aktif' });
+});
+
+// Proxy route to view WhatsApp Gateway web interface directly through HTTPS
+app.get('/api/whatsapp/gateway-view', async (req, res) => {
+  const vpsWaUrl = (database.settings?.openWaVpsUrl || 'http://101.32.141.172:3006').replace(':3005', ':3006');
+  try {
+    const vpsRes = await fetch(`${vpsWaUrl}/`, { signal: AbortSignal.timeout(6000) });
+    if (vpsRes.ok) {
+      const html = await vpsRes.text();
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.send(html);
+    }
+  } catch (err: any) {
+    console.error('[WhatsApp Gateway View Error]:', err?.message);
+  }
+
+  res.status(503).send(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>WhatsApp Gateway - Status Koneksi</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+          .card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; max-width: 520px; width: 100%; padding: 32px; text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); }
+          .icon { font-size: 40px; margin-bottom: 12px; }
+          h2 { margin: 0 0 10px; color: #38bdf8; font-size: 20px; }
+          p { color: #94a3b8; font-size: 13.5px; line-height: 1.6; margin: 8px 0; }
+          code { background: #0f172a; color: #38bdf8; padding: 3px 8px; border-radius: 6px; font-size: 12px; border: 1px solid #334155; }
+          .btn { display: inline-block; margin-top: 20px; padding: 10px 20px; background: #0284c7; color: white; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 13px; transition: background 0.2s; }
+          .btn:hover { background: #0369a1; }
+          .script-box { background: #020617; border: 1px solid #1e293b; border-radius: 8px; padding: 12px; font-family: monospace; font-size: 11px; color: #34d399; text-align: left; overflow-x: auto; margin-top: 16px; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <div class="icon">🤖</div>
+          <h2>Status Gateway WhatsApp (Port 3006)</h2>
+          <p>Sistem sedang mencoba menghubungi service WhatsApp Gateway di <code>${vpsWaUrl}</code>.</p>
+          <p>Jika bot belum berjalan di VPS, jalankan perintah ini di SSH VPS Anda:</p>
+          <div class="script-box">cd ~/wa-gateway && pm2 restart wa-gateway || pm2 start server.js --name wa-gateway</div>
+          <a href="${vpsWaUrl}" target="_blank" class="btn">Buka Akses Langsung (${vpsWaUrl})</a>
+        </div>
+      </body>
+    </html>
+  `);
+});
+
+app.get('/api/whatsapp/qr', async (req, res) => {
+  res.redirect('/api/whatsapp/gateway-view');
+});
+
+// Endpoint to provide the fixed WhatsApp Gateway VPS script
+app.get('/api/whatsapp/fix-script', (req, res) => {
+  const scriptContent = `mkdir -p ~/wa-gateway && cd ~/wa-gateway
+cat << 'EOF' > server.js
+const express = require('express');
+const { Client, LocalAuth } = require('whatsapp-web.js');
+const qrcode = require('qrcode-terminal');
+const QRCode = require('qrcode');
+const app = express();
+app.use(express.json());
+const PORT = 3006;
+let qrCodeData = null;
+let isReady = false;
+let clientInfo = null;
+
+const client = new Client({
+  authStrategy: new LocalAuth({ dataPath: './.wwebjs_auth' }),
+  puppeteer: {
+    headless: true,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-gpu',
+      '--single-process'
+    ]
+  }
+});
+
+client.on('qr', (qr) => {
+  qrCodeData = qr;
+  isReady = false;
+  console.log('\\nScan QR WhatsApp (atau buka http://101.32.141.172:3006):\\n');
+  qrcode.generate(qr, { small: true });
+});
+
+client.on('ready', () => {
+  isReady = true;
+  qrCodeData = null;
+  clientInfo = client.info;
+  console.log('✅ WHATSAPP GATEWAY BERHASIL LOGIN:', client.info?.wid?.user);
+});
+
+client.on('authenticated', () => console.log('🔑 Sesi WhatsApp terotentikasi.'));
+client.on('disconnected', () => { isReady = false; client.initialize(); });
+
+app.get('/', async (req, res) => {
+  if (isReady) return res.send('<h2 style="color:green;text-align:center;margin-top:50px">✅ WhatsApp Gateway Aktif! (' + (clientInfo?.wid?.user || 'WA') + ')</h2>');
+  if (!qrCodeData) return res.send('<h3 style="text-align:center;margin-top:50px">Memuat QR Code WhatsApp... Refresh beberapa detik lagi.</h3>');
+  const qrImage = await QRCode.toDataURL(qrCodeData);
+  res.send('<div style="text-align:center;margin-top:40px;font-family:sans-serif"><h2>Scan QR Code WhatsApp</h2><p>Buka WhatsApp HP &rarr; Perangkat Tertaut &rarr; Tautkan Perangkat</p><img src="' + qrImage + '" width="280"/><script>setTimeout(() => location.reload(), 15000);</script></div>');
+});
+
+app.get('/health', (req, res) => res.json({ 
+  status: isReady ? 'connected' : 'waiting_qr', 
+  ready: isReady, 
+  user: clientInfo?.wid?.user || null, 
+  port: PORT 
+}));
+
+app.post('/send-message', async (req, res) => {
+  if (!isReady) return res.status(503).json({ error: 'WhatsApp client belum login / belum scan QR' });
+  const rawNum = req.body.target || req.body.number || req.body.phone;
+  const message = req.body.message;
+  if (!rawNum || !message) return res.status(400).json({ error: 'target nomor HP dan message harus diisi' });
+  
+  let cleanNum = rawNum.toString().replace(/[^0-9]/g, '');
+  if (cleanNum.startsWith('08')) cleanNum = '62' + cleanNum.slice(1);
+
+  // Cegah pengiriman ke nomor bot itu sendiri
+  const botUser = clientInfo?.wid?.user || client.info?.wid?.user;
+  if (botUser && cleanNum === botUser) {
+    return res.status(400).json({
+      error: \`Nomor \${cleanNum} adalah nomor bot itu sendiri. Bot tidak dapat mengirim chat ke dirinya sendiri.\`
+    });
+  }
+
+  try {
+    const chatId = \`\${cleanNum}@c.us\`;
+    const result = await client.sendMessage(chatId, message);
+    return res.json({ success: true, id: result?.id?._serialized || 'ok', to: cleanNum });
+  } catch (err) {
+    console.error('[Send Error]:', err.message);
+    try {
+      let resolvedChatId = \`\${cleanNum}@c.us\`;
+      if (typeof client.getNumberId === 'function') {
+        const numId = await client.getNumberId(cleanNum).catch(() => null);
+        if (numId && numId._serialized) {
+          resolvedChatId = numId._serialized;
+        }
+      }
+      const fallbackRes = await client.sendMessage(resolvedChatId, message);
+      return res.json({ success: true, id: fallbackRes?.id?._serialized || 'ok', to: cleanNum, fallback: true });
+    } catch (err2) {
+      return res.status(500).json({ 
+        error: \`Gagal mengirim ke \${cleanNum}: \${err2.message || err.message}\` 
+      });
+    }
+  }
+});
+
+client.initialize();
+app.listen(PORT, '0.0.0.0', () => console.log('🚀 WA Gateway aktif di port ' + PORT));
+EOF
+
+npm init -y && npm install express whatsapp-web.js@latest qrcode-terminal qrcode && pm2 restart wa-gateway || pm2 start server.js --name wa-gateway && pm2 save`;
+
+  res.json({
+    success: true,
+    code: scriptContent.trim(),
+    instructions: [
+      '1. Masuk ke VPS Anda via SSH: ssh root@101.32.141.172',
+      '2. Salin dan tempel perintah skrip perbaikan lengkap di atas ke terminal VPS',
+      '3. Tekan Enter dan biarkan proses pembaruan selesai',
+      '4. Periksa status via tombol Cek Status Gateway di aplikasi web ini'
+    ]
+  });
 });
 
 // ===================================
