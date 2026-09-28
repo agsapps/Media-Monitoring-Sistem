@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model AiTokenUsage {
+  id               String @id
+  model            String
+  endpoint         String
+  promptTokens     Int    @map("prompt_tokens")
+  completionTokens Int    @map("completion_tokens")
+  totalTokens      Int    @map("total_tokens")
+  thoughtTokens    Int?   @default(0) @map("thought_tokens")
+  cachedTokens     Int?   @default(0) @map("cached_tokens")
+  toolUseTokens    Int?   @default(0) @map("tool_use_tokens")
+  timestamp        String
+
+  @@map("ai_token_usage")
+}
+
+model Category {
+  id    String  @id
+  color String?
+  slug  String?
+  name  String
+
+  @@map("categories")
+}
+
+model Highlight {
+  id           String   @id
+  title        String
+  summary      String?
+  publishDate  String?  @map("publish_date")
+  publishTime  String?  @map("publish_time")
+  location     String?
+  categoryName String?  @map("category_name")
+  mediaName    String?  @map("media_name")
+  link         String?
+  imageUrl     String?  @map("image_url")
+  sentiment    String?
+  isPinned     Boolean? @default(false) @map("is_pinned")
+  orderIndex   Int?     @default(0) @map("order_index")
+  createdAt    String?  @map("created_at")
+
+  @@map("highlights")
+}
+
+model Keyword {
+  id        String   @id
+  text      String
+  active    Boolean? @default(true)
+  createdAt String?  @map("created_at")
+
+  @@map("keywords")
+}
+
+model Log {
+  id        String  @id
+  userId    String? @map("user_id")
+  username  String
+  role      String?
+  action    String
+  target    String?
+  timestamp String?
+
+  @@map("logs")
+}
+
+model Media {
+  id       String  @id
+  date     String?
+  name     String
+  provinsi String?
+  type     String?
+  reach    String?
+
+  @@map("medias")
+}
+
+model News {
+  id           String   @id
+  createdAt    String?  @map("created_at")
+  status       String?
+  publishDate  String?  @map("publish_date")
+  link         String?
+  updatedAt    String?  @map("updated_at")
+  mediaId      String?  @map("media_id")
+  tags         Json?
+  title        String
+  mediaName    String?  @map("media_name")
+  location     String?
+  summary      String?
+  imageUrl     String?  @map("image_url")
+  categoryId   String?  @map("category_id")
+  publishTime  String?  @map("publish_time")
+  categoryName String?  @map("category_name")
+  statusWaktu  String?  @map("status_waktu")
+  sentiment    String?
+  isFeatured   Boolean? @map("is_featured")
+  unixTime     Float?   @map("unix_time")
+  createdTime  Float?   @map("created_time")
+  isGeneric    Boolean? @map("is_generic")
+
+  @@map("news")
+}
+
+model Setting {
+  key   String @id
+  value String
+
+  @@map("settings")
+}
+
+model SocialNews {
+  id           String  @id
+  lokasi       String?
+  tanggalInput String? @map("tanggal_input")
+  caption      String
+  username     String
+  ringkasan    String?
+  urgensi      String?
+  analisis     String?
+  sentimen     String?
+  kategori     String?
+  waktuPosting String? @map("waktu_posting")
+  createdAt    String? @map("created_at")
+  updatedAt    String? @map("updated_at")
+  link         String?
+  jenisSosmed  String? @map("jenis_sosmed")
+
+  @@map("social_news")
+}
+
+model User {
+  id           String  @id
+  username     String
+  name         String
+  email        String?
+  role         String
+  status       String?
+  createdAt    String? @map("created_at")
+  lastLogin    String? @map("last_login")
+  passwordHash String? @map("password_hash")
+
+  @@map("users")
+}
