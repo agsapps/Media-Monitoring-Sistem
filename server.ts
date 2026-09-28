@@ -28,6 +28,7 @@ import http from 'http';
 import net from 'net';
 import * as cheerio from 'cheerio';
 import { eq, sql, desc } from 'drizzle-orm';
+import { prisma } from './src/db/prisma.ts';
 import { db as sqlDb, refreshDatabaseConnection, pool, ensureConnection, queryHistory, isDbConnected } from './src/db/index.ts';
 import {
   users as sqlUsers,
@@ -4344,77 +4345,116 @@ const logActivity = (userId: string, username: string, role: string, action: str
 // AUTH PREPARATION & ENDPOINTS
 // ===================================
 
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   const { username, password } = req.body;
-  
+
   if (!username || !password) {
-    return res.status(400).json({ success: false, message: 'Username dan Password wajib diisi!' });
+    return res.status(400).json({
+      success: false,
+      message: 'Username dan Password wajib diisi!'
+    });
   }
 
-  let user = database.users?.find(u => 
-    u.username.toLowerCase() === username.toLowerCase() ||
-    (u.email && u.email.toLowerCase() === username.toLowerCase())
-  );
+  try {
+    const loginIdentifier = String(username).trim();
 
-  if (!user && username.toLowerCase() === 'admin') {
-    const defaultAdmin = defaultUsers.find(u => u.username === 'admin');
-    if (defaultAdmin) {
-      database.users = database.users || [];
-      database.users.push(defaultAdmin);
-      user = defaultAdmin;
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          {
+            username: {
+              equals: loginIdentifier,
+              mode: 'insensitive'
+            }
+          },
+          {
+            email: {
+              equals: loginIdentifier,
+              mode: 'insensitive'
+            }
+          }
+        ]
+      }
+    });
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Username atau Password salah!'
+      });
     }
-  }
 
-  if (!user) {
-    return res.status(401).json({ success: false, message: 'Username atau Password salah!' });
-  }
+    if (user.status === 'Nonaktif' || user.status === 'Non-Aktif') {
+      return res.status(403).json({
+        success: false,
+        message: 'Akun Anda tidak aktif. Silakan hubungi Administrator!'
+      });
+    }
 
-  if (user.status === 'Nonaktif' || user.status === 'Non-Aktif') {
-    return res.status(403).json({ success: false, message: 'Akun Anda tidak aktif. Silakan hubungi Administrator!' });
-  }
+    if (!user.passwordHash) {
+      return res.status(401).json({
+        success: false,
+        message: 'Password untuk akun ini belum dikonfigurasi di database!'
+      });
+    }
 
-  if (!user.passwordHash) {
-    return res.status(401).json({ success: false, message: 'Password untuk akun ini belum dikonfigurasi di database!' });
-  }
+    const match = bcrypt.compareSync(password, user.passwordHash);
 
-  let match = bcrypt.compareSync(password, user.passwordHash);
-  if (!match && user.username.toLowerCase() === 'admin' && (password === 'Admin#EnergyMonitoring2026!' || password === '@Zuperman1194' || (process.env.INITIAL_ADMIN_PASSWORD && password === process.env.INITIAL_ADMIN_PASSWORD))) {
-    match = true;
-    user.passwordHash = bcrypt.hashSync(password, 10);
-  }
+    if (!match) {
+      return res.status(401).json({
+        success: false,
+        message: 'Username atau Password salah!'
+      });
+    }
 
-  if (!match) {
-    return res.status(401).json({ success: false, message: 'Username atau Password salah!' });
-  }
+    const lastLogin = new Date().toISOString();
 
-  // Update lastLogin
-  user.lastLogin = new Date().toISOString();
-  saveDatabase();
-  saveToFirestoreCol('users', user.id, user);
+    await prisma.user.update({
+      where: {
+        id: user.id
+      },
+      data: {
+        lastLogin
+      }
+    });
 
-  logActivity(user.id, user.username, user.role, 'Login Pengguna', `User: ${user.username} (${user.role})`);
+    logActivity(
+      user.id,
+      user.username,
+      user.role,
+      'Login Pengguna',
+      `User: ${user.username} (${user.role})`
+    );
 
-  const signedToken = signToken({
-    id: user.id,
-    username: user.username,
-    name: user.name,
-    role: user.role,
-    email: user.email
-  });
-
-  res.json({
-    success: true,
-    user: {
+    const signedToken = signToken({
       id: user.id,
       username: user.username,
       name: user.name,
       role: user.role,
-      email: user.email,
-      status: user.status,
-      avatarUrl: user.avatarUrl || ''
-    },
-    token: signedToken
-  });
+      email: user.email
+    });
+
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        username: user.username,
+        name: user.name,
+        role: user.role,
+        email: user.email,
+        status: user.status,
+        avatarUrl: ''
+      },
+      token: signedToken
+    });
+  } catch (error) {
+    console.error('Login Prisma error:', error);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Terjadi kesalahan saat proses login.'
+    });
+  }
 });
 
 // ===================================
