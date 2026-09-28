@@ -1126,7 +1126,7 @@ app.post('/api/admin/test-24h-ping', authenticateToken, requireRole(['Admin']), 
   broadcastCrawlerStream({
     type: 'terminal',
     source: 'vps',
-    level: vpsHostOnline ? 'success' : 'warning',
+    level: vpsHostOnline ? 'success' : 'warn',
     message: `[24/7 Test Ping Selesai] Host VPS 101.32.141.172 ${vpsHostOnline ? 'ONLINE' : 'BELUM TERJANGKAU'}, latensi: ${vpsPingMs}ms, self-ping: ${selfPingOk ? 'OK' : 'FAIL'}`
   });
 
@@ -6983,7 +6983,7 @@ async function callPlaywrightVps(endpoint: string, body: any): Promise<any> {
         throw new Error(`Healthcheck status: ${res.status}`);
       }
     } catch (err: any) {
-      console.warn(`[Playwright URL Resolver] Remote Playwright VPS (${targetVps}) is not reachable (${err.message}). Using local Playwright driver.`);
+      console.log(`[Playwright URL Resolver] Remote Playwright VPS (${targetVps}) is inactive or unconfigured. Seamlessly using local Playwright driver.`);
       isVpsAvailable = false;
     }
   }
@@ -7003,13 +7003,36 @@ async function callPlaywrightVps(endpoint: string, body: any): Promise<any> {
       message: '[Playwright Engine] Inisialisasi driver lokal Chromium sukses. Engine siap digunakan.'
     });
   } catch (err: any) {
+    if (err.message && (err.message.includes("Executable doesn't exist") || err.message.includes("playwright install"))) {
+      console.log('[Playwright URL Resolver] Chromium binary not found. Automatically running npx playwright install chromium-headless-shell...');
+      try {
+        const { execSync } = await import('child_process');
+        execSync('npx playwright install chromium-headless-shell', { stdio: 'inherit' });
+        const retryBrowser = await chromium.launch({
+          headless: true,
+          args: PLAYWRIGHT_CHROMIUM_ARGS
+        });
+        await retryBrowser.close();
+        isPlaywrightAvailable = true;
+        console.log('[Playwright URL Resolver] Pre-flight check passed after automatic browser binary installation.');
+        broadcastCrawlerStream({
+          type: 'terminal',
+          source: 'playwright',
+          level: 'success',
+          message: '[Playwright Engine] Inisialisasi driver lokal Chromium sukses setelah instalasi otomatis.'
+        });
+        return;
+      } catch (installErr: any) {
+        console.warn('[Playwright URL Resolver] Automatic browser installation skipped:', installErr.message);
+      }
+    }
     isPlaywrightAvailable = false;
-    console.warn('[Playwright URL Resolver] Pre-flight check failed. Local Playwright is disabled; falling back to rapid in-memory URL decoding:', err.message);
+    console.log('[Playwright URL Resolver] Local Playwright disabled; utilizing high-speed in-memory URL decoder:', err.message);
     broadcastCrawlerStream({
       type: 'terminal',
       source: 'playwright',
-      level: 'warn',
-      message: `[Playwright Engine] Driver lokal gagal: ${err.message}. Menggunakan fallback decoding in-memory.`
+      level: 'info',
+      message: `[Playwright Engine] Driver lokal tidak aktif: ${err.message}. Menggunakan fallback decoding in-memory.`
     });
   }
 })();
