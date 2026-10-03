@@ -14731,7 +14731,7 @@ const startServer = async () => {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  app.listen(PORT, '127.0.0.1', () => {
     console.log(`Media Intelligence System is running heavily on host 0.0.0.0, port ${PORT}`);
     
     // Sync the database from Google Cloud Firestore in the background
