@@ -45,7 +45,7 @@ Atur nama instansi, warna brand, header & footer PDF, sampai konfigurasi AI — 
 - **Backend:** Express.js (Node.js)
 - **Database:** PostgreSQL + Prisma ORM
 - **PDF Generation:** jsPDF
-- **AI Engine:** Google Gemini API
+- **AI Engine:** Atur saja
 
 ### Struktur Folder Utama
 
