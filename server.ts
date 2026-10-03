@@ -29,6 +29,8 @@ import net from 'net';
 import * as cheerio from 'cheerio';
 import { eq, sql, desc } from 'drizzle-orm';
 import { prisma } from './src/db/prisma.ts';
+import { callSumoPod } from './src/services/sumopod.ts';
+import { callDeepSeek } from './src/services/deepseek.ts';
 import { db as sqlDb, refreshDatabaseConnection, pool, ensureConnection, queryHistory, isDbConnected } from './src/db/index.ts';
 import {
   users as sqlUsers,
@@ -90,6 +92,103 @@ async function sleepRandomDelay(): Promise<void> {
 const app = express();
 app.use(compression());
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+
+// =========================================================================
+// PDF IMAGE PROXY - Mengatasi CORS gambar eksternal saat generate PDF
+// =========================================================================
+function isBlockedProxyHost(hostname: string): boolean {
+  const host = hostname.toLowerCase();
+
+  return (
+    host === 'localhost' ||
+    host === '127.0.0.1' ||
+    host === '0.0.0.0' ||
+    host === '::1' ||
+    host.endsWith('.localhost') ||
+    host.endsWith('.local')
+  );
+}
+
+app.get('/api/proxy-image', async (req, res) => {
+  try {
+    const rawUrl = typeof req.query.url === 'string' ? req.query.url : '';
+
+    if (!rawUrl) {
+      return res.status(400).json({
+        error: 'Parameter url wajib diisi.'
+      });
+    }
+
+    let targetUrl: URL;
+
+    try {
+      targetUrl = new URL(rawUrl);
+    } catch {
+      return res.status(400).json({
+        error: 'URL gambar tidak valid.'
+      });
+    }
+
+    if (!['http:', 'https:'].includes(targetUrl.protocol)) {
+      return res.status(400).json({
+        error: 'Protocol URL tidak diizinkan.'
+      });
+    }
+
+    if (isBlockedProxyHost(targetUrl.hostname)) {
+      return res.status(403).json({
+        error: 'Host tujuan tidak diizinkan.'
+      });
+    }
+
+    const response = await fetch(targetUrl.toString(), {
+      method: 'GET',
+      headers: {
+        'User-Agent': getRandomUserAgent(),
+        'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8'
+      },
+      redirect: 'follow'
+    });
+
+    if (!response.ok) {
+      return res.status(response.status).json({
+        error: `Gambar gagal diambil dari sumber (${response.status}).`
+      });
+    }
+
+    const contentType = response.headers.get('content-type') || '';
+
+    if (!contentType.toLowerCase().startsWith('image/')) {
+      return res.status(415).json({
+        error: 'URL tujuan bukan file gambar.'
+      });
+    }
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+
+    if (!buffer.length) {
+      return res.status(404).json({
+        error: 'File gambar kosong.'
+      });
+    }
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Length', buffer.length.toString());
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    return res.send(buffer);
+  } catch (error: any) {
+    console.error(
+      '[PDF IMAGE PROXY] Gagal mengambil gambar:',
+      error?.message || error
+    );
+
+    return res.status(502).json({
+      error: 'Gagal mengambil gambar dari sumber.'
+    });
+  }
+});
 
 // Global 24/7 Keep-Alive & High-Availability State
 let appPublicUrl = process.env.APP_URL || 'https://ais-dev-63ipzbktb2wyonsjbvzuen-913122404225.asia-southeast1.run.app';
@@ -4332,14 +4431,114 @@ const logActivity = (userId: string, username: string, role: string, action: str
     target,
     timestamp: new Date().toISOString()
   };
+
   database.logs.unshift(newLog);
+
   // Keep logs to a maximum of 100 entries for stability
   if (database.logs.length > 100) {
     database.logs = database.logs.slice(0, 100);
   }
+
   saveDatabase();
   saveToFirestoreCol('logs', newLog.id, newLog);
+
+  // Broadcast only crawler/scheduler activity to the Kantor 3D stream.
+  // User/admin/system activities are intentionally not exposed here.
+  const kantor3dCrawlerActions = new Set([
+    'Scheduler Crawling',
+    'Scheduler Crawler Error',
+    'Google News RSS Crawling',
+    'Duplicate Check Skip',
+    'Input Isu Baru Otomatis',
+    'Highlight Isu dengan AI',
+    'AI Highlight Gagal',
+    'AI Highlight FAILED',
+    'Penyimpanan Hasil Crawler',
+    'Scheduler Selesai',
+
+    // DeepSeek Analytics - Agus Saputra
+    'DeepSeek Analytics Mulai',
+    'DeepSeek Analytics Batch',
+    'DeepSeek Analytics Batch Selesai',
+    'DeepSeek Analytics Sintesis',
+    'DeepSeek Analytics Selesai',
+    'DeepSeek Analytics Gagal'
+  ]);
+
+  if (kantor3dCrawlerActions.has(action)) {
+    broadcastCrawlerStream({
+      type: 'terminal',
+      source: 'crawler',
+      level:
+        action.includes('Error') ||
+        action.includes('Gagal') ||
+        action.includes('FAILED')
+          ? 'error'
+          : action === 'Penyimpanan Hasil Crawler' ||
+            action === 'Google News RSS Crawling'
+            ? 'success'
+            : 'info',
+      message: `${action}: ${target}`
+    });
+  }
 };
+
+// ===================================
+// KANTOR 3D - CRAWLER ACTIVITY LOGS
+// ===================================
+
+app.get('/api/kantor-3d/logs', (req, res) => {
+  try {
+    const limit = Math.min(
+      Math.max(parseInt(String(req.query.limit || '40'), 10) || 40, 1),
+      100
+    );
+
+    const crawlerActions = new Set([
+      'Scheduler Crawling',
+      'Scheduler Crawler Error',
+      'Google News RSS Crawling',
+      'Duplicate Check Skip',
+      'Input Isu Baru Otomatis',
+      'Highlight Isu dengan AI',
+      'AI Highlight Gagal',
+      'AI Highlight FAILED',
+      'Penyimpanan Hasil Crawler',
+      'Scheduler Selesai',
+
+      // DeepSeek Analytics - Agus Saputra
+      'DeepSeek Analytics Mulai',
+      'DeepSeek Analytics Batch',
+      'DeepSeek Analytics Batch Selesai',
+      'DeepSeek Analytics Sintesis',
+      'DeepSeek Analytics Selesai',
+      'DeepSeek Analytics Gagal'
+    ]);
+
+    const logs = (Array.isArray(database.logs) ? database.logs : [])
+      .filter((log: any) => crawlerActions.has(String(log.action || '')))
+      .slice(0, limit)
+      .map((log: any) => ({
+        id: log.id,
+        timestamp: log.timestamp,
+        action: log.action,
+        target: log.target
+      }));
+
+    res.json({
+      app: 'kantor-3d-crawler-logs',
+      updatedAt: new Date().toISOString(),
+      logs
+    });
+  } catch (error: any) {
+    console.error('[Kantor 3D] Gagal mengambil crawler logs:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Gagal mengambil crawler activity logs',
+      error: error?.message || String(error)
+    });
+  }
+});
 
 // ===================================
 // AUTH PREPARATION & ENDPOINTS
@@ -4815,6 +5014,117 @@ app.get('/api/news/:id', (req, res) => {
   res.json(sanitizedItem);
 });
 
+
+// ===================================
+// KANTOR 3D REALTIME - MEDIA MONITORING
+// ===================================
+
+app.get('/api/kantor-3d/state', (req, res) => {
+  try {
+    const hours = Math.min(
+      Math.max(parseInt(String(req.query.hours || '24'), 10) || 24, 1),
+      72
+    );
+
+    const limit = Math.min(
+      Math.max(parseInt(String(req.query.limit || '100'), 10) || 100, 1),
+      200
+    );
+
+    const now = Date.now();
+    const cutoff = now - (hours * 60 * 60 * 1000);
+
+    const recentNews = database.news
+      .filter((item: any) => {
+        const dateTime = item.publishDate
+          ? new Date(
+              `${item.publishDate}T${
+                item.publishTime
+                  ? item.publishTime.replace(' WIB', '')
+                  : '00:00'
+              }:00+07:00`
+            ).getTime()
+          : new Date(item.createdAt || 0).getTime();
+
+        return !isNaN(dateTime) && dateTime >= cutoff;
+      })
+      .slice(0, limit);
+
+    const sentiment = {
+      positif: 0,
+      netral: 0,
+      negatif: 0
+    };
+
+    const locations: Record<string, number> = {};
+    const categories: Record<string, number> = {};
+
+    const events = recentNews.map((item: any) => {
+      const itemSentiment = String(item.sentiment || 'Netral').toLowerCase();
+
+      if (itemSentiment === 'positif') {
+        sentiment.positif++;
+      } else if (itemSentiment === 'negatif') {
+        sentiment.negatif++;
+      } else {
+        sentiment.netral++;
+      }
+
+      const location = String(item.location || 'Nasional').trim() || 'Nasional';
+      const category = String(item.categoryName || 'Lainnya').trim() || 'Lainnya';
+
+      locations[location] = (locations[location] || 0) + 1;
+      categories[category] = (categories[category] || 0) + 1;
+
+      return {
+        id: item.id,
+        title: cleanNewsTitle(item.title || ''),
+        location,
+        category,
+        sentiment: item.sentiment || 'Netral',
+        publishDate: item.publishDate || null,
+        publishTime: item.publishTime || null,
+        mediaName: item.mediaName || null,
+        link: item.link || null
+      };
+    });
+
+    const sortCounts = (data: Record<string, number>) =>
+      Object.entries(data)
+        .sort((a, b) => b[1] - a[1])
+        .map(([name, count]) => ({ name, count }));
+
+    res.json({
+      app: 'kantor-3d-realtime',
+      version: '1.0.0',
+      updatedAt: new Date().toISOString(),
+      period: {
+        hours,
+        from: new Date(cutoff).toISOString(),
+        to: new Date(now).toISOString()
+      },
+      summary: {
+        total: recentNews.length,
+        positif: sentiment.positif,
+        netral: sentiment.netral,
+        negatif: sentiment.negatif
+      },
+      locations: sortCounts(locations),
+      categories: sortCounts(categories),
+      rss: kantor3dRssState,
+      analytics: kantor3dAnalyticsState,
+      events
+    });
+  } catch (error: any) {
+    console.error('[Kantor 3D] Gagal mengambil state:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Gagal mengambil data Kantor 3D',
+      error: error?.message || String(error)
+    });
+  }
+});
+
 app.post('/api/news/batch', authenticateToken, requireRole(['Admin', 'Analis']), async (req, res) => {
   const { items, user } = req.body;
   if (!items || !Array.isArray(items)) {
@@ -5182,9 +5492,9 @@ app.post('/api/chatbot', authenticateToken, async (req, res) => {
     return res.status(400).json({ message: 'Messages array is required' });
   }
 
-  if (!ai) {
-    return res.status(503).json({ 
-      message: 'Layanan Chatbot belum siap karena API Key Gemini belum dikonfigurasi di menu Settings.' 
+  if (!process.env.SUMOPOD_API_KEY) {
+    return res.status(503).json({
+      message: 'Layanan Chatbot belum siap karena SumoPod API Key belum dikonfigurasi.'
     });
   }
 
@@ -5435,22 +5745,10 @@ ${serializedSocialNews || 'Tidak ada data sosial media relevan.'}
 
 =======================================`;
 
-    const formattedContents = [
+    const chatbotMessages = [
       {
-        role: 'user',
-        parts: [{ text: `Berikut adalah ringkasan statistik dan dokumen relevan dari database internal:\n\n${dbContext}\n\nSilakan jawab pertanyaan pengguna berdasarkan database di atas.` }]
-      },
-      ...messages.map((m: any) => ({
-        role: m.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: m.content }]
-      }))
-    ];
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-flash-lite-latest',
-      contents: formattedContents,
-      config: {
-        systemInstruction: `Anda adalah Security Chat assistant yang bertugas menjawab pertanyaan berdasarkan database internal pemantau media (RAG).
+        role: 'system' as const,
+        content: `Anda adalah Security Chat assistant yang bertugas menjawab pertanyaan berdasarkan database internal pemantau media (RAG).
 
 ## ⚠️ ATURAN DAN FORMAT TANGGAL YANG WAJIB DIGUNAKAN (SANGAT CRITICAL)
 - **WAJIB**: Semua tanggal dalam setiap jawaban Anda kepada pengguna **HARUS** disajikan dalam format **dd-mm-yyyy** (misalnya: ${wibTodayDMY}, ${yesterdayDMY}).
@@ -5508,11 +5806,23 @@ ${serializedSocialNews || 'Tidak ada data sosial media relevan.'}
    - Di bagian akhir jawaban, tawarkan alternatif pencarian rentang waktu lain jika relevan (misalnya: "Apabila Anda menginginkan informasi 24 jam terakhir atau 7 hari terakhir, saya dapat menampilkan hasil berdasarkan rentang waktu tersebut.").
 6. **Jujur, Presisi, dan Objektif**:
    - Tampilkan metadata (tanggal dalam format dd-mm-yyyy, media/platform, link sumber, waktu) secara transparan pada setiap poin atau baris data agar pengguna dapat memverifikasi. Jangan mengarang isi berita, link, atau tanggal.`
-      }
+      },
+      {
+        role: 'user' as const,
+        content: `Berikut adalah ringkasan statistik dan dokumen relevan dari database internal:\n\n${dbContext}\n\nSilakan jawab pertanyaan pengguna berdasarkan database di atas.`
+      },
+      ...messages.map((m: any) => ({
+        role: (m.role === 'assistant' ? 'assistant' : 'user') as 'assistant' | 'user',
+        content: m.content
+      }))
+    ];
+
+    const response = await callSumoPod(chatbotMessages, {
+      maxTokens: 4000,
+      temperature: 0.2
     });
 
     const reply = response.text || 'Maaf, saya tidak dapat merumuskan jawaban saat ini.';
-    logAiTokenUsage('/api/chatbot', 'gemini-flash-lite-latest', response);
     res.json({ reply });
   } catch (err: any) {
     console.error('Error in chatbot API:', err);
@@ -7912,6 +8222,53 @@ function parseRss(xmlText: string) {
   return items;
 }
 
+const kantor3dRssState = {
+  status: 'idle' as 'idle' | 'scraping' | 'parsing' | 'resolving' | 'done' | 'error',
+  keyword: '',
+  timeLimit: '',
+  newsCount: 0,
+  message: 'Menunggu scraping Google News RSS',
+  startedAt: null as string | null,
+  updatedAt: new Date().toISOString(),
+  finishedAt: null as string | null
+};
+
+// Kantor 3D: realtime activity state untuk Agus - Google News RSS Crawler.
+const broadcastAgusRssActivity = (
+  status: 'working' | 'idle' | 'error',
+  message: string
+) => {
+  broadcastCrawlerStream({
+    type: 'terminal',
+    source: 'crawler',
+    level: status === 'error' ? 'error' : status === 'idle' ? 'success' : 'info',
+    agent: 'agus-rss',
+    agentName: 'Agus',
+    agentRole: 'Google News RSS Crawler',
+    status,
+    message,
+    rssState: {
+      status: kantor3dRssState.status,
+      keyword: kantor3dRssState.keyword,
+      timeLimit: kantor3dRssState.timeLimit,
+      newsCount: kantor3dRssState.newsCount,
+      updatedAt: kantor3dRssState.updatedAt
+    }
+  });
+};
+
+// Kantor 3D: state Analytics DeepSeek untuk Agus Saputra.
+const kantor3dAnalyticsState = {
+  status: 'idle' as 'idle' | 'running' | 'batch' | 'synthesizing' | 'done' | 'error',
+  totalNews: 0,
+  batchNumber: 0,
+  totalBatches: 0,
+  message: 'Menunggu analisis DeepSeek',
+  startedAt: null as string | null,
+  updatedAt: new Date().toISOString(),
+  finishedAt: null as string | null
+};
+
 async function crawlGoogleNewsHelper(keywordStr: string, timeLimit: string = '1h', userJsonStr?: string, method: string = 'auto'): Promise<any[]> {
   const selectedMethod = String(method || 'auto').toLowerCase().trim();
   const author = userJsonStr ? JSON.parse(userJsonStr) : { id: 'user-system', username: 'system-scheduler', role: 'Admin' };
@@ -7919,6 +8276,20 @@ async function crawlGoogleNewsHelper(keywordStr: string, timeLimit: string = '1h
   // Helper 1: Google News RSS Crawler (Free, Fast, Reliable)
   const runRss = async (): Promise<any[] | null> => {
     try {
+      kantor3dRssState.status = 'scraping';
+      kantor3dRssState.keyword = keywordStr;
+      kantor3dRssState.timeLimit = timeLimit;
+      kantor3dRssState.newsCount = 0;
+      kantor3dRssState.message = `Scraping Google News RSS: "${keywordStr}"`;
+      kantor3dRssState.startedAt = new Date().toISOString();
+      kantor3dRssState.updatedAt = new Date().toISOString();
+      kantor3dRssState.finishedAt = null;
+
+      broadcastAgusRssActivity(
+        'working',
+        `Agus mulai scraping Google News RSS: "${keywordStr}" (${timeLimit})`
+      );
+
       await sleepRandomDelay();
       console.log(`[Google News RSS Crawler] Fetching public RSS for keyword: "${keywordStr}" with timeLimit: "${timeLimit}"`);
       let docQuery = keywordStr;
@@ -7936,7 +8307,19 @@ async function crawlGoogleNewsHelper(keywordStr: string, timeLimit: string = '1h
         }
       });
       const xmlText = await response.text();
+
+      kantor3dRssState.status = 'parsing';
+      kantor3dRssState.message = `Parsing RSS Google News: "${keywordStr}"`;
+      kantor3dRssState.updatedAt = new Date().toISOString();
+
+      broadcastAgusRssActivity(
+        'working',
+        `Agus sedang parsing RSS Google News: "${keywordStr}"`
+      );
+
       const items = parseRss(xmlText);
+      kantor3dRssState.newsCount = items?.length || 0;
+      kantor3dRssState.updatedAt = new Date().toISOString();
 
       // Sort items descending by publication standard date (Newest First)
       if (items && items.length > 0) {
@@ -7956,6 +8339,15 @@ async function crawlGoogleNewsHelper(keywordStr: string, timeLimit: string = '1h
         });
 
         // Resolve top 25 items using Playwright batch resolver to get original URLs
+        kantor3dRssState.status = 'resolving';
+        kantor3dRssState.message = `Resolving ${Math.min(items.length, 25)} berita Google News`;
+        kantor3dRssState.updatedAt = new Date().toISOString();
+
+        broadcastAgusRssActivity(
+          'working',
+          `Agus sedang resolving ${Math.min(items.length, 25)} berita Google News: "${keywordStr}"`
+        );
+
         const itemsToResolve = items.slice(0, 25);
         const originalUrls = await resolveMultipleUrlsWithPlaywright(itemsToResolve.map((it: any) => it.link));
         for (const item of itemsToResolve) {
@@ -7964,6 +8356,17 @@ async function crawlGoogleNewsHelper(keywordStr: string, timeLimit: string = '1h
           }
         }
       }
+
+      kantor3dRssState.status = 'done';
+      kantor3dRssState.newsCount = items.length;
+      kantor3dRssState.message = `Selesai: ${items.length} berita untuk "${keywordStr}"`;
+      kantor3dRssState.updatedAt = new Date().toISOString();
+      kantor3dRssState.finishedAt = new Date().toISOString();
+
+      broadcastAgusRssActivity(
+        'idle',
+        `Agus selesai Google News RSS: ${items.length} berita untuk "${keywordStr}"`
+      );
 
       console.log(`[Google News RSS Crawler] Successfully resolved and parsed ${items.length} news items for "${keywordStr}"`);
       
@@ -7976,6 +8379,16 @@ async function crawlGoogleNewsHelper(keywordStr: string, timeLimit: string = '1h
       );
       return items;
     } catch (e: any) {
+      kantor3dRssState.status = 'error';
+      kantor3dRssState.message = `RSS error: ${e?.message || 'Unknown error'}`;
+      kantor3dRssState.updatedAt = new Date().toISOString();
+      kantor3dRssState.finishedAt = new Date().toISOString();
+
+      broadcastAgusRssActivity(
+        'error',
+        `Agus gagal Google News RSS: ${e?.message || 'Unknown error'}`
+      );
+
       console.warn('[Google News RSS Crawler] Access failed or delayed:', e.message);
       return null;
     }
@@ -11123,12 +11536,7 @@ ${crawledContent || '(Gagal crawling/memuat konten HTML atau link kosong)'}`;
   const fallbackYYYYMMDD = `${nowWib.getUTCFullYear()}-${String(nowWib.getUTCMonth() + 1).padStart(2, '0')}-${String(nowWib.getUTCDate()).padStart(2, '0')}`;
   const fallbackHHMM_WIB = `${todayHHMM} WIB`;
 
-  if (!ai) {
-    initGeminiClient();
-  }
-
-  if (ai) {
-    try {
+  try {
       const dynamicCategoriesList = database.categories.map(c => c.name).join(', ') || 'Subsidi & Distribusi, Penyalahgunaan BBM, Antrean BBM, SPBU Meledak, Penimbunan BBM, Penimbunan LPG, Kenaikan Harga BBM, Kenaikan Harga LPG, Penyalahgunaan LPG, Lingkungan & ESG, HSSE, Kebijakan Pemerintah, Regulasi, Korupsi & Hukum, Infrastruktur, Transportasi, Investasi, CSR & TJSL, Politik, Sosial Kemasyarakatan, Ekonomi & Keuangan';
 
       const systemPrompt = `Anda adalah AI Media Intelligence Analyst senior khusus untuk mengulas media berita di Indonesia, terkait sektor energi, logistik, operasional, BUMN (seperti PT Pertamina), komersial, HSSE, hukum, dan kedaulatan migas nasional. Tugas Anda adalah menganalisis berita dari URL yang telah diekstrak untuk kebutuhan Media Monitoring, Intelligence Monitoring, Risk Monitoring, Corporate Communication, dan Stakeholder Management.
@@ -11152,18 +11560,22 @@ The JSON object MUST contain the following fields:
 
 PENTING: Hanya kembalikan objek JSON mentah tanpa blok kode markdown (\`\`\`json ...) atau teks pengantar lainnya agar sistem dapat langsung memproses string JSON ini secara otomatis.`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-flash-lite-latest',
-        contents: [
-          { role: 'user', parts: [{ text: `${systemPrompt}\n\nMasukkan artikel:\n${finalContext}` }] }
-        ]
-      });
+      const response = await callSumoPod(
+        [
+          {
+            role: 'user',
+            content: `${systemPrompt}\n\nMasukkan artikel:\n${finalContext}`
+          }
+        ],
+        {
+          maxTokens: 4000,
+          temperature: 0.2
+        }
+      );
 
-      // Log AI token usage asynchronously
-      logAiTokenUsage('/api/gemini/analyze', 'gemini-flash-lite-latest', response);
+      console.log('SumoPod Analysis RAW Output:', response.text);
 
       const responseText = response.text ? response.text.trim() : '';
-      console.log('Gemini Analysis RAW Output:', responseText);
 
       // Extract JSON using regex if wrapped in markdown formatting
       let cleanJson = responseText;
@@ -11277,7 +11689,7 @@ PENTING: Hanya kembalikan objek JSON mentah tanpa blok kode markdown (\`\`\`json
 
       return res.json({
         success: true,
-        source: 'Gemini AI Enterprise API with URL Crawling Link Extraction',
+        source: 'SumoPod DeepSeek v4 Flash with URL Crawling Link Extraction',
         analysis: analysisResult
       });
     } catch (err: any) {
@@ -11287,7 +11699,6 @@ PENTING: Hanya kembalikan objek JSON mentah tanpa blok kode markdown (\`\`\`json
       } else {
         console.log('[Gemini API] Analysis processing active (utilizing backup simulator):', errMessage);
       }
-    }
   }
   // --- MOCK AUTO FEED / AI-LIKE SIMULATION FALLBACK ----
   const lowercaseVal = finalContext.toLowerCase();
@@ -11620,12 +12031,7 @@ app.post('/api/gemini/suggest-titles', authenticateToken, requireRole(['Admin', 
 
   const trimmedText = draftText.trim();
 
-  if (!ai) {
-    initGeminiClient();
-  }
-
-  if (ai) {
-    try {
+  try {
       const prompt = `Anda adalah AI Media Intelligence Analyst khusus media berita di Indonesia.
 Diberikan sebuah teks draf kasar, rangkaian kata kunci, atau tulisan acak oleh user, tugas Anda adalah mengenali maksud isu utama tersebut, mengoreksi salah tik (typo)/singkatan informal, dan menyusun 3 rekomendasi judul berita (headline) yang formal, obyektif, padat, profesional, dan relevan dalam Bahasa Indonesia untuk kliping media intelijen.
 
@@ -11655,18 +12061,13 @@ Aturan Penulisan Judul:
 3. Kapitalisasi menggunakan Title Case yang tepat.
 4. Jangan menyertakan opini bias pribadi.`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-flash-lite-latest',
-        contents: [
-          { role: 'user', parts: [{ text: prompt }] }
-        ]
-      });
-
-      // Log AI token usage asynchronously
-      logAiTokenUsage('/api/gemini/suggest-titles', 'gemini-flash-lite-latest', response);
+      const response = await callSumoPod(
+        [{ role: 'user', content: prompt }],
+        { maxTokens: 1000, temperature: 0.2 }
+      );
 
       const responseText = response.text ? response.text.trim() : '';
-      console.log('Gemini Suggest Titles RAW Output:', responseText);
+      console.log('SumoPod Suggest Titles RAW Output:', responseText);
 
       let cleanJson = responseText;
       if (cleanJson.startsWith('```json')) {
@@ -11695,7 +12096,6 @@ Aturan Penulisan Judul:
         console.log('[Gemini API] Title generation active (utilizing backup simulator):', errMessage);
       }
     }
-  }
 
   // --- FALLBACK SIMULATOR (If Gemini not initialized or failed) ---
   let baseTitle = trimmedText
@@ -11759,12 +12159,7 @@ Sentimen: ${sentiment || ''}
 Ringkasan Berita: ${summary || ''}`;
   }
 
-  if (!ai) {
-    initGeminiClient();
-  }
-
-  if (ai) {
-    try {
+  try {
       const systemInstruction = `Anda adalah analis senior media monitoring dan intelijen strategis.
 
 Tugas Anda adalah membaca isi ${isBulk ? 'seluruh berita yang diberikan' : 'berita secara lengkap'} kemudian membuat ringkasan strategis (Highlight) berdasarkan tema penting yang ditemukan.
@@ -11817,23 +12212,196 @@ Contoh:
 - Pengawasan distribusi BBM subsidi diperketat melalui verifikasi QR Code dan STNK.
 - Langkah ini dilakukan untuk mencegah penyalahgunaan BBM bersubsidi.`;
 
+      const bulkSystemInstruction = `Anda adalah analis senior media monitoring dan intelijen strategis.
+
+Tugas Anda adalah mengolah kumpulan berita yang diberikan dan menyusun HIGHLIGHT ISU berdasarkan tema-tema yang paling sering, paling relevan, atau paling menonjol dalam kumpulan berita tersebut.
+
+TUJUAN:
+- Mengelompokkan berita yang membahas isu atau kejadian yang sama.
+- Menggabungkan informasi yang memiliki substansi serupa.
+- Menghasilkan beberapa tema utama, bukan ringkasan satu per satu untuk setiap berita.
+- Menyajikan fakta penting secara ringkas untuk kebutuhan dashboard media monitoring.
+
+ATURAN UTAMA:
+1. Jangan membuat satu ringkasan untuk setiap berita.
+2. Kelompokkan berita berdasarkan kesamaan isu, kejadian, topik, atau substansi.
+3. Jangan menyebut "Berita #1", "Berita #2", dan seterusnya.
+4. Jangan menyebut jumlah berita kecuali jumlah tersebut secara eksplisit diperlukan untuk menjelaskan fakta.
+5. Jangan mengulang informasi yang sama pada beberapa tema.
+6. Prioritaskan tema yang muncul berulang kali atau memiliki relevansi tinggi terhadap monitoring Pertamina.
+7. Gunakan hanya informasi yang terdapat dalam berita yang diberikan.
+8. Jangan menambahkan fakta dari pengetahuan di luar data.
+9. Jangan memberikan opini.
+10. Jangan memberikan rekomendasi.
+11. Jangan membuat prediksi.
+12. Jangan membuat kesimpulan sendiri.
+13. Jangan menggunakan kata pembuka seperti:
+   - Artikel ini...
+   - Berita ini...
+   - Dalam berita...
+14. Jangan menggunakan tanda pagar (#, ##, ###).
+15. Gunakan Bahasa Indonesia formal, objektif, dan padat.
+16. Maksimal 800 kata.
+17. Jika terdapat banyak isu, pilih tema yang paling menonjol dan gabungkan isu yang sangat kecil ke tema yang relevan.
+18. Setiap tema harus memiliki 1–4 bullet fakta.
+19. Hindari bullet yang hanya mengulang judul berita.
+20. Jangan membuat tema yang hanya berasal dari satu berita jika informasinya tidak memiliki relevansi yang cukup.
+
+FORMAT OUTPUT WAJIB:
+
+**Nama Tema**
+- Fakta atau perkembangan utama yang ditemukan.
+- Fakta pendukung dari berita lain yang masih berada dalam tema yang sama.
+- Fakta tambahan yang relevan jika tersedia.
+
+---
+
+**Nama Tema Kedua**
+- Fakta atau perkembangan utama.
+- Fakta pendukung.
+- Fakta tambahan jika tersedia.
+
+KETENTUAN FORMAT:
+- Nama tema WAJIB menggunakan bold Markdown: **Nama Tema**
+- Setiap informasi WAJIB menggunakan bullet "-".
+- Gunakan "---" sebagai pemisah antar tema.
+- Tidak boleh menggunakan heading Markdown dengan tanda #.
+- Tidak boleh ada kalimat pembuka sebelum tema pertama.
+- Tidak boleh ada kalimat penutup setelah tema terakhir.
+- Jangan menampilkan proses berpikir atau alasan pengelompokan tema.
+- Langsung berikan hasil akhir dalam format yang ditentukan.
+
+CONTOH OUTPUT:
+
+**Antrean dan Distribusi BBM**
+- Sejumlah wilayah melaporkan antrean kendaraan di SPBU akibat peningkatan permintaan BBM.
+- Pertamina melakukan pengawasan terhadap distribusi dan ketersediaan BBM di sejumlah SPBU.
+- Kondisi antrean dilaporkan terjadi di beberapa wilayah dengan karakteristik dan waktu kejadian berbeda.
+
+---
+
+**Penyalahgunaan BBM Subsidi**
+- Aparat mengungkap dugaan penyalahgunaan BBM subsidi melalui modifikasi kendaraan dan penggunaan barcode.
+- Penindakan dilakukan terhadap pelaku di sejumlah wilayah.
+- Kasus berkaitan dengan distribusi BBM subsidi yang tidak sesuai peruntukan.
+
+---
+
+**Operasional dan Layanan Pertamina**
+- Sejumlah pemberitaan membahas kondisi operasional, pelayanan SPBU, dan ketersediaan produk BBM.
+- Pertamina melakukan langkah pengawasan dan penyesuaian operasional pada lokasi tertentu.`;
+
       let response = null;
       try {
-        response = await ai.models.generateContent({
-          model: 'gemini-flash-lite-latest',
-          contents: [
-            { role: 'user', parts: [{ text: `Isi Berita Lengkap:\n${newsContent}` }] }
-          ],
-          config: {
-            systemInstruction: systemInstruction,
-            temperature: 0.3
+        if (isBulk) {
+          const batchSize = 100;
+          const totalArticles = articles.length;
+          const totalBatches = Math.ceil(totalArticles / batchSize);
+          const batchHighlights: string[] = [];
+
+          console.log('[Highlight Bulk] Menggunakan DeepSeek:', process.env.DEEPSEEK_MODEL || 'default');
+          console.log(`[Highlight Bulk] Total berita: ${totalArticles}`);
+          console.log(`[Highlight Bulk] Mode batch: ${batchSize} berita/request`);
+          console.log(`[Highlight Bulk] Total batch: ${totalBatches}`);
+
+          for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+            const startIndex = batchIndex * batchSize;
+            const batchArticles = articles.slice(startIndex, startIndex + batchSize);
+
+            const batchNewsContent = batchArticles.map((art: any, idx: number) => `Berita #${startIndex + idx + 1}:
+Judul: ${art.title || ''}
+Kategori: ${art.categoryName || ''}
+Media: ${art.mediaName || ''}
+Tanggal Terbit: ${art.publishDate || ''}
+Lokasi: ${art.location || ''}
+Sentimen: ${art.sentiment || ''}
+Ringkasan Berita: ${art.summary || ''}`).join('\n\n');
+
+            console.log(
+              `[Highlight Bulk] Memproses Batch ${batchIndex + 1}/${totalBatches} (${batchArticles.length} berita)...`
+            );
+
+            try {
+              const deepSeekResponse = await callDeepSeek(
+                [
+                  {
+                    role: 'system',
+                    content: bulkSystemInstruction
+                  },
+                  {
+                    role: 'user',
+                    content: `Isi Berita Lengkap Batch ${batchIndex + 1}/${totalBatches}:\n${batchNewsContent}`
+                  }
+                ],
+                {
+                  maxTokens: 5000,
+                  temperature: 0.3
+                }
+              );
+
+              if (deepSeekResponse.text?.trim()) {
+                batchHighlights.push(deepSeekResponse.text.trim());
+
+                console.log(
+                  `[Highlight Bulk] Batch ${batchIndex + 1}/${totalBatches} selesai. Model: ${deepSeekResponse.model || process.env.DEEPSEEK_MODEL || 'default'}`
+                );
+
+                if (deepSeekResponse.usage) {
+                  console.log(
+                    `[Highlight Bulk] Batch ${batchIndex + 1} Token Usage:`,
+                    deepSeekResponse.usage
+                  );
+                }
+              } else {
+                console.warn(
+                  `[Highlight Bulk] Batch ${batchIndex + 1}/${totalBatches} tidak menghasilkan highlight.`
+                );
+
+                console.warn(
+                  `[Highlight Bulk] Debug usage:`,
+                  deepSeekResponse.usage
+                );
+
+                console.warn(
+                  `[Highlight Bulk] Debug model:`,
+                  deepSeekResponse.model || process.env.DEEPSEEK_MODEL || 'default'
+                );
+
+                console.warn(
+                  `[Highlight Bulk] Debug finish_reason:`,
+                  deepSeekResponse.raw?.choices?.[0]?.finish_reason || 'unknown'
+                );
+
+                console.warn(
+                  `[Highlight Bulk] Debug message content length:`,
+                  deepSeekResponse.raw?.choices?.[0]?.message?.content?.length || 0
+                );
+
+                console.warn(
+                  `[Highlight Bulk] Debug reasoning content length:`,
+                  deepSeekResponse.raw?.choices?.[0]?.message?.reasoning_content?.length || 0
+                );
+              }
+            } catch (batchError: any) {
+              console.warn(
+                `[Highlight Bulk] Batch ${batchIndex + 1}/${totalBatches} gagal:`,
+                batchError.message || batchError
+              );
+            }
           }
-        });
-      } catch (errLite: any) {
-        console.warn('[Gemini Highlight API] Primary model gemini-flash-lite-latest failed, trying gemini-3.5-flash-lite...');
-        try {
+
+          if (batchHighlights.length > 0) {
+            response = {
+              text: batchHighlights.join('\n\n---\n\n')
+            };
+
+            console.log(
+              `[Highlight Bulk] Semua proses batch selesai. Berhasil: ${batchHighlights.length}/${totalBatches} batch.`
+            );
+          }
+        } else {
           response = await ai.models.generateContent({
-            model: 'gemini-3.5-flash-lite',
+            model: 'gemini-flash-lite-latest',
             contents: [
               { role: 'user', parts: [{ text: `Isi Berita Lengkap:\n${newsContent}` }] }
             ],
@@ -11842,9 +12410,28 @@ Contoh:
               temperature: 0.3
             }
           });
-        } catch (err35: any) {
-          console.warn('[Gemini Highlight API] All Gemini models failed. Gracefully falling back to simulator.');
+        }
+      } catch (errLite: any) {
+        if (isBulk) {
+          console.warn('[Highlight Bulk] DeepSeek gagal, menggunakan fallback simulator:', errLite.message || errLite);
           response = null;
+        } else {
+          console.warn('[Gemini Highlight API] Primary model gemini-flash-lite-latest failed, trying gemini-3.5-flash-lite...');
+          try {
+            response = await ai.models.generateContent({
+              model: 'gemini-3.5-flash-lite',
+              contents: [
+                { role: 'user', parts: [{ text: `Isi Berita Lengkap:\n${newsContent}` }] }
+              ],
+              config: {
+                systemInstruction: systemInstruction,
+                temperature: 0.3
+              }
+            });
+          } catch (err35: any) {
+            console.warn('[Gemini Highlight API] All Gemini models failed. Gracefully falling back to simulator.');
+            response = null;
+          }
         }
       }
 
@@ -11859,7 +12446,6 @@ Contoh:
     } catch (err: any) {
       console.warn('[Gemini Highlight Generation Error - Handled gracefully]:', err.message || 'Unknown error');
     }
-  }
 
   // Fallback simulator in case Gemini API is offline or quota exceeded
   let fallbackHighlight = '';
@@ -11889,6 +12475,8 @@ app.post('/api/gemini/agent-report', authenticateToken, requireRole(['Admin', 'A
     return res.status(400).json({ message: 'Data berita terfilter wajib disediakan.' });
   }
 
+  // Kantor 3D: tandai Agus Saputra sebagai agent Analytics DeepSeek.
+  // Event ini dikirim melalui activity log yang juga dibaca oleh frontend Kantor 3D.
   // Count items for statistics
   const totalCount = filteredNews.length;
   if (totalCount === 0) {
@@ -11897,6 +12485,24 @@ app.post('/api/gemini/agent-report', authenticateToken, requireRole(['Admin', 'A
       report: `### TIDAK ADA DATA UNTUK DIANALISIS\n\nSilakan ubah filter Anda untuk menyertakan lebih banyak berita agar AI dapat melakukan analisis komprehensif.`
     });
   }
+
+  // Kantor 3D: Agus Saputra mulai bekerja setelah dipastikan ada data.
+  kantor3dAnalyticsState.status = 'running';
+  kantor3dAnalyticsState.totalNews = totalCount;
+  kantor3dAnalyticsState.batchNumber = 0;
+  kantor3dAnalyticsState.totalBatches = Math.ceil(totalCount / 100);
+  kantor3dAnalyticsState.message = `Agus Saputra menganalisis ${totalCount} berita dengan DeepSeek`;
+  kantor3dAnalyticsState.startedAt = new Date().toISOString();
+  kantor3dAnalyticsState.updatedAt = new Date().toISOString();
+  kantor3dAnalyticsState.finishedAt = null;
+
+  logActivity(
+    'user-system',
+    'Agus Saputra',
+    'Media Analyst',
+    'DeepSeek Analytics Mulai',
+    `Agus Saputra memulai analisis ${totalCount} berita dengan DeepSeek`
+  );
 
   const positifCount = filteredNews.filter((n: any) => n.sentiment === 'Positif').length;
   const negatifCount = filteredNews.filter((n: any) => n.sentiment === 'Negatif').length;
@@ -11973,26 +12579,9 @@ app.post('/api/gemini/agent-report', authenticateToken, requireRole(['Admin', 'A
     reportHeaderLine = `✅ **[STATUS: NORMAL / STABLE]** - Sentimen wilayah dalam batas kendali kondusif.\n\n`;
   }
 
-  // Handle active Gemini API call
-  if (!ai) {
-    initGeminiClient();
-  }
-
-  if (ai) {
-    try {
-      const serializedArticles = filteredNews.map((n: any, idx: number) => `
-ID: ${n.id}
-Judul: ${n.title}
-Sumber/Media: ${n.mediaName || 'Tidak Diketahui'}
-Tanggal/Waktu Terbit: ${n.publishDate} ${n.publishTime || ''}
-Lokasi: ${n.location || 'DKI Jakarta'}
-Kategori: ${n.categoryName || 'Lainnya'}
-Sentimen: ${n.sentiment}
-Ringkasan: ${n.summary || ''}
-Tags: ${(n.tags || []).join(', ')}
-`).join('\n---\n');
-
-      const systemPrompt = `Anda bertindak sebagai Senior Media Intelligence & Strategic Communication Analyst PT Pertamina.
+  // Handle active SumoPod / GLM-5.3-Flash API call
+  try {
+    const systemPrompt = `Anda bertindak sebagai Senior Media Intelligence & Strategic Communication Analyst PT Pertamina.
 
 Berdasarkan seluruh berita yang diberikan (sesuai filter yang dipilih), lakukan analisis dan sajikan laporan dalam format berikut.
 
@@ -12014,7 +12603,7 @@ Tulis dalam 1 paragraf.
 
 | Indikator        | Hasil |
 | ---------------- | ----- |
-| Total Beritahu   | [Angka] |
+| Total Berita     | [Angka] |
 | Positif          | [Angka] |
 | Netral           | [Angka] |
 | Negatif          | [Angka] |
@@ -12028,32 +12617,31 @@ Tulis dalam 1 paragraf.
 
 Kelompokkan berdasarkan lokasi.
 
-| Lokasi      | Jumlah Berita | Topik Dominan | Sentimen |
-| ----------- | ------------- | ------------- | -------- |
-| [Provinsi1]  | [Angka]       | [Topik]       | [Sentimen] |
-| [Provinsi2]  | [Angka]       | [Topik]       | [Sentimen] |
+| Lokasi | Jumlah Berita | Topik Dominan | Sentimen |
+| ------ | ------------- | ------------- | -------- |
+| [Provinsi] | [Angka] | [Topik] | [Sentimen] |
 
-Tampilkan hanya wilayah yang memiliki berita dari daftar yang diberikan.
+Tampilkan hanya wilayah yang memiliki berita dari data yang diberikan.
 
 ---
 
 # TOP 5 ISU STRATEGIS
 
-Urutkan berdasarkan jumlah pemberitaan dan potensi dampak secara objektif dari data berita yang ada. Jika jumlah berita kurang dari 5, tampilkan sebanyak berita yang ada.
+Urutkan berdasarkan jumlah pemberitaan dan potensi dampak secara objektif dari data berita yang ada. Jika jumlah berita kurang dari 5, tampilkan sebanyak isu yang dapat diidentifikasi.
 
 | Rank | Isu | Jumlah Berita | Sentimen | Risiko |
 | ---- | --- | ------------- | -------- | ------ |
-| 1    | [Nama Isu] | [Angka] | [Sentimen] | [Risiko Tinggi / Sedang / Rendah] |
-| 2    | [Nama Isu] | [Angka] | [Sentimen] | [Risiko Tinggi / Sedang / Rendah] |
-| 3    | [Nama Isu] | [Angka] | [Sentimen] | [Risiko Tinggi / Sedang / Rendah] |
-| 4    | [Nama Isu] | [Angka] | [Sentimen] | [Risiko Tinggi / Sedang / Rendah] |
-| 5    | [Nama Isu] | [Angka] | [Sentimen] | [Risiko Tinggi / Sedang / Rendah] |
+| 1 | [Nama Isu] | [Angka] | [Sentimen] | [Risiko] |
+| 2 | [Nama Isu] | [Angka] | [Sentimen] | [Risiko] |
+| 3 | [Nama Isu] | [Angka] | [Sentimen] | [Risiko] |
+| 4 | [Nama Isu] | [Angka] | [Sentimen] | [Risiko] |
+| 5 | [Nama Isu] | [Angka] | [Sentimen] | [Risiko] |
 
 ---
 
 # ISU PRIORITAS MANAJEMEN
 
-Pilih maksimal 3 isu dengan dampak terbesar (dari data yang diberikan).
+Pilih maksimal 3 isu dengan dampak terbesar dari data yang diberikan.
 
 Untuk setiap isu tampilkan:
 
@@ -12071,7 +12659,8 @@ Maksimal 3 kalimat.
 * HSSE
 * Legal
 * Bisnis
-(Pilih yang relevan dari data)
+
+Pilih hanya yang relevan berdasarkan data.
 
 **Level Risiko:**
 Rendah / Sedang / Tinggi / Kritis
@@ -12085,33 +12674,29 @@ Rendah / Sedang / Tinggi / Kritis
 
 # EARLY WARNING ALERT
 
-Identifikasi isu yang berpotensi menjadi krisis dalam 1-7 hari ke depan.
+Identifikasi isu yang memiliki indikasi eskalasi dalam 1-7 hari ke depan.
 
 | Isu | Indikasi Eskalasi | Risiko |
 | --- | ----------------- | ------ |
-| [Nama Isu] | [Penjelasan alasan eskalasi] | [Tinggi / Sedang / Rendah] |
+| [Nama Isu] | [Penjelasan] | [Tinggi / Sedang / Rendah] |
 
 ---
 
 # REKOMENDASI TINDAK LANJUT
 
 ## Corporate Communication
-* [Langkah aksi corp comm 1]
-* [Langkah aksi corp comm 2]
+* [Langkah aksi]
 
 ## Operasional
-* [Langkah aksi operasional 1]
-* [Langkah aksi operasional 2]
+* [Langkah aksi]
 
 ## HSSE
-* [Langkah aksi hsse 1]
-* [Langkah aksi hsse 2]
+* [Langkah aksi]
 
 ## Stakeholder Engagement
-* [Langkah aksi stakeholder engagement 1]
-* [Langkah aksi stakeholder engagement 2]
+* [Langkah aksi]
 
-Tampilkan hanya kategori rekomendasi yang relevan dengan hasil analisis.
+Tampilkan hanya kategori yang relevan.
 
 ---
 
@@ -12124,48 +12709,285 @@ Buat kesimpulan maksimal 75 kata yang menjelaskan:
 * Prioritas tindakan manajemen.
 
 ATURAN ANALISIS:
-1. Analisis hanya berdasarkan berita dalam hasil filter yang disediakan pengguna di bawah. Jangan membuat-buat berita, nama instansi, atau isu yang tidak ada di daftar.
-2. Jangan memberikan mitigasi yang tidak relevan dengan isu yang muncul.
-3. Jika filter hanya mencakup satu topik (misalnya HSSE atau Fraud), fokuskan seluruh analisis pada topik tersebut.
+1. Analisis hanya berdasarkan berita yang diberikan.
+2. Jangan membuat-buat berita, nama instansi, angka, lokasi, atau isu.
+3. Jika filter hanya mencakup satu topik, fokuskan analisis pada topik tersebut.
 4. Jika lebih dari 60% berita bernada negatif, tandai status sebagai "HIGH ATTENTION".
 5. Jika terdapat isu yang berpotensi memengaruhi reputasi nasional, regulator, investor, atau keberlangsungan operasional, tandai sebagai "CRITICAL ISSUE".
 6. Prioritaskan insight strategis dibanding ringkasan berita.
 7. Gunakan bahasa Indonesia formal tingkat Direksi/BOD.`;
 
-      const promptUser = `Lakukan analisis mendalam berdasarkan data real-time terfilter berikut.
+    const batchSize = 100;
+    const batchInsights: string[] = [];
 
-INFORMASI FILTER AKTIF: ${filterStatusHeadline || 'Default filter'}
+    console.log(`[DeepSeek Analytics] Total berita: ${totalCount}`);
+    console.log(`[DeepSeek Analytics] Mode batch: ${batchSize} berita/request`);
 
-DAFTAR BERITA YANG TERFILTER:
-${serializedArticles}`;
+    for (let batchStart = 0; batchStart < filteredNews.length; batchStart += batchSize) {
+      const batch = filteredNews.slice(batchStart, batchStart + batchSize);
+      const batchNumber = Math.floor(batchStart / batchSize) + 1;
+      const totalBatches = Math.ceil(filteredNews.length / batchSize);
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-flash-lite-latest',
-        contents: [
-          { role: 'user', parts: [{ text: `${systemPrompt}\n\n${promptUser}` }] }
-        ]
-      });
+      // Kantor 3D: Agus Saputra sedang memproses batch DeepSeek.
+      kantor3dAnalyticsState.status = 'batch';
+      kantor3dAnalyticsState.batchNumber = batchNumber;
+      kantor3dAnalyticsState.totalBatches = totalBatches;
+      kantor3dAnalyticsState.message =
+        `Agus Saputra menganalisis Batch ${batchNumber}/${totalBatches} (${batch.length} berita)`;
+      kantor3dAnalyticsState.updatedAt = new Date().toISOString();
 
-      // Log AI token usage asynchronously
-      logAiTokenUsage('/api/gemini/agent-report', 'gemini-flash-lite-latest', response);
+      logActivity(
+        'user-system',
+        'Agus Saputra',
+        'Media Analyst',
+        'DeepSeek Analytics Batch',
+        `Memproses Batch ${batchNumber}/${totalBatches} (${batch.length} berita) dengan DeepSeek`
+      );
 
-      const responseText = response.text ? response.text.trim() : '';
-      if (responseText) {
-        return res.json({
-          success: true,
-          source: 'Gemini AI Intelligent Strategic Analyst Engine',
-          report: reportHeaderLine + responseText
-        });
-      }
-    } catch (err: any) {
-      const errMessage = err?.message || String(err);
-      if (errMessage.includes('429') || errMessage.includes('LIMIT_EXHAUSTED') || errMessage.includes('RESOURCE_EXHAUSTED') || errMessage.includes('spending cap')) {
-        console.log('[Gemini API] Quota/spending limit status active (429) during report generation. Routing to local fallback.');
-      } else {
-        console.log('[Gemini API] Agent report generation active (utilizing backup simulator):', errMessage);
+      const serializedBatch = batch.map((n: any) => `
+ID: ${n.id}
+Judul: ${n.title}
+Sumber/Media: ${n.mediaName || 'Tidak Diketahui'}
+Tanggal/Waktu Terbit: ${n.publishDate} ${n.publishTime || ''}
+Lokasi: ${n.location || 'DKI Jakarta'}
+Kategori: ${n.categoryName || 'Lainnya'}
+Sentimen: ${n.sentiment}
+Ringkasan: ${n.summary || ''}
+Tags: ${(n.tags || []).join(', ')}
+`).join('\n---\n');
+
+      const batchPrompt = `Anda adalah analis Media Intelligence PT Pertamina.
+
+Analisis BATCH ${batchNumber} dari ${totalBatches}.
+
+INFORMASI FILTER:
+${filterStatusHeadline || 'Default filter'}
+
+DATA BERITA:
+${serializedBatch}
+
+TUGAS ANALISIS BATCH:
+Analisis 100 berita berikut hanya untuk menghasilkan bahan sintesis bagi laporan akhir.
+
+WAJIB:
+1. Identifikasi maksimal 5 isu utama yang paling menonjol.
+2. Gabungkan berita yang membahas isu yang sama.
+3. Sebutkan pola sentimen yang benar-benar terlihat.
+4. Sebutkan lokasi atau topik yang paling menonjol.
+5. Identifikasi risiko atau indikasi eskalasi hanya jika didukung data.
+6. Berikan insight strategis yang paling relevan.
+
+BATASAN OUTPUT:
+- Maksimal 500 kata.
+- Gunakan bullet point.
+- Jangan mengulang judul berita.
+- Jangan membuat rekomendasi panjang.
+- Jangan mengarang fakta, angka, lokasi, instansi, atau isu.
+- Jangan menjelaskan proses berpikir atau analisis internal.
+- Langsung berikan hasil akhir.
+
+FORMAT OUTPUT:
+
+ISU UTAMA:
+- [Isu] — [fakta/pola utama]
+
+POLA SENTIMEN:
+- [pola sentimen utama]
+
+LOKASI/TOPIK MENONJOL:
+- [lokasi/topik]
+
+RISIKO / EARLY WARNING:
+- [isu + indikasi eskalasi jika ada]
+
+INSIGHT STRATEGIS:
+- [insight paling penting]
+`;
+
+      try {
+        const batchResponse = await callDeepSeek(
+          [
+            {
+              role: 'user',
+              content: batchPrompt
+            }
+          ],
+          {
+            maxTokens: 2500,
+            temperature: 0.2
+          }
+        );
+
+        const batchText = batchResponse.text ? batchResponse.text.trim() : '';
+
+        console.log(
+          `[DeepSeek Analytics] Batch ${batchNumber}/${totalBatches} selesai. Model:`,
+          batchResponse.model
+        );
+        console.log(
+          `[DeepSeek Analytics] Batch ${batchNumber} Token Usage:`,
+          batchResponse.usage
+        );
+
+        if (batchText) {
+          batchInsights.push(
+            `=== HASIL BATCH ${batchNumber}/${totalBatches} ===\n${batchText}`
+          );
+
+          // Kantor 3D: batch DeepSeek berhasil diselesaikan.
+          kantor3dAnalyticsState.status = 'batch';
+          kantor3dAnalyticsState.batchNumber = batchNumber;
+          kantor3dAnalyticsState.totalBatches = totalBatches;
+          kantor3dAnalyticsState.message =
+            `Batch ${batchNumber}/${totalBatches} selesai`;
+          kantor3dAnalyticsState.updatedAt = new Date().toISOString();
+
+          logActivity(
+            'user-system',
+            'Agus Saputra',
+            'Media Analyst',
+            'DeepSeek Analytics Batch Selesai',
+            `Batch ${batchNumber}/${totalBatches} selesai`
+          );
+        }
+      } catch (batchErr: any) {
+        const batchErrMessage = batchErr?.message || String(batchErr);
+        console.log(
+          `[DeepSeek Analytics] Batch ${batchNumber}/${totalBatches} gagal:`,
+          batchErrMessage
+        );
       }
     }
-  }
+
+    if (batchInsights.length > 0) {
+      const synthesisBatchCount = batchInsights.length;
+      const synthesisTotalBatches = Math.ceil(totalCount / batchSize);
+
+      // Kantor 3D: Agus Saputra menyusun sintesis final dari hasil batch.
+      kantor3dAnalyticsState.status = 'synthesizing';
+      kantor3dAnalyticsState.batchNumber = synthesisBatchCount;
+      kantor3dAnalyticsState.totalBatches = synthesisTotalBatches;
+      kantor3dAnalyticsState.message =
+        `Agus Saputra menyusun sintesis final dari ${synthesisBatchCount} batch`;
+      kantor3dAnalyticsState.updatedAt = new Date().toISOString();
+
+      logActivity(
+        'user-system',
+        'Agus Saputra',
+        'Media Analyst',
+        'DeepSeek Analytics Sintesis',
+        `Memulai sintesis laporan final dari ${synthesisBatchCount} batch`
+      );
+
+      const synthesisInput = batchInsights.join('\n\n==============================\n\n');
+
+      const synthesisPrompt = `${systemPrompt}
+
+INFORMASI FILTER AKTIF:
+${filterStatusHeadline || 'Default filter'}
+
+STATISTIK YANG SUDAH DIHITUNG OLEH SISTEM:
+- Total berita: ${totalCount}
+- Positif: ${positifCount}
+- Netral: ${netralCount}
+- Negatif: ${negatifCount}
+- Topik dominan: ${dominantTopic}
+- Wilayah dominan: ${dominantRegion}
+- Risiko tertinggi: ${highestRisk}
+
+HASIL ANALISIS PER BATCH:
+${synthesisInput}
+
+TUGAS SINTESIS:
+Susun laporan final lengkap sesuai struktur yang telah ditentukan di atas.
+
+Gunakan statistik sistem sebagai angka resmi untuk dashboard.
+Gunakan hasil analisis batch sebagai dasar identifikasi isu, pola, risiko, early warning, dan rekomendasi.
+Jangan mengarang fakta di luar data berita dan hasil analisis batch.
+Jangan menyebut bahwa analisis dilakukan secara batch.
+Jangan menampilkan proses internal AI.
+Hasil akhir harus siap ditampilkan langsung kepada manajemen.`;
+
+      try {
+        console.log(
+          `[DeepSeek Analytics] Memulai sintesis final dari ${batchInsights.length} batch...`
+        );
+
+        const finalResponse = await callDeepSeek(
+          [
+            {
+              role: 'user',
+              content: synthesisPrompt
+            }
+          ],
+          {
+            maxTokens: 12000,
+            temperature: 0.2
+          }
+        );
+
+        console.log('[DeepSeek Analytics] Final synthesis model:', finalResponse.model);
+        console.log('[DeepSeek Analytics] Final synthesis Token Usage:', finalResponse.usage);
+
+        const responseText = finalResponse.text
+          ? finalResponse.text.trim()
+          : '';
+
+        if (responseText) {
+          // Kantor 3D: Agus Saputra menyelesaikan analisis DeepSeek.
+          kantor3dAnalyticsState.status = 'done';
+          kantor3dAnalyticsState.batchNumber = synthesisBatchCount;
+          kantor3dAnalyticsState.totalBatches = synthesisTotalBatches;
+          kantor3dAnalyticsState.message =
+            `Agus Saputra menyelesaikan analisis ${totalCount} berita`;
+          kantor3dAnalyticsState.updatedAt = new Date().toISOString();
+          kantor3dAnalyticsState.finishedAt = new Date().toISOString();
+
+          logActivity(
+            'user-system',
+            'Agus Saputra',
+            'Media Analyst',
+            'DeepSeek Analytics Selesai',
+            `Agus Saputra menyelesaikan analisis ${totalCount} berita`
+          );
+
+          return res.json({
+            success: true,
+            source: 'DeepSeek Intelligent Strategic Analyst Engine',
+            report: reportHeaderLine + responseText
+          });
+        }
+      } catch (synthesisErr: any) {
+        const synthesisErrMessage =
+          synthesisErr?.message || String(synthesisErr);
+
+        console.log(
+          '[DeepSeek Analytics] Final synthesis gagal, routing ke local fallback:',
+          synthesisErrMessage
+        );
+
+        kantor3dAnalyticsState.status = 'error';
+        kantor3dAnalyticsState.message =
+          `Sintesis DeepSeek gagal, Agus Saputra menggunakan fallback`;
+        kantor3dAnalyticsState.updatedAt = new Date().toISOString();
+
+        logActivity(
+          'user-system',
+          'Agus Saputra',
+          'Media Analyst',
+          'DeepSeek Analytics Gagal',
+          `Sintesis final gagal: ${synthesisErrMessage}`
+        );
+      }
+    } else {
+      console.log(
+        '[DeepSeek Analytics] Tidak ada batch yang berhasil menghasilkan insight.'
+      );
+    }
+    } catch (err: any) {
+      const errMessage = err?.message || String(err);
+      console.log('[DeepSeek Analytics] Generation failed, routing to local fallback:', errMessage);
+    }
 
   // --- MOCK fallbacks and simulation output generator ---
   // Formulate high faith Indonesian mock responses
@@ -12296,6 +13118,23 @@ ${earlyWarningRows}
 # KESIMPULAN
 
 Kondisi sentimen saat ini didominasi oleh ketegangan bernada negatif menengah dari isu distribusi dan kepatuhan. Isu paling mendesak berkaitan langsung dengan pengamanan Obvitnas serta pengelolaan opini penyelewengan di Pantura. Risiko utama berada pada level **${highestRisk}**. Prioritas utama manajemen mencakup pelaksanaan strategi pencegahan krisis humas transparan serta respon cepat patroli perimeter lapangan.`;
+
+  // Kantor 3D: proses Analytics selesai melalui fallback lokal.
+  kantor3dAnalyticsState.status = 'done';
+  kantor3dAnalyticsState.batchNumber = batchInsights.length;
+  kantor3dAnalyticsState.totalBatches = Math.ceil(totalCount / batchSize);
+  kantor3dAnalyticsState.message =
+    `Agus Saputra menyelesaikan analisis ${totalCount} berita melalui fallback`;
+  kantor3dAnalyticsState.updatedAt = new Date().toISOString();
+  kantor3dAnalyticsState.finishedAt = new Date().toISOString();
+
+  logActivity(
+    'user-system',
+    'Agus Saputra',
+    'Media Analyst',
+    'DeepSeek Analytics Selesai',
+    `Agus Saputra menyelesaikan analisis ${totalCount} berita melalui fallback`
+  );
 
   res.json({
     success: true,
@@ -13203,14 +14042,20 @@ Analisis secara teliti judul, tanggal, dan seluruh isi konten berita yang sudah 
 
 PENTING: Jangan sertakan blok penjelas markdown atau text prefiks/suffiks apa pun. Kembalikan RAW JSON object.`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-flash-lite-latest',
-        contents: [
-          { role: 'user', parts: [{ text: `${systemPrompt}\n\nMasukkan artikel hasil BeautifulSoup Scrape:\n${finalContext}` }] }
-        ]
-      });
+      const response = await callSumoPod(
+        [
+          {
+            role: 'user',
+            content: `${systemPrompt}\n\nMasukkan artikel hasil BeautifulSoup Scrape:\n${finalContext}`
+          }
+        ],
+        {
+          maxTokens: 4000,
+          temperature: 0.2
+        }
+      );
 
-      logAiTokenUsage('/api/scraper/intelligent-parse', 'gemini-flash-lite-latest', response);
+      console.log('[SumoPod Intelligent Parse] Model:', response.model);
 
       const responseText = response.text ? response.text.trim() : '';
       let cleanJson = responseText;

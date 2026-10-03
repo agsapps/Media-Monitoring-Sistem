@@ -655,6 +655,19 @@ export const PortalView: React.FC = () => {
         format: 'a4',
       });
 
+      const compactWrap = (text: string, maxWidth: number, maxLines: number): string[] => {
+        if (!text) return [];
+
+        const clean = String(text)
+          .replace(/\s+/g, ' ')
+          .trim();
+
+        if (!clean) return [];
+
+        const lines = doc.splitTextToSize(clean, maxWidth);
+        return lines.slice(0, maxLines);
+      };
+
       const todayStr = new Date().toLocaleDateString('id-ID', {
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
       });
@@ -800,255 +813,411 @@ export const PortalView: React.FC = () => {
 
         y += 12;
 
-        // Executive Highlights Card box - HIGHLY DYNAMIC AND NO OVERLAPPING
-        const paragraphs = splitSummaryIntoParagraphs(item.summary || '');
-        const mainText = paragraphs.mainText;
-        const analysisText = paragraphs.analysisText;
+        // --- THUMBNAIL BERITA ---
+        // Thumbnail ditempatkan di area aman setelah metadata.
+        // Tinggi dan posisi dibatasi agar tidak pernah menimpa
+        // Executive Highlights maupun elemen PDF lainnya.
+        if (item.imageUrl) {
+          try {
+            const loadImageAsDataUrl = (url: string): Promise<string> =>
+              new Promise((resolve, reject) => {
+                const img = new Image();
 
-        const mainLines = wrapAndSanitiseText(doc, mainText, 168);
-        const analysisLines = analysisText ? wrapAndSanitiseText(doc, analysisText, 168) : [];
-        const mainHeight = mainLines.length * 5.2;
-        const analysisHeight = analysisText ? 10 + (analysisLines.length * 5.2) : 0;
+                // Tetap menggunakan CORS agar sumber gambar yang
+                // mengizinkan CORS dapat diproses melalui canvas.
+                img.crossOrigin = 'anonymous';
 
-        const headerSpacing = 10;
-        const contentSpacing = mainHeight + analysisHeight;
-        const totalBoxHeight = Math.max(30, headerSpacing + contentSpacing + 10);
+                img.onload = () => {
+                  try {
+                    const naturalWidth = img.naturalWidth || img.width;
+                    const naturalHeight = img.naturalHeight || img.height;
 
-        // Prevent overflow of the summary card by automatically splitting into the next page if space is insufficient
-        if (y + totalBoxHeight > 250) {
-          doc.addPage();
-          doc.setFillColor(brandColor.r, brandColor.g, brandColor.b);
-          doc.rect(0, 0, 210, 16, 'F');
-          doc.setTextColor(255, 255, 255);
-          doc.setFont('Helvetica', 'bold');
-          doc.setFontSize(10);
-          doc.text(settings.companyName.toUpperCase(), 15, 10.5);
-          y = 28;
-        }
+                    if (!naturalWidth || !naturalHeight) {
+                      reject(new Error('Ukuran thumbnail tidak valid'));
+                      return;
+                    }
 
-        doc.setFillColor(250, 250, 250);
-        doc.rect(15, y, 180, totalBoxHeight, 'F');
-        doc.setDrawColor(203, 213, 225);
-        doc.rect(15, y, 180, totalBoxHeight, 'S');
+                    const canvas = document.createElement('canvas');
 
-        // Small Brand highlight bar on left side of Executive summary
-        doc.setFillColor(brandColor.r, brandColor.g, brandColor.b);
-        doc.rect(15, y, 2.5, totalBoxHeight, 'F');
+                    // Ukuran canvas dibatasi agar proses PDF tetap ringan.
+                    const maxWidth = 1200;
+                    const maxHeight = 700;
 
-        doc.setTextColor(brandColor.r, brandColor.g, brandColor.b);
-        doc.setFont('Helvetica', 'bold');
-        doc.setFontSize(10);
-        doc.text('HIGHLIGHT:', 21, y + 7.5);
+                    const scale = Math.min(
+                      maxWidth / naturalWidth,
+                      maxHeight / naturalHeight,
+                      1
+                    );
 
-        // Layout divider inside summary card
-        doc.setLineWidth(0.3);
-        doc.setDrawColor(226, 232, 240);
-        doc.line(21, y + 10.5, 95, y + 10.5);
+                    const width = Math.max(
+                      1,
+                      Math.round(naturalWidth * scale)
+                    );
 
-        doc.setFont('Helvetica', 'normal');
-        doc.setFontSize(9.5);
-        doc.setTextColor(15, 23, 42);
-        
-        let textY = y + 16;
-        doc.text(mainText, 21, textY, { align: 'justify', maxWidth: 168 });
+                    const height = Math.max(
+                      1,
+                      Math.round(naturalHeight * scale)
+                    );
 
-        if (analysisText) {
-          textY += mainHeight + 4;
-          
-          doc.setFont('Helvetica', 'bold');
-          doc.setFontSize(9.5);
-          doc.setTextColor(brandColor.r, brandColor.g, brandColor.b);
-          doc.text('Analisis', 21, textY);
-          
-          textY += 4.5;
-          doc.setFont('Helvetica', 'normal');
-          doc.setFontSize(9.5);
-          doc.setTextColor(15, 23, 42);
-          doc.text(analysisText, 21, textY, { align: 'justify', maxWidth: 168 });
-        }
+                    canvas.width = width;
+                    canvas.height = height;
 
-        y += totalBoxHeight + 8;
+                    const ctx = canvas.getContext('2d');
 
-        // Keywords tags section - styled as pill badges
-        if (item.tags && item.tags.length > 0) {
-          if (y + 14 > 250) {
-            doc.addPage();
-            doc.setFillColor(brandColor.r, brandColor.g, brandColor.b);
-            doc.rect(0, 0, 210, 16, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFont('Helvetica', 'bold');
-            doc.setFontSize(10);
-            doc.text(settings.companyName.toUpperCase(), 15, 10.5);
-            y = 28;
-          }
-          doc.setFont('Helvetica', 'bold');
-          doc.setFontSize(9);
-          doc.setTextColor(30, 41, 59);
-          doc.text('KATA KUNCI/TAGS:', 15, y + 4);
-          
-          let tagX = 53;
-          doc.setFont('Helvetica', 'normal');
-          doc.setFontSize(8);
-          
-          item.tags.forEach(tag => {
-            const cleanTag = tag.trim();
-            if (!cleanTag) return;
-            const tagW = doc.getTextWidth(cleanTag) + 6;
-            if (tagX + tagW > 195) {
-              y += 7;
-              tagX = 53;
+                    if (!ctx) {
+                      reject(new Error('Canvas context tidak tersedia'));
+                      return;
+                    }
+
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    resolve(canvas.toDataURL('image/jpeg', 0.82));
+                  } catch (err) {
+                    reject(err);
+                  }
+                };
+
+                img.onerror = () => {
+                  reject(new Error('Thumbnail gagal dimuat'));
+                };
+
+                img.src = url;
+              });
+
+            console.log('[PDF PER-NEWS] Image URL:', item.imageUrl);
+
+            const proxyImageUrl =
+              `/api/proxy-image?url=${encodeURIComponent(item.imageUrl)}`;
+
+            console.log(
+              '[PDF PER-NEWS] Proxy Image URL:',
+              proxyImageUrl
+            );
+
+            const thumbnailDataUrl =
+              await loadImageAsDataUrl(proxyImageUrl);
+
+            // Area thumbnail tetap berada di dalam lebar konten PDF.
+            const thumbnailX = 15;
+            const thumbnailY = y;
+            const thumbnailBoxW = 180;
+
+            // Tinggi maksimum dibuat tetap agar area konten setelah gambar
+            // selalu mempunyai posisi yang dapat diprediksi.
+            const thumbnailMaxH = 42;
+
+            const img = new Image();
+
+            await new Promise<void>((resolve) => {
+              img.onload = () => resolve();
+              img.onerror = () => resolve();
+              img.src = thumbnailDataUrl;
+            });
+
+            if (!img.naturalWidth || !img.naturalHeight) {
+              throw new Error('Thumbnail hasil konversi tidak valid');
             }
-            doc.setFillColor(239, 246, 255); // light blue
-            doc.rect(tagX, y + 0.5, tagW - 2, 5.5, 'F');
-            doc.setDrawColor(191, 219, 254);
-            doc.rect(tagX, y + 0.5, tagW - 2, 5.5, 'S');
-            doc.setTextColor(29, 78, 216);
-            doc.text(cleanTag, tagX + 2, y + 4.3);
-            tagX += tagW;
-          });
-          
-          y += 12;
-        }
 
-        // Tautan Original Berita - dynamically placed below summary/tags
-        const targetLink = item.link || `https://google.com/search?q=${encodeURIComponent(item.title)}`;
-        if (targetLink) {
-          const linkLines = wrapAndSanitiseText(doc, targetLink, 180);
-          const requiredH = (linkLines.length * 4.5) + 12;
-          if (y + requiredH > 250) {
-            doc.addPage();
-            doc.setFillColor(brandColor.r, brandColor.g, brandColor.b);
-            doc.rect(0, 0, 210, 16, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFont('Helvetica', 'bold');
-            doc.setFontSize(10);
-            doc.text(settings.companyName.toUpperCase(), 15, 10.5);
-            y = 28;
+            const imgRatio = img.naturalWidth / img.naturalHeight;
+
+            // CONTAIN:
+            // seluruh gambar terlihat dan tidak boleh keluar dari
+            // kotak thumbnail.
+            let thumbnailW = thumbnailBoxW;
+            let thumbnailH = thumbnailW / imgRatio;
+
+            if (thumbnailH > thumbnailMaxH) {
+              thumbnailH = thumbnailMaxH;
+              thumbnailW = thumbnailH * imgRatio;
+            }
+
+            // Jangan sampai gambar terlalu kecil karena rasio ekstrem.
+            thumbnailW = Math.min(thumbnailW, thumbnailBoxW);
+            thumbnailH = Math.min(thumbnailH, thumbnailMaxH);
+
+            // Posisi gambar ditengahkan di dalam area 180 mm.
+            const imageX =
+              thumbnailX + ((thumbnailBoxW - thumbnailW) / 2);
+
+            const imageY =
+              thumbnailY + ((thumbnailMaxH - thumbnailH) / 2);
+
+            // Background area thumbnail.
+            doc.setFillColor(248, 250, 252);
+            doc.roundedRect(
+              thumbnailX,
+              thumbnailY,
+              thumbnailBoxW,
+              thumbnailMaxH,
+              2,
+              2,
+              'F'
+            );
+
+            // Border area thumbnail.
+            doc.setDrawColor(226, 232, 240);
+            doc.setLineWidth(0.35);
+            doc.roundedRect(
+              thumbnailX,
+              thumbnailY,
+              thumbnailBoxW,
+              thumbnailMaxH,
+              2,
+              2,
+              'S'
+            );
+
+            // Gambar SELALU berada di dalam area thumbnail.
+            // Tidak lagi menggunakan ukuran cover yang dapat keluar
+            // dari kotak dan menimpa konten berikutnya.
+            doc.addImage(
+              thumbnailDataUrl,
+              'JPEG',
+              imageX,
+              imageY,
+              thumbnailW,
+              thumbnailH,
+              undefined,
+              'FAST'
+            );
+
+            // Beri jarak aman setelah thumbnail sebelum Executive Highlights.
+            y = thumbnailY + thumbnailMaxH + 7;
+
+          } catch (thumbnailError) {
+            console.warn(
+              '[PDF PER-NEWS] Thumbnail tidak dapat dimuat, PDF tetap dilanjutkan:',
+              thumbnailError
+            );
+
+            // Jika gambar gagal, tetap beri jarak kecil agar layout
+            // berikutnya tidak bertabrakan dengan metadata.
+            y += 4;
           }
-          doc.setFont('Helvetica', 'bold');
-          doc.setFontSize(9);
-          doc.setTextColor(15, 23, 42);
-          doc.text('TAUTAN BERITA (KLIK UNTUK MEMBUKA):', 15, y + 3);
-          
-          doc.setFont('Helvetica', 'normal');
-          doc.setFontSize(8.5);
-          doc.setTextColor(79, 70, 229);
-          
-          let lineY = y + 8;
-          linkLines.forEach((line: string) => {
-            doc.textWithLink(line, 15, lineY, { url: targetLink });
-            lineY += 4.5;
-          });
         }
 
-        // Footer block placed neatly at bottom limits
-        doc.setFillColor(241, 245, 249);
-        doc.rect(15, 265, 180, 15, 'F');
-        doc.setTextColor(100, 116, 139);
-        doc.setFont('Helvetica', 'normal');
-        doc.setFontSize(7.5);
-        doc.text(settings.footerText, 20, 271);
-        doc.text('Sistem Dokumentasi Media Monitoring.', 20, 276);
-        doc.text(`Halaman 1 dari 2 | Generated on: ${pdfTimestampStr}`, 190, 274, { align: 'right' });
+        // --- COMPACT ONE-PAGE NEWS REPORT ---
+        // Seluruh konten per berita dipadatkan agar selalu berada pada 1 halaman A4.
 
-        // --- PAGE 2: AGENT AI HIGHLIGHT GENERATOR ---
-        doc.addPage();
+        const paragraphs = splitSummaryIntoParagraphs(item.summary || '');
+        const mainText = paragraphs.mainText || '';
+        const analysisText = paragraphs.analysisText || '';
 
-        // Top Primary Border Branded Accent for Page 2
-        doc.setFillColor(brandColor.r, brandColor.g, brandColor.b);
-        doc.rect(0, 0, 210, 16, 'F');
+        // Executive Highlights - tampilkan isi lengkap seperti kartu
+        // tanpa pemotongan teks. Tinggi kartu mengikuti jumlah baris.
+        const mainLines = wrapAndSanitiseText(
+          doc,
+          mainText || '-',
+          168
+        );
 
-        // Logo text or Branding Header for Page 2
-        doc.setTextColor(255, 255, 255);
-        doc.setFont('Helvetica', 'bold');
-        doc.setFontSize(10);
-        doc.text(settings.companyName.toUpperCase(), 15, 10.5);
+        const analysisLines = analysisText
+          ? wrapAndSanitiseText(doc, analysisText, 168)
+          : [];
 
-        // Subheader metadata block
-        doc.setTextColor(200, 210, 230);
-        doc.setFont('Helvetica', 'normal');
-        doc.setFontSize(8);
-        doc.text('LAPORAN MEDIA MONITORING - HIGHLIGHT AI', 195, 10.5, { align: 'right' });
+        const summaryStartY = y;
 
-        // Meta Header info
-        doc.setTextColor(51, 65, 85);
-        doc.setFont('Helvetica', 'normal');
-        doc.setFontSize(8);
-        doc.text(`ID ISU: ${item.id || 'N/A'}`, 15, 24);
+        // Font dan line-height dibuat compact agar teks panjang tetap muat.
+        const mainFontSize = 8.0;
+        const analysisFontSize = 7.8;
+        const mainLineHeight = 4.15;
+        const analysisLineHeight = 4.0;
 
-        // Date of report
-        doc.setTextColor(51, 65, 85);
-        doc.text(`Tanggal Cetak: ${todayStr}`, 195, 24, { align: 'right' });
+        let summaryHeight =
+          15 +
+          (mainLines.length * mainLineHeight);
 
-        // Divider
-        doc.setLineWidth(0.4);
-        doc.setDrawColor(226, 232, 240);
-        doc.line(15, 27, 195, 27);
+        if (analysisLines.length > 0) {
+          summaryHeight +=
+            7 +
+            (analysisLines.length * analysisLineHeight);
+        }
 
-        // Title of Page 2
-        doc.setTextColor(brandColor.r, brandColor.g, brandColor.b);
-        doc.setFont('Helvetica', 'bold');
-        doc.setFontSize(13);
-        doc.text('SOROTAN & HIGHLIGHT INTELIJEN STRATEGIS', 15, 38);
+        // Executive Highlights dibuat lebih besar ke bawah.
+        summaryHeight = Math.max(summaryHeight, 45);
 
-        // Calculate dynamic height for box holding generated highlight
-        const highlightLines = wrapAndSanitiseText(doc, generatedHighlight || 'Highlight tidak tersedia.', 166);
-        const contentHeight = highlightLines.length * 6;
-        const boxHeight = Math.max(80, 30 + contentHeight);
+        doc.setFillColor(248, 250, 252);
+        doc.roundedRect(
+          15,
+          summaryStartY,
+          180,
+          summaryHeight,
+          2,
+          2,
+          'F'
+        );
 
-        // Render Box
-        doc.setFillColor(249, 250, 251); 
-        doc.rect(15, 45, 180, boxHeight, 'F');
         doc.setDrawColor(226, 232, 240);
         doc.setLineWidth(0.35);
-        doc.rect(15, 45, 180, boxHeight, 'S');
+        doc.roundedRect(
+          15,
+          summaryStartY,
+          180,
+          summaryHeight,
+          2,
+          2,
+          'S'
+        );
 
-        // Brand Highlight Left line
-        doc.setFillColor(brandColor.r, brandColor.g, brandColor.b);
-        doc.rect(15, 45, 3, boxHeight, 'F');
+        // Accent bar
+        doc.setFillColor(
+          brandColor.r,
+          brandColor.g,
+          brandColor.b
+        );
+        doc.rect(
+          15,
+          summaryStartY,
+          3,
+          summaryHeight,
+          'F'
+        );
 
-        // Inside Box Content
-        doc.setTextColor(15, 23, 42);
+        // Judul
+        doc.setTextColor(
+          brandColor.r,
+          brandColor.g,
+          brandColor.b
+        );
         doc.setFont('Helvetica', 'bold');
-        doc.setFontSize(10.5);
-        doc.text('INTISARI EKSEKUTIF SENIOR (AGENT AI)', 22, 54);
+        doc.setFontSize(10);
+        doc.text(
+          'EXECUTIVE HIGHLIGHTS',
+          22,
+          summaryStartY + 8
+        );
 
-        doc.setTextColor(100, 116, 139);
-        doc.setFont('Helvetica', 'oblique');
-        doc.setFontSize(8.5);
-        doc.text('Formulasi otomatis oleh Analis Senior Agent AI', 22, 59);
-
-        // Inner Divider
-        doc.setLineWidth(0.25);
-        doc.setDrawColor(226, 232, 240);
-        doc.line(22, 63, 185, 63);
-
-        // Highlight Paragraph
+        // Isi utama
         doc.setTextColor(30, 41, 59);
         doc.setFont('Helvetica', 'normal');
-        doc.setFontSize(10);
+        doc.setFontSize(mainFontSize);
 
-        let page2LineY = 71;
-        highlightLines.forEach((line) => {
-          doc.text(line, 22, page2LineY);
-          page2LineY += 6.2;
+        let textY = summaryStartY + 15;
+
+        mainLines.forEach((line: string) => {
+          doc.text(line, 22, textY);
+          textY += mainLineHeight;
         });
 
-        // Page 2 Footer
+        // Analisis tetap ditampilkan lengkap
+        if (analysisLines.length > 0) {
+          textY += 2;
+
+          doc.setTextColor(71, 85, 105);
+          doc.setFont('Helvetica', 'bold');
+          doc.setFontSize(7.8);
+          doc.text('ANALISIS:', 22, textY);
+
+          textY += 4.5;
+
+          doc.setFont('Helvetica', 'normal');
+          doc.setFontSize(analysisFontSize);
+
+          analysisLines.forEach((line: string) => {
+            doc.text(line, 22, textY);
+            textY += analysisLineHeight;
+          });
+        }
+
+        // Berikan jarak proporsional setelah kartu.
+        y = summaryStartY + summaryHeight + 7;
+
+        // Tags
+        if (item.tags && item.tags.length > 0) {
+          doc.setTextColor(15, 23, 42);
+          doc.setFont('Helvetica', 'bold');
+          doc.setFontSize(8);
+
+          doc.text('KATA KUNCI:', 15, y + 4);
+
+          let tagX = 43;
+          let tagY = y;
+          let tagRow = 0;
+
+          item.tags.slice(0, 6).forEach((tag: string) => {
+            const cleanTag = String(tag)
+              .replace(/[\r\n]+/g, ' ')
+              .trim();
+
+            if (!cleanTag) return;
+
+            doc.setFont('Helvetica', 'normal');
+            doc.setFontSize(6.8);
+
+            const tagW = Math.min(
+              Math.max(doc.getTextWidth(cleanTag) + 6, 14),
+              42
+            );
+
+            if (tagX + tagW > 192) {
+              tagX = 43;
+              tagY += 7;
+              tagRow++;
+            }
+
+            if (tagRow > 1) return;
+
+            doc.setFillColor(239, 246, 255);
+            doc.setDrawColor(191, 219, 254);
+            doc.roundedRect(tagX, tagY, tagW - 2, 5.5, 1.5, 1.5, 'FD');
+
+            doc.setTextColor(29, 78, 216);
+            doc.text(cleanTag, tagX + 2, tagY + 3.9);
+
+            tagX += tagW;
+          });
+
+          y = tagY + 9;
+        }
+
+        // Link berita
+        const targetLink =
+          item.link ||
+          `https://google.com/search?q=${encodeURIComponent(item.title)}`;
+
+        doc.setTextColor(15, 23, 42);
+        doc.setFont('Helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.text('TAUTAN BERITA:', 15, y + 4);
+
+        const linkLines = compactWrap(targetLink, 165, 2);
+
+        doc.setFont('Helvetica', 'normal');
+        doc.setFontSize(7.2);
+        doc.setTextColor(79, 70, 229);
+
+        let linkY = y + 9;
+
+        linkLines.forEach((line: string) => {
+          doc.textWithLink(line, 15, linkY, { url: targetLink });
+          linkY += 3.8;
+        });
+
+        y = linkY + 4;
+
+        // Footer satu halaman
         doc.setFillColor(241, 245, 249);
         doc.rect(15, 265, 180, 15, 'F');
+
         doc.setTextColor(100, 116, 139);
         doc.setFont('Helvetica', 'normal');
         doc.setFontSize(7.5);
-        doc.text(settings.footerText, 20, 271);
-        doc.text('Laporan Hasil Analisis Agent AI Intelijen Strategis.', 20, 276);
-        doc.text(`Halaman 2 dari 2 | Generated on: ${pdfTimestampStr}`, 190, 274, { align: 'right' });
 
+        doc.text(settings.footerText, 20, 271);
+        doc.text('Sistem Dokumentasi Media Monitoring.', 20, 276);
+        doc.text(
+          `Halaman 1 dari 1 | Generated on: ${pdfTimestampStr}`,
+          190,
+          274,
+          { align: 'right' }
+        );
+
+        // Simpan PDF satu halaman
         doc.save(`Report_Isu_${item.id || 'export'}.pdf`);
         showToast('Report berita PDF berhasil diunduh.', 'success');
 
       } else {
-        // --- ENTIRE FILTER BULLETIN RAPORT ---
+        // --- ENTIRE FILTER BULLETIN REPORT ---
         if (sortedNews.length === 0) {
           showToast('Tidak ada rilis berita terfilter untuk diekspor.', 'error');
           return;
@@ -1062,8 +1231,12 @@ export const PortalView: React.FC = () => {
             .map((n) => n.publishDate)
             .filter(Boolean)
             .sort();
+
           if (dates.length > 0) {
-            dateRangeLabel = dates.length === 1 ? dates[0] : `${dates[0]} s/d ${dates[dates.length - 1]}`;
+            dateRangeLabel =
+              dates.length === 1
+                ? dates[0]
+                : `${dates[0]} s/d ${dates[dates.length - 1]}`;
           } else {
             dateRangeLabel = 'Periode Juni 2026';
           }
@@ -1086,7 +1259,7 @@ export const PortalView: React.FC = () => {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              articles: sortedNews.slice(0, 20).map(n => ({
+              articles: sortedNews.map(n => ({
                 title: n.title,
                 summary: n.summary,
                 mediaName: n.mediaName,
@@ -1168,6 +1341,7 @@ export const PortalView: React.FC = () => {
         showToast('Berkas PDF Berhasil Diunduh!', 'success');
       }
     } catch (e) {
+      console.error('[PDF PER-NEWS] Gagal memproses dokumen PDF:', e);
       showToast('Gagal memproses dokumen PDF.', 'error');
     } finally {
       setIsDownloadingPdf(false);

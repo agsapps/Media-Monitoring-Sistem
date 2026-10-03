@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAppState } from '../AppContext';
 import { generatePDFReport } from '../utils/pdfReportGenerator';
+import { generateAnalyticsPDF } from '../utils/analyticsPdfGenerator';
 import { OSMMap, normalizeProvinceName } from './OSMMap';
 import { safeHtml2Canvas } from '../utils/safeHtml2Canvas';
 import { DateRangeSlider } from './DateRangeSlider';
@@ -1664,6 +1665,36 @@ export const DashboardView: React.FC = () => {
     }
   };
 
+  const handleExportAnalyticsPDF = () => {
+    try {
+      if (!reportData) {
+        showToast('Belum ada hasil analitik yang dapat diekspor.', 'error');
+        return;
+      }
+
+      showToast('Sedang menyiapkan PDF Analitik Intelijen Media...', 'info');
+
+      let dateRangeLabel = 'Semua Periode';
+      if (startDateFilter && endDateFilter) {
+        dateRangeLabel = `${startDateFilter} s/d ${endDateFilter}`;
+      } else if (selectedCalendarDates.length > 0) {
+        dateRangeLabel = selectedCalendarDates.join(', ');
+      }
+
+      generateAnalyticsPDF(reportData, {
+        period: dateRangeLabel,
+        filter: filterStatusHeadline || 'Filter aktif',
+        totalData: filteredNews.length,
+        source: reportSource || 'GLM-5.3-Flash'
+      });
+
+      showToast('PDF Analitik Intelijen Media berhasil diunduh.', 'success');
+    } catch (err) {
+      console.error('[Analytics PDF Export Error]:', err);
+      showToast('Gagal membuat PDF Analitik Intelijen Media.', 'error');
+    }
+  };
+
   const handleExportPDF = async () => {
     try {
       showToast('Sedang mempersiapkan Laporan PDF...', 'info');
@@ -2216,6 +2247,14 @@ export const DashboardView: React.FC = () => {
                     >
                       <Copy className="w-3.5 h-3.5" />
                       <span>Salin Laporan</span>
+                    </button>
+
+                    <button
+                      onClick={handleExportAnalyticsPDF}
+                      className="px-3 py-1.5 hover:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20 hover:border-blue-500/30 rounded-lg text-[11px] font-semibold transition active:scale-95 flex items-center gap-1 cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Ekspor PDF</span>
                     </button>
 
                     <button
