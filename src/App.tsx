@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { AppProvider, useAppState } from './AppContext';
 import { Sidebar } from './components/Sidebar';
 
-const defaultAppLogo = '/src/assets/images/head_office_badge.png';
+const defaultAppLogo = '/src/assets/images/favicon.svg';
 import { PortalView } from './components/PortalView';
 import { DashboardView } from './components/DashboardView';
 import { ManageView } from './components/ManageView';

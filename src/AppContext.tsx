@@ -15,7 +15,7 @@ import { setGlobalSettingsLogos } from './utils/pdfReportGenerator';
 import { getCachedAccessToken } from './googleAuth';
 import { appendSocialToSheet, appendIssueToSheet } from './sheetsService';
 
-const defaultAppLogo = '/src/assets/images/head_office_badge.png';
+const defaultAppLogo = '/src/assets/images/favicon.svg';
 
 
 export interface ToastItem {

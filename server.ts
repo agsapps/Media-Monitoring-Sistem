@@ -2945,7 +2945,7 @@ const defaultMedas = [
 
 const defaultSettings = {
   companyName: 'Security Head Office',
-  logoUrl: '/src/assets/images/head_office_badge.png',
+  logoUrl: '/src/assets/images/favicon.svg',
   primaryColor: '#0f172a',
   headerText: 'Media Monitoring Report & Issue Tracking',
   footerText: 'Powered by Security Head Office © 2026',
