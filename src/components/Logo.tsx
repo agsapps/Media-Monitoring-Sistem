@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { useAppState } from '../AppContext';
 import { Upload } from 'lucide-react';
 
-const defaultAppLogo = '/src/assets/images/head_office_badge.png';
+const defaultAppLogo = '/src/assets/images/favicon.svg';
 
 interface LogoProps {
   className?: string;
