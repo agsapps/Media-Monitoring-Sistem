@@ -257,27 +257,31 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // =========================================================================
 // SECURITY, JWT UTILITIES, AND AUTHENTICATION MIDDLEWARES
 // =========================================================================
-const JWT_SECRET = process.env.JWT_SECRET || 'stable-media-monitoring-jwt-secret-key-prod-2026-super-safe!';
+const JWT_SECRET = process.env.JWT_SECRET || '';
+if (JWT_SECRET.length < 32) {
+  console.error('FATAL: JWT_SECRET belum diset di .env (minimal 32 karakter).');
+  process.exit(1);
+}
+const JWT_TTL_HOURS = Number(process.env.JWT_TTL_HOURS || 168);
 
-// Sign secure JWT-like token (HS256)
 function signToken(payload: any): string {
   const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
-  // Set expiration to 100 years from now (permanent login)
-  const body = Buffer.from(JSON.stringify({ ...payload, exp: Date.now() + 100 * 365 * 24 * 60 * 60 * 1000 })).toString('base64url');
+  const body = Buffer.from(JSON.stringify({ ...payload, exp: Date.now() + JWT_TTL_HOURS * 3600 * 1000 })).toString('base64url');
   const signature = crypto.createHmac('sha256', JWT_SECRET).update(`${header}.${body}`).digest('base64url');
   return `${header}.${body}.${signature}`;
 }
 
-// Verify secure token
 function verifyToken(token: string): any | null {
   try {
     const parts = token.split('.');
     if (parts.length !== 3) return null;
     const [header, body, signature] = parts;
-    const expectedSig = crypto.createHmac('sha256', JWT_SECRET).update(`${header}.${body}`).digest('base64url');
-    if (signature !== expectedSig) return null;
+    const expected = crypto.createHmac('sha256', JWT_SECRET).update(`${header}.${body}`).digest('base64url');
+    const a = Buffer.from(signature);
+    const b = Buffer.from(expected);
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
     const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
-    // Make login permanent, no time limitation constraints
+    if (typeof payload.exp !== 'number' || payload.exp < Date.now()) return null;
     return payload;
   } catch {
     return null;
@@ -316,7 +320,7 @@ const requireRole = (allowedRoles: string[]) => {
 };
 
 // Debug and Health check endpoint
-app.get('/api/debug-status', (req, res) => {
+app.get('/api/debug-status', authenticateToken, requireRole(['Admin']), (req, res) => {
   const distPath = path.join(process.cwd(), 'dist');
   res.json({
     nodeEnv: process.env.NODE_ENV,
@@ -330,7 +334,7 @@ app.get('/api/debug-status', (req, res) => {
 });
 
 // Diagnostic endpoint to verify CUSTOM_SQL_DB_NAME database tables connection
-app.get('/api/diagnostics/db-tables', async (req, res) => {
+app.get('/api/diagnostics/db-tables', authenticateToken, requireRole(['Admin']), async (req, res) => {
   try {
     const host = process.env.CUSTOM_SQL_HOST;
     const user = process.env.CUSTOM_SQL_USER;
@@ -384,7 +388,7 @@ app.get('/api/diagnostics/db-tables', async (req, res) => {
 });
 
 // Diagnostic endpoint to get the last 10 query history log entries
-app.get('/api/diagnostics/db-queries', (req, res) => {
+app.get('/api/diagnostics/db-queries', authenticateToken, requireRole(['Admin']), (req, res) => {
   res.json({
     success: true,
     queries: queryHistory.slice(0, 10)
@@ -4544,6 +4548,24 @@ app.get('/api/kantor-3d/logs', (req, res) => {
 // AUTH PREPARATION & ENDPOINTS
 // ===================================
 
+const loginAttempts = new Map<string, { n: number; t: number }>();
+app.use('/api/auth/login', (req, res, next) => {
+  if (req.method !== 'POST') return next();
+  const key = `${req.ip}|${String(req.body?.username || '').toLowerCase().trim()}`;
+  const now = Date.now();
+  if (loginAttempts.size > 5000) loginAttempts.clear();
+  const e = loginAttempts.get(key);
+  if (!e || now - e.t > 15 * 60 * 1000) {
+    loginAttempts.set(key, { n: 1, t: now });
+    return next();
+  }
+  e.n++;
+  if (e.n > 10) {
+    return res.status(429).json({ success: false, message: 'Terlalu banyak percobaan login. Coba lagi dalam 15 menit.' });
+  }
+  next();
+});
+
 app.post('/api/auth/login', async (req, res) => {
   const { username, password } = req.body;
 
@@ -6562,8 +6584,9 @@ app.delete('/api/social-news/:id', authenticateToken, requireRole(['Admin', 'Ana
   res.json({ success: true, message: 'Berita Sosmed berhasil dihapus.' });
 });
 
-app.post('/api/news/batch-update-category', (req, res) => {
-  const { ids, categoryId, user } = req.body;
+app.post('/api/news/batch-update-category', authenticateToken, requireRole(['Admin', 'Analis']), (req, res) => {
+  const { ids, categoryId } = req.body;
+  const user = req.user;
   if (!ids || !Array.isArray(ids) || ids.length === 0) {
     return res.status(400).json({ message: 'ID berita terpilih tidak valid!' });
   }
@@ -6626,8 +6649,9 @@ app.post('/api/news/batch-update-category', (req, res) => {
   res.json({ success: true, message: `${updatedCount} berita berhasil diperbarui.` });
 });
 
-app.post('/api/news/batch-update-sentiment', (req, res) => {
-  const { ids, sentiment, user } = req.body;
+app.post('/api/news/batch-update-sentiment', authenticateToken, requireRole(['Admin', 'Analis']), (req, res) => {
+  const { ids, sentiment } = req.body;
+  const user = req.user;
   if (!ids || !Array.isArray(ids) || ids.length === 0) {
     return res.status(400).json({ message: 'ID berita terpilih tidak valid!' });
   }
@@ -6684,8 +6708,9 @@ app.post('/api/news/batch-update-sentiment', (req, res) => {
   res.json({ success: true, message: `${updatedCount} berita berhasil diperbarui.` });
 });
 
-app.post('/api/news/batch-update-location', (req, res) => {
-  const { ids, location, user } = req.body;
+app.post('/api/news/batch-update-location', authenticateToken, requireRole(['Admin', 'Analis']), (req, res) => {
+  const { ids, location } = req.body;
+  const user = req.user;
   if (!ids || !Array.isArray(ids) || ids.length === 0) {
     return res.status(400).json({ message: 'ID berita terpilih tidak valid!' });
   }
@@ -6742,8 +6767,9 @@ app.post('/api/news/batch-update-location', (req, res) => {
   res.json({ success: true, message: `${updatedCount} berita berhasil diperbarui.` });
 });
 
-app.post('/api/news/batch-update-publish-date', (req, res) => {
-  const { ids, publishDate, user } = req.body;
+app.post('/api/news/batch-update-publish-date', authenticateToken, requireRole(['Admin', 'Analis']), (req, res) => {
+  const { ids, publishDate } = req.body;
+  const user = req.user;
   if (!ids || !Array.isArray(ids) || ids.length === 0) {
     return res.status(400).json({ message: 'ID berita terpilih tidak valid!' });
   }
@@ -6801,8 +6827,9 @@ app.post('/api/news/batch-update-publish-date', (req, res) => {
   res.json({ success: true, message: `${updatedCount} berita berhasil diperbarui.` });
 });
 
-app.post('/api/news/batch-update-publish-time', (req, res) => {
-  const { ids, publishTime, user } = req.body;
+app.post('/api/news/batch-update-publish-time', authenticateToken, requireRole(['Admin', 'Analis']), (req, res) => {
+  const { ids, publishTime } = req.body;
+  const user = req.user;
   if (!ids || !Array.isArray(ids) || ids.length === 0) {
     return res.status(400).json({ message: 'ID berita terpilih tidak valid!' });
   }
@@ -12131,7 +12158,7 @@ Aturan Penulisan Judul:
   res.json({ success: true, suggestions: fallbacks });
 });
 
-app.post('/api/gemini/generate-highlight', async (req, res) => {
+app.post('/api/gemini/generate-highlight', authenticateToken, requireRole(['Admin', 'Analis']), async (req, res) => {
   const { title, summary, mediaName, publishDate, location, categoryName, sentiment, articles } = req.body;
   if (!title && !summary && (!articles || !Array.isArray(articles) || articles.length === 0)) {
     return res.status(400).json({ message: 'Judul/ringkasan berita atau daftar artikel wajib disediakan.' });
